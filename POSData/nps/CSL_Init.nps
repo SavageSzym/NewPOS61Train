@@ -1,0 +1,118 @@
+ /** 
+ * @file CSL_Init.nps
+ * @brief This NPS file implements BusinessComponents Initialiation.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Init
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Init.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_INIT_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable global. */
+GLO_WRITELOG=false;
+SRC_BC_INIT='CSL_Init.nps';
+
+/** CSL_dbglog
+ * This function calls a real Business Object given its' name and parameters.
+ * Used by internal routines to execute BOs.
+ * @param
+ * @param
+ * @return the value returned by the BO.
+ * @throws 
+ * @author Pedro
+ * 
+ * Level Type:
+ * 9 = Load - NPS
+ * 8 = Unload - NPS
+ * 7 = Entry - Function
+ * 6 = Leave - Function
+ * 5 = Before While, For and to call other Function
+ * 4 = After While, For and to exit other Function
+ * 3 = Any logs
+ * 2 = Any logs
+ * 1 = Any logs
+ * 0 = Full log
+ *
+ */
+function CSL_dbglog(level, module, command, message) {
+	if(GLO_WRITELOG) {
+		return API.dbg("[" + module + "][" + command + "][" + message + "]");
+	}
+}
+
+/* Load the CSL (scripts) Core Extension. */
+var cmd = "executeScript";
+executeScript("CSL_Tools.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Tools.nps");
+
+executeScript("CSL_Sales.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Sales.nps");
+
+executeScript("CSL_Tender.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Tender.nps");
+
+executeScript("CSL_Grill.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Grill.nps");
+
+executeScript("CSL_TotalStoreRecall.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_TotalStoreRecall.nps");
+
+executeScript("CSL_Reports.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Reports.nps");
+
+executeScript("CSL_Register.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Register.nps");
+
+executeScript("CSL_Screen.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Screen.nps");
+
+executeScript("CSL_CashOperation.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_CashOperation.nps");
+
+executeScript("CSL_Choices.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Choices.nps");
+
+executeScript("CSL_Security.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Security.nps");
+
+executeScript("CSL_ApplyUpdate.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_ApplyUpdate.nps");
+
+executeScript("CSL_CoreUtilities.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_CoreUtilities.nps");
+
+executeScript("CSL_Missing.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Missing.nps");
+
+executeScript("CSL_Adaptors.nps",true);
+CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_Adaptors.nps");
+
+//executeScript("CSL_CSO.nps",true);
+//CSL_dbglog(9, SRC_BC_INIT, cmd, "CSL_CSO.nps");
+
+/**
+ * END nps
+ */
+ 
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700b9115c80eaae6266882cedbbc27e98d0b3cb835c4f2f6b9816cd850f88a56d2f45405cdd795c9e7d8268c8e6f7c6f5383f000010
+ * =============================================================================================================================
+*/

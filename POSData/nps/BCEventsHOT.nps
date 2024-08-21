@@ -1,0 +1,655 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCEventsHOT.nps 
+* This NPS file implements Local's BusinessComponentes event handlers for HOT.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00	25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*
+* 2.53.01	11.05.2010	Mihai Secareanu	add onItemSell function  (ACSP8164964)
+* 2.54.02	18.06.2010	Olga Illenseer		(ACSP8275844 ) change the onRebuild function and include the 2 new functions getHotUpdtList and resetHotUpdtList 
+* 2.55.00	29.07.2010 Mihai Secareanu 		add support for promo authority check
+* 2.56.07	07.12.2010	Mihai Secareanu  	update the place from where the PromoItemAuthorityLevel, PromoItemAuthorityLimits , DiscountAuthorityLevel, DiscountAuthorityLimits are read
+*2.58.00	18.06.0211	Mihai secareanu		change onChocieMade accordign to RC16 sample scripts
+*								update onEndInitialize (call for  PosApplyUpdateJS) according to NP6.1.17 RC17 sample scripts
+*/
+ 
+ var	gbLstApplyUpd		=	true;
+ //const NON_FOOD_PRODUCT=8;
+
+/** PosMountOrderIdJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosMountOrderIdJS</b>\n
+ * This BC checks if it's possible to void a sale!\n
+ * In a workflow sequence it is called:<b>PosMountOrderIdJS NbrFormat szOrder szMajor szMinor</b>\n
+ * In java script it should be called:<b>PosMountOrderIdJS(NbrFormat,szOrder,szMajor,szMinor)</b>\n
+ * @param - NbrFormat - Number Format
+ * @param - Order - POD + order number
+ * @param - Major - major number
+ * @param - Minor - minor number
+ * Return - rval - OrderId
+ */
+function PosMountOrderIdJS(szNbrFormat,Order,Major,Minor) {
+	var OrderId="";
+	var NbrFormat = Number(szNbrFormat);
+	
+	switch(NbrFormat) {
+	default:
+	case 1:
+		while(Major.length < 2) {
+			Major="0"+Major;
+		}
+		OrderId=Major.substr(Major.length-2,2);
+		if(Number(Minor) > 0) {
+			OrderId+="-"+Minor;
+		}
+		break;
+	case 2:
+		while(Major.length < 2) {
+			Major="0"+Major;
+		}
+		OrderId=Order.substr(6,1)+Major.substr(Major.length-2,2);
+		break;
+	}
+	
+	return(OrderId);
+}
+
+/** onGrillStart
+ *
+ * @brief - Called by the kernel and it will start the grill process 
+ * @param - qttMax - Number of products that will be grilled
+ * @return - TRUE to continue the grilling process
+ */
+function onGrillStart(qttMax) {
+	gnGrillScreen=-1;
+	return(true);
+}
+
+/** onLoadScreen
+  *  @brief - Called by the kernel when a new screen is loaded.
+  *  @param - scrNbr - screen number loaded
+  *  @return - true if ok
+  */
+function onLoadScreen(scrNbr) {
+	if(gnGrillScreen==1) {
+		if(Number(scrNbr) == TOTAL_SCREEN_NUMBER) {
+			PosDoTotal();
+		}
+		gnGrillScreen=0;
+	}
+	else if(gnGrillScreen==-1) {
+		gnGrillScreen=1;
+	}
+	else {
+		gnGrillScreen=0;
+	}
+	return(true);
+}
+
+/** onSelIndex
+ * @brief - Called by the kernel when a new list box selection is made
+ * @param - index - new list index to be selected
+ * @return - True to continue item selection
+ */
+function onSelIndex(index){
+	if(gnGrillScreen==1) {
+		PosProtectQuantity();
+	}
+	//OI 27.01.2010 add for 6.1.17
+	PosEndSmartReminder();
+	return(true);
+}
+
+/**onCreateSale
+ *
+ * @brief - This function handles onCreateSale event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onCreateSale(tp,recall) {
+	var ctx=new SessionContext;
+	var remPOD = ctx.get("RemPOD");
+	// Handles purge of tlog
+	// Handles the purge of TLOGs
+	var hlp=new BusinessObjectHelper;
+	var maxTLOGRegisters;
+	maxTLOGRegisters=hlp.findParamInSectionConfig("maxTLOGRegisters","Persistence");
+	if((maxTLOGRegisters != null) && (maxTLOGRegisters.length > 0) && (Number(maxTLOGRegisters) > 0))
+	{
+		PosCheckHOTDate(Number(maxTLOGRegisters));
+	}
+	else 
+	{
+		PosCheckHOTDate();
+	}
+	// Check for new updates
+	if(remPOD != "STAND_ALONE") {	
+		if(PosCheckForNewUpdates()) {
+			var ctx = new SessionContext;
+			var baseId = ctx.get("baseScreenId");
+		
+			if(baseId != null && Number(baseId)>0) {
+				PosShowMessage("MSG_BC_MUSTUPDATE");
+				PosShowScreen(baseId);
+			}
+
+			return(false);
+		}
+	}
+	return(true);
+}
+
+/**onStore
+ *
+ * @brief - This function handles onStore event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onStore(bTandemEnabled,nTandemMode,nTandemBooth,szCurOrderId) {
+	if(bTandemEnabled && (2 == nTandemMode) && (nTandemBooth > 1)) {
+		PosQueryStsQueueByTandem((SALE_STATUS_IN_PROGRESS | SALE_STATUS_ON_TOTAL),1,szCurOrderId);
+	}
+	return(true);
+}
+
+/**onPromoItem
+ *
+ * @brief - This function handles onPromoItem event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onPromoItem(tp)
+{
+	if(PosCheckSessionProperty("POD","CSO")) {
+		return(true);
+	}
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	var items=view.ItemView.(level == 0 && quantity > 0);
+	if(null == items) {
+		return(true);
+	}
+	var i;
+	var selItem=null;
+	var balance=0;
+	var authLimits=hlp.findParamInSectionConfig("PromoItemAuthorityLimits", "UserInterface");
+
+	for(i=0; i < items.length(); i++) {
+		var item=items[i];
+		//OI 27.01.2010 add for 6.1.17
+		var bGiftCard = (item.quantity > 0) && (item.familyGroup == GIFT_COUPON) && (item.productType == NON_FOOD_PRODUCT) && (item.category == PAPER);
+		var bGiftCert = (item.quantity > 0) && (item.familyGroup == GIFT_COUPON) && (item.productType == 9) && (item.category == PAPER);
+
+		if(item.currentSelected != "true") {
+			var unitPrice=new BigDecimal(item.unitPrice);
+			if((!bGiftCard) && (!bGiftCert) && (unitPrice.compareTo(new BigDecimal(0))!=0)) {
+			
+				balance+=Number(item.quantity);
+				if(item.quantityPromo > 0) {
+					var promos=item.promo;
+					if(promos != null) {
+						var promo=promos.(@id==tp);
+						if(promo != null) {
+							balance-=Number(promo);
+						}
+					}
+				}
+			} 
+		} else {
+			selItem=items[i];
+			if(bGiftCard || bGiftCert) {
+				// Gift Card not allowed
+				PosShowMessage("MSG_BC_PROMO_GC");
+				return(false);
+			}
+		}
+	}
+	if(null == selItem) {
+		return(true);
+	}
+	if(balance <= 0) { 
+		var promoQtty=hlp.getQuantity();
+		if(promoQtty < 0) {
+			promoQtty=0;
+			if(selItem.quantityPromo > 0) {
+				var promos=selItem.promo;
+				if(promos != null) {
+					var promo=promos.(@id==tp);
+					if(promo != null) {
+						promoQtty=Number(promo);
+					}
+				}
+			}
+			++promoQtty;
+		}
+		if(Number(selItem.quantity) <= promoQtty) {
+			PosShowMessage("MSG_BC_PROMO_LAST_ITEM");
+			return(false);
+		}
+	}
+	
+	if("enable"==authLimits) {
+		// NPS-5766 - enable this only for debug
+		//API.SLog("LOGLEVL_DEBUG", "[onPromoItem] view ["+curView+"]");
+
+		// NPS-5766
+		var bReqAuthorization=false;
+		var authorizationMsg="";
+		var authLevel=hlp.findParamInSectionConfig("PromoItemAuthorityLevel", "UserInterface");
+		var bAcceptNegativeQty=false;
+		var paramValue=hlp.findParamInSectionConfig("AcceptNegativeQty","Account");	// TODO: should get this from TLOG
+
+		API.SLog("LOGLEVL_DEBUG", "[onPromoItem] AcceptNegativeQty ["+paramValue+"]");
+		API.SLog("LOGLEVL_DEBUG", "[onPromoItem] PromoItemAuthorityLevel ["+authLevel+"]");
+
+		if(("true"==paramValue)||("TRUE"==paramValue)) {
+			bAcceptNegativeQty=true;
+		}
+
+		if("manager"==authLevel) {
+			bReqAuthorization=true;
+		}
+		else if("crew"==authLevel) {
+			var quantum=hlp.getQuantity();
+			var promoQty=0;
+			var promoAmount=new BigDecimal(0);
+			var fatherQty=0;
+			var fatherPromoQty=0;
+			var fatherSelected=false;
+			var lastFather=0;
+			var iIndex;
+			for (iIndex=0; iIndex<view.ItemView.length(); iIndex++) {
+				var item = view.ItemView[iIndex];
+
+				if(item.quantity!=0) {
+					var meanUnitPrice=new BigDecimal(0);
+					var totalPrice=new BigDecimal(item.totalPrice);
+					var totalPriceBeforePromo=new BigDecimal(item.BPTotalPrice);
+					var zeroBD=new BigDecimal(0);
+					var itemQtty=new BigDecimal(lGetProductMultiplicity(view, iIndex, lastFather, true));
+					if(0!=totalPriceBeforePromo.compareTo(zeroBD)) {
+						// BPTotalPrice has the original total price
+						meanUnitPrice=totalPriceBeforePromo.divide(itemQtty,6);
+					}
+					else {
+						meanUnitPrice=totalPrice.divide(itemQtty,6);
+					}
+					if(0==Number(item.level)) {
+						lastFather=iIndex;
+						if(meanUnitPrice.compareTo(new BigDecimal(0))!=0) {		// can the meanUnitPrice be negative ?
+							if(item.currentSelected != "true") {
+								promoQty=promoQty+Number(item.quantityPromo);
+								fatherSelected=false;
+							}
+							else {
+								fatherSelected=true;
+								if(quantum<0) {
+									var itemQtyPromo=Number(item.quantityPromo);
+									promoQty=promoQty+itemQtyPromo+1;
+									if(itemQtyPromo>0) {
+										promoAmount=promoAmount.add(new BigDecimal(item.BPTotalPrice));
+										promoAmount=promoAmount.subtract(new BigDecimal(item.totalPrice));
+									}
+									// test if one more promo is possible
+									if(itemQtyPromo>=Number(item.quantity)) {
+										// more promos than items sold
+										PosShowMessage("MSG_BC_INVPROMO");
+										return(false);
+									}
+								}
+								else {
+									promoQty=promoQty+quantum;
+									meanUnitPrice=meanUnitPrice.multiply(new BigDecimal(quantum));
+									// test if the the promo can be applied
+									if(quantum>Number(item.quantity)) {
+										// more promos than items sold
+										PosShowMessage("MSG_BC_INVPROMO");
+										return(false);
+									}
+								}
+							
+								promoAmount=promoAmount.add(meanUnitPrice);
+							}
+						}
+						fatherQty=Number(item.quantity);
+						fatherPromoQty=Number(item.quantityPromo);
+					}
+					else {
+						if(true==fatherSelected) {
+							var totalPrice=new BigDecimal(item.totalPrice);
+							var totalPriceBeforePromo=new BigDecimal(item.BPTotalPrice);
+							var zeroBD=new BigDecimal(0);
+							var isPriceGTZ=totalPrice.compareTo(zeroBD);
+							var isPriceGTZBP=totalPriceBeforePromo.compareTo(zeroBD);
+	
+							if((item.quantity<0)&&(false==bAcceptNegativeQty)) {
+								// do not accept negative qty
+								isPriceGTZ=0;
+								isPriceGTZBP=0;
+							}
+
+							// ignore cost inclusive items
+							if((0!=isPriceGTZ)||(0!=isPriceGTZBP)) {
+								var multiplicity=lGetProductMultiplicity(view, iIndex, lastFather, false);
+								if(quantum<0) {
+									multiplicity*=(fatherPromoQty+1);
+								}
+								else {
+									multiplicity*=quantum;
+								}
+								meanUnitPrice=meanUnitPrice.multiply(new BigDecimal(multiplicity));
+								promoAmount=promoAmount.add(meanUnitPrice);
+							}
+						}
+					}
+
+					if((fatherPromoQty>0)&&(false==fatherSelected)) {
+						promoAmount=promoAmount.add(new BigDecimal(item.BPTotalPrice));
+						promoAmount=promoAmount.subtract(new BigDecimal(item.totalPrice));
+					}
+				}
+			}
+
+			// NPS-5766
+			API.SLog("LOGLEVL_DEBUG", "[onPromoItem] total promo qtty ["+promoQty+"]");
+			API.SLog("LOGLEVL_DEBUG", "[onPromoItem] total promo amount["+promoAmount.toString()+"]");
+		
+			var promoQtyLimit=hlp.getBusinessLimitsParam("PromoItemQuantityLimit");
+			var promoAmtLimit=hlp.getBusinessLimitsParam("PromoItemAmountLimit");
+			if(""==promoQtyLimit) {
+				promoQtyLimit="1"
+			}
+			if(""==promoAmtLimit) {
+				promoAmtLimit="0.01"
+			}
+			API.SLog("LOGLEVL_DEBUG", "[onPromoItem] PromoItemQuantityLimit ["+promoQtyLimit+"]");
+			API.SLog("LOGLEVL_DEBUG", "[onPromoItem] PromoItemAmountLimit ["+promoAmtLimit+"]");
+
+			if(promoQty>=Number(promoQtyLimit)) {
+				// request manager authorization
+				authorizationMsg="MSG_PROMPTPROMOQTYAUTH";
+				bReqAuthorization=true;
+			}
+			else {
+				if(promoAmount.compareTo(new BigDecimal(promoAmtLimit))>=0) {
+					// request manager authorization
+					authorizationMsg="MSG_PROMPTPROMOAMTAUTH";
+					bReqAuthorization=true;
+				}
+			}
+		}
+		if(bReqAuthorization && !PosCheckSessionProperty ("skipPromoAuthorization", "true")) {
+			var bAuth=false;
+			if(""==authorizationMsg) {
+				bAuth=PosGetAuthorization("manager");	// SingleSignOn - false
+			}
+			else {
+				bAuth=PosGetAuthorization("manager",authorizationMsg);	// SingleSignOn - false
+			}
+			if(false==bAuth) {
+				// Not Authorized
+				return(false);
+			}
+		}
+	}
+	
+	return(true);
+}
+
+
+/* SDE-1052 -bypass HALO and HILO limit */
+function onHILO(nQtty,nHighQuantitySaleLimit) {
+	return(true);
+}
+
+function onHALO(currentValue,HighAmountSaleLimit) {
+	return(true);
+}
+
+/* SDE-1059 */
+function onValidSaleForTotal() {
+	return(true);
+}
+/* bypass TRED */
+function onReductionHILOBeforeTotal(nQtty,TRedBeforeTotal) {
+	return(true);
+}
+
+function onReductionHILOAfterTotal (nItemsAfterTotal,TRedAfterTotalQuantity) {
+	return(true);
+}
+
+function onReductionHALOAfterTotal(nItemsAfterTotal,TRedAfterTotalAmount) {
+	return(true);
+}
+
+/** onCheckFileForUpdate
+ *
+ * @brief - Invoked by the kernel during <i>PosCheckForNewUpdates</i> BC execution to check if the file should be updated.
+ * @param - String swVersion - Current software version.
+ * @param - String datVersion - Current data configuration version.
+ * @param - String imgVersion - Current image package version.
+ * @param - String np6Version - Current software version estracted from version.np6 file
+ * @param - String updFileName - File available for update.
+ * @param - Object usrObj - User object passed as parameter in the call to <i>PosCheckForNewUpdates</i> BC.
+ * @return - 'true' to inform the BC to add the file for update.
+ */
+function onCheckFileForUpdate(swVersion, datVersion, imgVersion, np6Version, updFileName, usrObj) {
+	var aFiles = usrObj;
+	var idx = 0;
+	var rc = false;
+
+	if(Number(idx=updFileName.toLowerCase().indexOf(".cab")) > -1) {
+		// CAB file naming convention: [Any prefix]![3 chars with the provider identification]![Version number].CAB
+		var cabInfo = updFileName.substring(0,idx).split("!");
+		if(cabInfo.length == 3) {
+			if(cabInfo[1].toLowerCase() == "npi") { // NewPOS International CAB file
+			    //SDO-1156 - any different cab must be installed - there will be only one cab available at WayStation
+				rc=(cabInfo[2]!=swVersion && cabInfo[2]!=np6Version)
+			}
+			// TODO: treat other CAB file provider if necessary
+		}
+	}
+	else if(Number(idx=updFileName.toLowerCase().indexOf("_dat.zip")) > -1) {
+		// DAT file naming convention: [File package number]_DAT.ZIP
+		var filePkg = updFileName.substring(0,idx);
+		rc = (Number(filePkg) > Number(datVersion));
+	}
+	else if(Number(idx=updFileName.toLowerCase().indexOf("_img.zip")) > -1) {
+		// IMG file naming convention: [File package number]_img.ZIP
+		var filePkg = updFileName.substring(0,idx);
+		rc = (Number(filePkg) > Number(imgVersion));
+	}
+	else {
+	   //other files will not be applied
+       rc = false;
+	}
+
+	if(rc && aFiles != null) {
+		aFiles.push(String(updFileName));
+	}
+	return(rc);
+}
+
+/** onCheckFileForRemoteDelete
+ *
+ * @brief - Invoked by the kernel during <i>PosCheckApplyUpdateResult</i> BC execution to check if the file should be deleted from the WayStation.
+ * @param - String fileName - Current software version.
+ * @return - 'true' to inform the BC to delete the file.
+ */
+function onCheckFileForRemoteDelete(fileName) {
+	// Deletes only non-CAB files - leve them on the WayStation for other devices
+//	if(Number(idx=fileName.toLowerCase().indexOf(".cab")) > -1) {
+//		return(false);
+//	}
+//	return(true);
+	return(false);
+}
+
+/** onRebuild
+ * @brief - Invoked by the kernel when the TLOG rebuild process has just finished.\n
+ *          Currently is being used to check ApplyUpdate results and display the necessary information for the user.\n
+ */
+function onRebuild() {
+	// Gets persisted update file list
+	var ctx = new SessionContext;
+	//18.06.2010 OI use getHotUpdtList (ACSP8275844)
+	var persistedFileList = getHotUpdtList(); // ctx.get("HOTUPDLIST");
+	var aFiles = ((persistedFileList!=null && persistedFileList.length>0)?persistedFileList.split("|"):null);
+	// Clears persisted file list
+	//18.06.2010 OI use resetHotUpdtList (ACSP8275844)
+	resetHotUpdtList();
+	//PosSetSessionProperty("HOTUPDLIST","",true);
+	// Check apply update results and perform clean up operations
+	gbLstApplyUpd=PosCheckApplyUpdateResult("MSG_BC_UPDATESUCCESS","MSG_BC_UPDATEFAIL",aFiles);
+	var hlp = new BusinessObjectHelper;
+	hlp.forceCache("10000001");
+	hlp.forceCache("10000003");
+	return(true);
+}
+
+/** onEndInitialize
+ * @brief - Invoked by the kernel when the POS initializaion process has just finished.\n
+ *          Currently is being used to check for new updates in the WayStation.\n
+ */
+function onEndInitialize() {
+	var ctx=new SessionContext;
+	var remPOD = ctx.get("RemPOD");
+	if(remPOD != "STAND_ALONE" && gbLstApplyUpd) {
+		var aFiles = new Array();
+
+		PosSecurityUpdate();
+
+		// Checks if there's new updates ...
+		if(PosCheckForNewUpdates(null,aFiles)) {
+			// new updates are available start apply update
+			if(PosApplyUpdateJS(false, aFiles)) {
+				return(false); // shutdown
+			}
+		}
+	}
+		
+	return(true);
+}
+
+//SDE-2536
+/**onChoiceMade
+ *
+ * @brief - This is called once choices are made
+ * @param - code - product code
+ * @param - qty - quantity of choices made
+ * Return - always returns true
+ */
+function onChoiceMade(qty, forceAll) {
+     if(forceAll) {
+         if (PosConvertProductForceAll()) {
+           PosAutoChoice();
+         }
+
+     } else {
+         if (PosConvertProduct()) {
+           PosAutoChoice();
+         }
+     }
+
+     return(true);
+}
+
+/**onSelectedItem
+ *
+ * @brief - This function handles onSelelectedIndex event, a selection in the sale list is completelly done
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onSelectedItem() {
+	
+	if(PosCheckSessionProperty("isSmartReminderON","TRUE")) {
+		return(true);
+	}
+
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+
+	if(view.@saleStatus==SALE_STATUS_START || view.@saleStatus==SALE_STATUS_IN_PROGRESS || view.@saleStatus==SALE_STATUS_GRILLING) {
+		if(!PosShowGrillFloatScreen(false)) {
+				PosHideFloatScreen();
+		}
+	}
+
+	return(true);
+}
+
+/**onItemSell
+ *
+ * @brief -  
+ * @param - 
+ * @param - 
+ * Return - true if valid
+ */
+function onItemSell(prodCode,incQtty) {
+	PosSetSessionProperty("ActualSaleQuantity", incQtty>=0?incQtty:0);
+	return(true);
+}
+
+
+//OI 18.06.2010 add for 6.1.17 RC2 (ACSP8275844 )
+
+function getHotUpdtList() {
+    var path = "HOTUPDLIST";
+    var updTempFile = new File(path);
+    var ret = null;
+    if(File.exists(path)) {
+        if(updTempFile.open("r")) {
+            ret = updTempFile.read();
+              updTempFile.close();
+        } else {
+           API.SLog("LOGLEVL_ERROR", "UPDT - Cannot open HOTUPDLIST for reading");
+        }
+    } else {
+        API.SLog("LOGLEVL_DEBUG", "UPDT - File HOTUPDLIST not found");
+    }
+    return(ret);
+}
+
+function resetHotUpdtList() {
+    var path = "HOTUPDLIST";
+    var updTempFile = new File(path);
+    if(File.exists(path)) {
+        updTempFile.remove();
+        API.SLog("LOGLEVL_DEBUG", "UPDT - File HOTUPDLIST removed");
+    }
+}
+
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d3739343700f20a71afdb7a7b675cc71c6444c9add8b8ad6050d4647aa0ccdc7a0735bfa4d711dc5eec718c7c78655541d2c383945e69230010
+ * =================================================================================================================================
+*/

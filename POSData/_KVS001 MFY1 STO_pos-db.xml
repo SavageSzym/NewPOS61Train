@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="KVS001 MFY1 STO">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+			<Section name="Messaging">
+				<Parameter name="serverPort" value="60002"/>
+			</Section>
+	</Configuration>
+	<Services>
+		<Service name="2001" type="STO" classname="npUpdtRcv.dll" startonload="true" quitOnFail="true">
+			<Configuration imports="STO"/>
+		</Service>
+	</Services>
+</PosDB>

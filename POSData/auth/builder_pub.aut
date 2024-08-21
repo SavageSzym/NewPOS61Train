@@ -1,0 +1,18 @@
+public aut version 93-9076
+authority id = builder
+authority level = 10
+authority name = NewPOS release level
+validity = 2010-04-18
+public pki version 9751-7947
+c52e59381f8136562901234db99e195a528f5325f89301ad6286b3a7fe2b0d753bdbf075c673815dab396f17e210ba7ddc5d
+3
+signed aut version 93-9076
+authority id = corp
+authority level = 1
+authority name = NewPOS corp authorithy
+validity = 2010-04-18
+signature type = bottom
+time stamp (GMT) = Fri May 18 14:30:24 2007
+certificate = 393735312d37393437005e0b88c4143fb9e4644aaa43a40f64487ac9336ff311872de014c452a9dc90bca811ec9a9de0e645e5d5dce9c113f497c31d0010
+==============================================================================================================================================================================
+

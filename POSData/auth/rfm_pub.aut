@@ -1,0 +1,18 @@
+public aut version 93-9076
+authority id = rfm
+authority level = 30
+authority name = RFM authority for package generation
+validity = 2010-04-18
+public pki version 9751-7947
+19029a79af141d45963d3899965f0abfac167e729d21474eee7eeee4d9367fe89e109d6e64398e7ebcb863fd225237e40e73
+3
+signed aut version 93-9076
+authority id = corp
+authority level = 1
+authority name = NewPOS corp authorithy
+validity = 2010-04-18
+signature type = bottom
+time stamp (GMT) = Fri May 18 14:30:28 2007
+certificate = 393735312d37393437007bf917d5e2d54f2396ca254a1df9373f54783c095f48082742f96fb84066205d98a089e8fe685de7ae9beadbd4b589a3d3290010
+==============================================================================================================================================================================
+

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sample configuration file for DET initial setup.  -->
+<NPDrivers>
+    <Logging LogFile="dslserver.log" LogLevel="3" LogMaxFileSize="2000000"/>
+    <!-- configuration with old name -->
+	<Driver logicalName="linedisp00" category="CustomerDisplay" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.LineDisplay"/>
+        <param name="PROFILENAME" value="Line_Display"/>
+        <param name="CLEARBEFOREPRINT" value="0"/>
+    </Driver>
+    <Driver logicalName="magst00" category="MagneticReader" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.MSR"/>
+        <param name="PROFILENAME" value="MSR"/>
+        <param name="HOOKMETHOD" value="1"/>
+    </Driver>
+    <Driver logicalName="cashdrawer00" category="CashDrawer" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.CashDrawer"/>
+        <param name="PROFILENAME" value="Drawer1"/>
+    </Driver>
+	<!-- configuration with new name -->
+	<Driver logicalName="LINE_DISPLAY" category="CustomerDisplay" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.LineDisplay"/>
+        <param name="PROFILENAME" value="Line_Display"/>
+        <param name="CLEARBEFOREPRINT" value="0"/>
+    </Driver>
+    <Driver logicalName="MSR" category="MagneticReader" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.MSR"/>
+        <param name="PROFILENAME" value="MSR"/>
+        <param name="HOOKMETHOD" value="1"/>
+		<param name="NODIALOG" value="1"/>
+    </Driver>
+    <Driver logicalName="DRAWER1" category="CashDrawer" version="1.0" serviceClass="dslopos.dll">
+        <vendor name="NewPOS International" url="http://www.newpos.com"/>
+        <param name="PROGRAMID" value="OPOS.CashDrawer"/>
+        <param name="PROFILENAME" value="Drawer1"/>
+    </Driver>
+</NPDrivers>

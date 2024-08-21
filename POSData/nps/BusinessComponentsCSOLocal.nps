@@ -1,0 +1,2772 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BusinessComponentsCSOLocal.nps
+* This NPS file implements the local CSO Business Componentes.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00	25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+* 2.52.00	08.04.2010	Mihai Secareanu	dual point implementation
+* 2.53.00	30.04.2010	Mihai Secareanu	Update of PosCheckRequiredCSOServicesJS according to ACSP7982660
+* 2.54.00
+*	PosDoTenderKioskJs  is not usedRC6
+* 			22.06.2010	Olga Illenseer		Add PT dual point settings
+* 2.56.16	18.03.2011 Mihai Secareanu		Add MCR blocked product support
+
+ */
+
+executeScript("BusinessComponentsLocal.nps",true);
+executeScript("BCEvents.nps",true);
+executeScript("BCBillAcceptor.nps",true);
+executeScript("BCPrinterStatus.nps",true);
+ 
+//const GLOBAL_UTF8_PROLOG_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";		// UTF-8 prolog for the exchanged XML messages
+const GLOBAL_CSO_CHK_CYCLES				= getParameterInt("networkCheckPeriod", 1); 					// NPS-5801 : Number of cyclos (of 10 seconds) to check the required services, i.e.: 1 means 10seconds, 6 means 1 minute
+const GLOBAL_CSO_REQ_SRVS				= getParameterStr("networkCheckServices", null); 				// NPS-5801 : Required services for Kiosk, if NULL it is always unblocked.
+const GLOBAl_CSO_NET_TIMEOUT			= getParameterInt("networkCheckTimeout", 3); 					// NPS-5801 : Timeout to query the required service, default it 3 seconds.
+const GLOBAL_CSO_CUSTOMER_MSG_CYCLES	= getParameterInt("networkCheckCustomerMessagePeriod", 3); 		// NPS-5801 : Number of cyclos (of 10 seconds) to keep showing the block message to the customer when detected that a required services is not available (used only for orders in progress).
+
+var GLOBAL_CSO_CHK_CYCLES_COUNTER   		= 0;														// NPS-5801 : Counter controller. 
+var GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER	= 0;														// NPS-5801 : Counter controller.
+var GLOBAL_CSO_IS_BLOCK						= false;													// NPS-5801 : When TRUE means that the required CSO services are not available.
+
+/*global variables for reading RFm configuration*/
+var xmlStoreDB = new XML(API.getStoredb());
+var xmlPosDB = new XML(API.getPosdb());
+var Country = (xmlStoreDB.StoreDB.StoreProfile.StoreDetails.Country).toUpperCase();
+
+
+/** PosCheckBlockProductJS
+ *
+ * @brief - Verify if we should block the sale of some products. Take the MCRBlocked.txt content and 
+ *          merge it with prodoutage
+ *
+ *
+ * @param - none.
+ * @return - Always TRUE.
+ * @since - 
+ * @author - Mihai Secareanu
+ */
+var globalMCRCheck_Counter=0;
+function PosCheckBlockProductJS()
+{
+  if(globalMCRCheck_Counter%6 != 0) //call this just once every 60 seconds
+  {
+	 globalMCRCheck_Counter++;
+	 return true;
+  }
+
+  if(File.exists("../POSDATA/MCRBlocked.txt") ==true)  //we need to block some products
+  {
+		globalMCRCheck_Counter =1;
+		var	file = new File("../POSDATA/MCRBlocked.txt");
+		file.open("r");
+		var fileContent = file.read();
+		file.close();
+		var arrBlockProduct = fileContent.split("\n"); 	
+		
+		if(File.exists("../POSDATA/prodOutage.xml") ==true)  //we have prodoutage file we must merge it
+		{
+			//merge the file
+			var	fileOutage = new File("../POSDATA/prodOutage.xml");
+			fileOutage.open("r");
+			var fileOutageContent = fileOutage.read();
+			fileOutage.close();
+			if(fileOutageContent.indexOf("?")>=0)
+			{
+				fileOutageContent = fileOutageContent.split("?>")[1]; //get just the xml  without the namespace that is not supported
+			}
+			var xmlOutageContent = new XML(fileOutageContent);
+				
+			//delete all products that have MCR attribute set to true
+			for (var i = 0; i < xmlOutageContent.Product.length();i++)  //first we add the fromMCR parameter to all new products defined from a register in the store
+			{
+				if(xmlOutageContent.Product[i].@fromMCR == undefined)
+				{
+					xmlOutageContent.Product[i].@fromMCR ="0";
+				}
+			}
+			
+			for (var i = 0; i < xmlOutageContent.Product.length();i++) //we delete all MCR blocked products 
+			{
+				if(xmlOutageContent.Product[i].@fromMCR == "1")
+				{
+					delete xmlOutageContent.Product[i];
+					i--;
+				}
+			}
+			
+			//delete all MCR product we'll add them again ; We must delete them because the MCRBlocked file maybe was changed and if this is the case we must remove old information
+			for(var i=0 ;i<arrBlockProduct.length; i++)
+			{
+				var found =false;
+				for(var j=0; j<xmlOutageContent.Product.length();j++)
+				{
+						if(Number(xmlOutageContent.Product[j].@code) == arrBlockProduct[i])
+						{
+							found =true;
+							break;
+						}
+				}
+				if(found ==false) //this product is not already blocked
+				{
+					var newProduct=<Product/>;
+					newProduct.@code=arrBlockProduct[i];
+					newProduct.@fromMCR="1";
+					xmlOutageContent.appendChild(newProduct);
+				}
+			}
+			
+			//update the file
+			fileOutage = new File("../POSDATA/prodOutage.xml");
+			fileOutage.open("w");
+			fileOutage.write(xmlOutageContent.toXMLString());
+			fileOutage.close();
+			
+		}
+		else  //prodoutage does not exists; we'll create it
+		{
+			//create the file
+			fileOutage = new File("../POSDATA/prodoutage.xml");
+			fileOutage.open("w");
+			var	content ="<ProdOutageDb version=\"1.0\">";
+		
+			for(var i=0 ;i<arrBlockProduct.length; i++)
+			{
+				content += "<Product code=\""+arrBlockProduct[i]+"\" fromMCR=\"1\" />";
+			}
+			content +="</ProdOutageDb>";
+			fileOutage.write(content);
+			fileOutage.close();
+		}
+  }
+  else // the MCR file does not exist anymore we must delete all MCR products that were added
+   {
+		if(File.exists("../POSDATA/prodOutage.xml") ==true)
+		{
+			//merge the file
+			var	fileOutage = new File("../POSDATA/prodOutage.xml");
+			fileOutage.open("r");
+			var fileOutageContent = fileOutage.read();
+			fileOutage.close();
+			if(fileOutageContent.indexOf("?")>=0)
+			{
+				fileOutageContent = fileOutageContent.split("?>")[1]; //get just the xml  without the namespace that is not supported
+			}
+			var xmlOutageContent = new XML(fileOutageContent);
+			
+			//set all non MCR blocked product that were added in the mean time to have fromMCR=0
+			for (var i = 0; i < xmlOutageContent.Product.length();i++)
+			{
+				if(xmlOutageContent.Product[i].@fromMCR == undefined)
+				{
+					xmlOutageContent.Product[i].@fromMCR ="0";
+				}
+			}
+			
+			//delete all MCR product we'll add them again ; We must delete them because the MCRBlocked file maybe was changed and if this is the case we must remove old information
+			for (var i = 0; i < xmlOutageContent.Product.length();i++)
+			{
+				if(xmlOutageContent.Product[i].@fromMCR == "1")
+				{
+					delete xmlOutageContent.Product[i];
+					i--;
+				}
+			}
+			
+			//update the file
+			fileOutage = new File("../POSDATA/prodOutage.xml");
+			fileOutage.open("w");
+			fileOutage.write(xmlOutageContent.toXMLString());
+			fileOutage.close();
+		}
+   }
+  
+  return true;
+}
+
+
+/** PosCheckRequiredCSOServicesJS
+ *
+ * @brief - Verifies if all configured services (as required) are available on the network (on-line). If at least one 
+ *          of the required services is not available, this function sends a block command message to the third part 
+ *          UI application (Kiosk UI). An unblock command message is sent, as soon as, all the required services become 
+ *          available again.
+ *
+ *          Background: During daily operations, the Customer Self Order (CSO) Kiosk or a normal POS register can 
+ *          lose network connectivity to other services in the store, if this occurs, the POS or CSO Kiosk cannot 
+ *          send any order to the production area kitchen video monitors for assembly. 
+ *
+ * @param - none.
+ * @return - Always TRUE.
+ * @since - NPS-5801
+ * @author - Kalil
+ */
+function PosCheckRequiredCSOServicesJS() {
+
+	
+	if (++GLOBAL_CSO_CHK_CYCLES_COUNTER >= GLOBAL_CSO_CHK_CYCLES) {
+		GLOBAL_CSO_CHK_CYCLES_COUNTER = 0;
+		handleChk();
+	} else {
+		//API.dbg("INFO_CSO : Still not the cycle (MAIN): " + GLOBAL_CSO_CHK_CYCLES_COUNTER + ", conf: " + GLOBAL_CSO_CHK_CYCLES);
+	}
+	
+	
+	if (GLOBAL_CSO_IS_BLOCK) {
+		if ((GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER != -1)) {
+			if (++GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER > GLOBAL_CSO_CUSTOMER_MSG_CYCLES) {
+				var hlp = new BusinessObjectHelper;
+				GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER = -1;
+				API.dbg("INFO_CSO : Unblocking UI to change the messsage to default language.");
+				sndUnBlock();
+				PosSetDefaultCSOLanguageJS();
+				sndBlock("MSG_CSO_BLOCKED"); // This Kiosk is blocked because of local network issues.
+			} else {
+				//API.dbg("INFO_CSO : Still not the cycle (defaul_language): " + GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER + ", conf: " + GLOBAL_CSO_CUSTOMER_MSG_CYCLES);
+			}
+			
+		}
+	}
+
+	return true;
+	
+	/** sndBlock
+	 *
+	 * @brief - Sends the unblock message.
+	 * @param - msgCode - Message code which explains the reason for blocking the UI.
+	 * @return - none.
+	 * @since - NPS-5801
+	 * @author - Kalil
+	 */
+	 function sndBlock(msgCode) {
+		var hlp	= new BusinessObjectHelper;
+		var msgText = hlp.getSysMessage(msgCode);					
+		PosSendUICmd(createBlockUnblock("UI_BLOCK", msgCode, msgText));
+		API.dbg("INFO_CSO : Kiosk UI has been BLOCKED - msg: [" + msgText + "]");
+	}
+	
+	/** sndUnBlock
+	 *
+	 * @brief - Sends the unblock message.
+	 * @param - none.
+	 * @return - none.
+	 * @since - NPS-5801
+	 * @author - Kalil
+	 */
+	 function sndUnBlock() {
+		PosSendUICmd(createBlockUnblock("UI_UNBLOCK"));	
+		API.dbg("INFO_CSO : Kiosk UI has been UNBLOCKED.");
+	}
+
+	/** handleChk
+	 *
+	 * @brief - Handles the check mechanism of the required services and its basic functionalities, 
+	 *          such as: the creation of the block and unblock command messages.
+	 * @param - none.
+	 * @return - none.
+	 * @since - NPS-5801
+	 * @author - Kalil
+	 */
+	function handleChk() {
+		if (areAllReqSrvsAvailable() && isOpLogged()) {
+			if (GLOBAL_CSO_IS_BLOCK) {
+				GLOBAL_CSO_IS_BLOCK = false;
+				sndUnBlock();
+			}
+		} else {
+			var msgCode = null;
+			var hlp 	= new BusinessObjectHelper;
+			if (!GLOBAL_CSO_IS_BLOCK) {
+				GLOBAL_CSO_IS_BLOCK = true;
+				var hlp				= new BusinessObjectHelper;
+				var isInProgress 	= (!PosNotATransactionInProgress("true"));
+				
+				if ((GLOBAL_CARD_READER_EVT == 1) || (GLOBAL_CARD_READER_EVT == 3) || (isInProgress)) {
+					msgCode = "MSG_CSO_BLOCKED_INPROGRESS";			// Dear customer, your order has been cancelled because of local network issues. Please remove your credit card and go to the front counter.
+					if (isInProgress) {
+						if (hlp.isGrilling()) {
+							API.dbg("INFO_CSO : Finalizing grill mode...");
+							PosDoGrillEnd('2');
+						}
+						API.dbg("INFO_CSO : Voiding in progress order...");
+						PosDoVoidSale('false','false');
+					}
+					API.dbg("INFO_CSO : In progress order has been CANCELLED.");
+				} else {
+					msgCode = "MSG_CSO_BLOCKED";					// This Kiosk is blocked because of local network issues.
+				}
+				sndBlock(msgCode);				
+				GLOBAL_CSO_CUSTOMER_MSG_CYCLES_COUNTER = 0;
+			}
+		}
+
+		/** areAllReqSrvsAvailable
+		 *
+		 * @brief - Sends a ping command to the configured services.
+		 * @param - none.
+		 * @return - TRUE when at least one service is unavailable, otherwise returns FALSE.
+		 * @since - NPS-5801
+		 * @author - Kalil
+		 */
+		function areAllReqSrvsAvailable() {
+			if ((GLOBAL_CSO_REQ_SRVS == null) || (ltrim(rtrim(GLOBAL_CSO_REQ_SRVS)).length == 0)) {
+				API.dbg("INFO_CSO : Required services for Kiosk are not configured, services availability can not be performed.");
+			} else {
+				API.dbg("INFO_CSO : Looking up services: [" + GLOBAL_CSO_REQ_SRVS + "]");
+				var srv = GLOBAL_CSO_REQ_SRVS.split("|");
+				for (var i=0;i<srv.length;i++) {
+					if (!PosCheckConnectivity(srv[i], GLOBAl_CSO_NET_TIMEOUT)) {
+						API.dbg("INFO_CSO : Required service [" + srv[i] + "] for Kiosk is UNAVAILABLE.");
+						return false;
+					}
+				}
+				API.dbg("INFO_CSO : All required services are available.");
+			}
+			return true;
+		}
+
+		/** isOpLogged
+		 *
+		 * @brief - Verifies the POS state and returns true if operator is logged
+		 * @param - none.
+		 * @return - TRUE if operator is logged.
+		 * @since - NPS-6409
+		 * @author - JMarrara
+		 */
+		function isOpLogged() {
+                      var hlp=new BusinessObjectHelper;
+                      var xmlPOS = new XML(hlp.getPOSState());
+                      var state   = Number(xmlPOS.@state);
+
+                      return(POS_STA_OPLOGGED==state);
+		}
+	}
+	
+	/** createBlockUnblock
+	 *
+	 * @brief - Creates the XML UI block / unblock message, command message sample:
+	 *
+	 *			<Event type="ASYNC" name="UI_BLOCK"/>
+	 *	   			<Parameter name="Code" value="6969"/>
+	 *	  			<Parameter name="Msg" value="The message"/>
+	 *			</Event>	 
+	 *
+	 * @param - none.
+	 * @return - TRUE when at least one service is unavailable, otherwise returns FALSE.
+	 * @since - NPS-5801
+	 * @author - Kalil
+	 */
+	function createBlockUnblock(evtName, code, msg) {
+		var xml = new StringBuffer();
+		xml.append(GLOBAL_UTF8_PROLOG_XML);
+		xml.append("<Event ");
+		{
+			xml.append(" type=\"ASYNC\"");
+			xml.append(" name=\"" + evtName + "\"");
+			xml.append(">\n");
+			if (code != null && msg != null) {
+				xml.append("\t<Parameter name=\"Code\" value=\"" + code + "\" />\n");
+				xml.append("\t<Parameter name=\"Msg\"  value=\"" + msg  + "\" />\n");
+			}
+		}
+		xml.append("</Event>");
+		return xml.toString();
+	}	
+}
+
+
+
+
+/** PosSetDefaultCSOLanguageJS
+ *
+ * @brief - Sets the default language for the Kiosk (CSO) based on the store-db configured localization.
+ * @param - none
+ * @return - Always TRUE.
+ * @since - NPS-5801
+ * @author - Kalil
+ */
+ function PosSetDefaultCSOLanguageJS() {
+	var storeDB 	= new XML(API.getStoredb());
+	var countryId 	= storeDB.StoreDB.StoreProfile.Localization.CountryId;
+	var language 	= storeDB.StoreDB.StoreProfile.Localization.Language;
+	var variant		= "KIOSK"; // default variant for CSO.
+	API.dbg("INFO_CSO : Reseting to the default language: [" + countryId + "_" + language + "_" + variant + "]");
+	PosSetLanguage(countryId, language, variant);
+	return true;
+}
+
+
+/** getParameterStr
+ *
+ * @brief - Gets the literal value of a given CSO parameter name.
+ * @param - name - name of the parameter.
+ * @param - defaultValue - default value in case of not finding the configuration.
+ * @return - Value for the parameter name.
+ * @since - NPS-5801
+ * @author - Kalil
+ */
+function getParameterStr(name, defaultValue) {
+	var hlp 	= new BusinessObjectHelper;
+	var data 	= hlp.findParamInSectionConfig(name, "CSO");
+	var rc 		= (data == null ? defaultValue : data);
+	API.dbg("INFO_CSO : Kiosk parameter [" + name + "] has been set to [" + rc + "]");
+	return rc;
+}
+
+/** getParameterInt
+ *
+ * @brief - Gets the integer value of a given CSO parameter name.
+ * @param - name - name of the parameter.
+ * @param - defaultValue - Default value in case of not finding the configuration.
+ * @return - Value for the parameter name.
+ * @since - NPS-5801
+ * @author - Kalil
+ */
+function getParameterInt(name, defaultValue) {
+	var hlp 	= new BusinessObjectHelper;
+	var data 	= hlp.findParamInSectionConfig(name, "CSO");
+	var rc 		= defaultValue;
+	if (data != null) {
+		rc = Number(data);
+		if (isNaN(rc)) { 
+			rc = defaultValue;
+			API.dbg("INFO_CSO: Parameter [" + name + "] has NOT been correctly configured [" + data + "], integer value was expected instead, default value will be considered.");
+		}
+	}
+	API.dbg("INFO_CSO : Kiosk parameter [" + name + "] has been set to [" + rc + "]");
+	return rc;
+}
+
+
+/**
+ * PUBLIC
+ * Set the language code for the kiosk. Called from workflow.
+ * Currently supported languages:
+ * nl
+ * en 
+ * @author Markus Ziegler
+ */
+function PosSetKioskLanguage(countryID, language)
+{
+	API.dbg("Kiosk Language set to (country / language): "+countryID+" / "+language);
+	language = trim(language);
+	language = language.toLowerCase();
+	/*store the current language*/
+	PosSetSessionProperty("KioskLanguage", language);
+	if(language == "nl" || language == "en")
+	{
+		API.dbg("language " + language);
+	}
+	else
+	{
+		API.dbg("Not supported language for NL "+language);
+	}
+
+	//find out if we are a country using eurecs.dll
+	var xmlStorePath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Everest\").Parameter.(@name==\"extname\").@value";
+	var xmlPosDbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Everest\").Parameter.(@name==\"extname\").@value";
+	var dllname = getConfigValue(xmlStorePath, xmlPosDbPath);
+	dllname = dllname.toLowerCase();
+	if(dllname == "eurecs.dll")
+	{
+		API.dbg("Country using eurecs.dll. ");
+		//we need to check if Eurecs.dll is already loaded.
+		if (!PosCheckParameter("TCLExtension","everest","true")) 
+		{
+			API.dbg("Eurecs.dll not yet loaded. Will not perform LanguageChange.");
+		}
+		else
+		{
+			//Change language
+			API.dbg("Calling Eurecs_LanguageChange with language "+language);
+			npTCLEvalEx("Eurecs_LanguageChange "+language);	
+			API.dbg("LanguageChange called.");
+		}
+	}
+
+	return true;
+}
+
+/** PosSendScanCouponEvtJS
+ *
+ * @brief - Sends the scan coupon event message to the TPUI.
+ * 
+ * XML sample:
+ * 
+ *	<Event type="ASYNC" name="SCAN_COUPON">
+ *	   <Parameter name="Event" value="READ"/>
+ *	</Event>
+ *
+ * @return - TRUE when the event could be sent to UI driver.
+ * @author - Kalil
+ */
+function PosSendScanCouponEvtJS(evt) {
+	if (evt == null) {
+		evt = "READ";
+	}
+	var params = Array("Event|" + evt);
+	var xml = lCreateKioskEvent("ASYNC", "SCAN_COUPON", params);
+	return PosSendUICmd(xml);
+}
+
+/**Dummy
+ *
+ * @brief - Dummy function required by Clarity.
+ * Return - always TRUE.
+ */
+function Dummy(ProductCode,NextScreen,Title,HidePrice,CloseScreen,MealIndex,NameVisible,AnimationScreenType,AnimateItem,Text) {
+	return true;
+}
+
+/**PosCheckPrinterStatusJS
+ *
+ * @brief - Checks the printer status, status sample: out of paper, paper jammed, paper near end and etc. 
+ *          This function has been designed to block the NewPOS application process if any problem 
+ *          is detected in the printer.
+ *	     The bScriptCall is used to determine if the function is called from an workflow or from the scripts.
+ *          If called from the scripts the method will return the status and not only true.
+ * @return - always TRUE.
+ * @since - PLE-446 - Generic implementation to detect the printer status.
+ */
+function PosCheckPrinterStatusJS(bScriptCall) 
+{
+	const BIT_0=1;
+	const BIT_1=2;
+	const BIT_2=4;
+	const BIT_3=8;
+	const BIT_4=16;
+	const BIT_5=32;
+	const BIT_6=64;
+	const BIT_7=128;
+	
+	const STATUS_OK=0;
+	const STATUS_NOT_AVAILABLE=1;
+	const STATUS_PAPER_NEAR_END=0x02000000;
+	const STATUS_PAPER_OUT=0x00000010;
+	const STATUS_DOOR_OPEN=4;
+	const STATUS_PAPER_JAM=5;
+	const STATUS_USER_INTERVENTION=6;
+	const STATUS_ERROR_UNKNOWN=7;
+	const STATUS_API_UNAVAILABLE=8;
+	
+	const CLASS_PRINTER_STATUS=String.fromCharCode(0x01);
+	const CLASS_BUSY_STATUS=String.fromCharCode(0x02);
+	const CLASS_ERROR_STATUS=String.fromCharCode(0x03);
+	const CLASS_PAPER_SENSOR_STATUS=String.fromCharCode(0x04);
+
+	var returnValue = 0;
+	try 
+	{
+		API.dbg("INFO : Checking default printer status.");
+		while (true) 
+		{
+			// Sends the real-time status transmission command.
+			var rc1=0;	// printer status
+			var rc2=0;	// paper sensor status
+			var rc3=0;	// busy status
+			var rc4=0;	// error status
+			
+			rc1 = sndRcvPrnCmd(CLASS_PRINTER_STATUS);			
+			if ((rc1!=STATUS_API_UNAVAILABLE) && (rc1!=STATUS_NOT_AVAILABLE)) 
+			{
+				rc2 = sndRcvPrnCmd(CLASS_PAPER_SENSOR_STATUS);
+				rc3 = sndRcvPrnCmd(CLASS_BUSY_STATUS);
+				rc4 = sndRcvPrnCmd(CLASS_ERROR_STATUS);
+			}			
+			if ((rc1+rc2+rc3+rc4)!=STATUS_OK) 
+			{
+				var msg = "";
+				msg=mountMsg(decodeMessage(rc1), msg);
+				msg=mountMsg(decodeMessage(rc2), msg);
+				msg=mountMsg(decodeMessage(rc3), msg);
+				msg=mountMsg(decodeMessage(rc4), msg);
+				API.dbg("INFO : Printer is NOT ready to work: " + msg);
+				//PosShowMessage(msg);
+				if(rc1 != STATUS_OK)
+				{
+					returnValue = rc1;
+				}
+				else if( rc4 != STATUS_OK)
+				{
+					returnValue = rc4;
+				}	
+				else if(rc3 != STATUS_OK)
+				{
+					returnValue = rc3;
+				}
+				else if(rc2 != STATUS_OK)
+				{
+					if(rc2 == STATUS_PAPER_NEAR_END)
+					{
+						returnValue = STATUS_PAPER_NEAR_END;
+					}
+					else 	if(rc2 == STATUS_PAPER_OUT)
+					{
+						returnValue = STATUS_PAPER_OUT;
+					}
+					else
+					{//should not be...
+						API.dbg("Printer Paper Status error, but not near end or low.");
+						returnValue = rc2;
+					}	
+				}
+				break;
+			} 
+			else 
+			{
+				API.dbg("INFO : Printer is ready to work.");
+				break;
+			}
+		}
+	}
+	catch (ex) 
+	{
+		PosShowMessage("Could not check printer status, due to: " + ex);
+	}
+	
+	if(bScriptCall)
+	{//called from script. Return status
+	
+	API.dbg("status returned is: "+returnValue);
+		
+		if(!PosCheckParameter("Kiosk","PrinterStatusCheckOff","1"))
+		{
+			return returnValue;
+		}
+		else //not check printer status always return true
+		{
+			return true
+		}
+
+		
+		
+	}
+	else
+	{
+		if(returnValue != 0 && !PosCheckParameter("Kiosk","PrinterStatusCheckOff","1")) //error and printer status code enabled
+		{
+			return false;
+		}
+		else
+		{	
+			return true;
+		}
+	}
+
+		
+	/** decodeMessage
+	 * 
+	 * @brief - Decodes the message.
+	 * @return - Error message.
+	 * @since - PLE-446 - Generic implementation to detect the printer status.
+	 */
+	function decodeMessage(rc) 
+	{
+		if (STATUS_OK==rc) 
+		{
+			return null;
+		} 
+		else if (STATUS_NOT_AVAILABLE==rc)
+		{
+			return "Printer is offline or not available in the network.";
+		} 
+		else if (STATUS_PAPER_NEAR_END==rc)
+		{
+			return "Paper is near end in the printer.";
+		} 
+		else if (STATUS_PAPER_OUT==rc)
+		{
+			return "Printer is out of paper.";
+		} 
+		else if (STATUS_DOOR_OPEN==rc)
+		{
+			return "Printer cover is opened.";
+		} 
+		else if (STATUS_PAPER_JAM==rc)
+		{
+			return "Paper is jammed in the printer.";
+		} 
+		else if (STATUS_USER_INTERVENTION==rc)
+		{
+			return "Printer error, human intervention is required.";
+		} 
+		else if (STATUS_API_UNAVAILABLE==rc) 
+		{
+			return "This feature is not available for the configured printer driver.";
+		}
+		return "Unknown printer error.";
+	}
+	
+	/** sndRcvPrnCmd
+	 * 
+	 * @brief - Sends and receives the printer command. 
+	 * @return - Encoded status.
+	 * @since - PLE-446 - Generic implementation to detect the printer status.
+	 */
+	 function sndRcvPrnCmd(class) 
+	 {
+	 	API.dbg("handling command: "+class);
+		const cmd = createCmd(class);						// Class command.
+		const rc = PosSendPrinterCmd(cmd); 					// Sends the escape command to the default printer.
+		if (rc == "-1") 
+		{
+			// This kind of RC is created by NewPOS
+			return STATUS_API_UNAVAILABLE; 					// This API is not implemented in this printer driver.
+		} 
+		else if ((rc == null) || (rc.length == 0))
+		{
+			return STATUS_NOT_AVAILABLE; 					// Printer is disconnected or offline.
+		} 
+		else 
+		{
+			//
+			// ALL CHECKS BELOW MAY DEPEND ON THE PRINTER DRIVER IMPLEMENTATION
+			//
+			const charCode = rc.charCodeAt(0);
+			API.dbg("charCode is: "+charCode);
+			if (charCode == 0) 
+			{
+				return STATUS_NOT_AVAILABLE; 				// Printer is disconnected or offline.
+			} 
+			else 
+			{
+				// Perfect status sequence tested using printer model: BT-T080 is: 22 18 18 18
+				if (class == CLASS_PRINTER_STATUS) 
+				{//mz 17.06.09: we  ignore the drawer kickout connector, the customer display and the undefined values (bits: 2, 5 and 6)
+					if (charCode != 18 && charCode != 22 && charCode != 40 && charCode != 82 && charCode != 86 && charCode !=  118 ) 
+					{
+						return STATUS_NOT_AVAILABLE;
+					}
+				} 
+				else if (class == CLASS_BUSY_STATUS) 
+				{
+					if (charCode & BIT_2) 
+					{
+						return STATUS_DOOR_OPEN;
+					} 
+					if( (charCode & BIT_5) && (charCode & BIT_6) )
+					{//do nothing this is an error for paper out. will be done with the CLASS_PAPER_SENSOR_STATUS
+						API.dbg("Printer Status (BUSY STATUS) was paper out.");
+					}
+					else if (charCode != 18 && charCode != 22 && charCode !=  40 && charCode !=  56) 
+					{//mz 17.06.09: we ignore Paper feed button status and printing stop due to a paper out (will be covered later)
+						return STATUS_USER_INTERVENTION;
+					}
+				} 
+				else if (class == CLASS_ERROR_STATUS) 
+				{
+					if (charCode & BIT_5 || charCode & BIT_3) 
+					{
+						return STATUS_PAPER_JAM;
+					} 
+					else if (charCode & BIT_6) 
+					{
+						return STATUS_ERROR_UNKNOWN;
+					} 
+					else if (charCode != 18) 
+					{
+						return STATUS_USER_INTERVENTION;
+					}
+				} 
+				else if (class == CLASS_PAPER_SENSOR_STATUS) 
+				{
+					if ((charCode & BIT_5) && (charCode & BIT_6)) 
+					{
+						return STATUS_PAPER_OUT;
+					}
+					else if ((charCode & BIT_2) && (charCode & BIT_3)) 
+					{
+						return STATUS_PAPER_NEAR_END;
+					}					 
+					else if (charCode != 18) 
+					{
+						return STATUS_USER_INTERVENTION;
+					}
+				}
+			}
+			return STATUS_OK;
+		}
+	}
+	
+	/** createCmd
+	 * 
+	 * @brief - Creates the real time status transmission command. The command sequence has been extracted 
+	 *          from the programming guide manual of the printers: Wincor TH230 and BT-T080 both models were 
+	 *          used in the Europen kiosk solution.
+	 * @return - real time status command.
+	 * @since - PLE-446 - Generic implementation to detect the printer status.
+	 */
+	 function createCmd(class) 
+	 {
+		var DLE 		= 0x10;
+		var EOT 		= 0x04;
+		var END_OF_CMD 	= 0x00;
+		var cmd = new StringBuffer();
+		
+		cmd.append(String.fromCharCode(DLE));
+		cmd.append(String.fromCharCode(EOT));
+		cmd.append(class);
+		cmd.append(String.fromCharCode(END_OF_CMD));
+		
+		return cmd.toString();
+	}
+	
+	/** getPrnId
+	 * 
+	 * @brief - Gets the first PRN id.
+	 * @return - Service id, -1 when the service type has not been found.
+	 */
+	function getFirstServiceId(srvType) {
+		var hlp 			= new BusinessObjectHelper;
+		var prolog			= "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+		var posDataPath		= hlp.PosGetDataDir();
+		var posDbName		= hlp.PosGetPosDbName();
+		var posDbFullName	= (posDataPath + "/" + posDbName);
+		var xmlBuffer 		= hlp.PosReadFile(posDbFullName);
+		if (xmlBuffer != null) {
+			xmlBuffer = xmlBuffer.replace("<?xml","<!-- bug_336551"); //spidermonkey bugzilla 336551
+			xmlBuffer = xmlBuffer.replace("?>","bug_336551 -->");
+			var posDb = new XML(xmlBuffer);
+			var srvId = 0;
+			for each(service in posDb.Services.Service) {
+				if ((service.@type == srvType) && (service.@startonload == "true")) {
+					for each(adaptor in service.Adaptors.Adaptor) {
+						if ((adaptor.@name == "npAdpRpr") && (adaptor.@startonload == "true")) {
+							return srvId;
+						}
+					}
+				}
+				srvId++;
+			}
+		}
+		return -1;
+	}
+	
+	/**mountMsg
+	 *
+	 * @brief - This function is required for not show the message twice.
+	 * @return - unique message.
+	 * @since - PLE-446 - Generic implementation to detect the printer status.
+	 */	
+	function mountMsg(inMsg, outMsg) 
+	{
+		if ((inMsg != null) && (outMsg.indexOf(inMsg)<0)) 
+		{
+			return (outMsg + "\n" + inMsg);
+		}
+		return outMsg;
+	}	
+}
+
+/**PosCreateKioskReceiptJS
+ *
+ * @brief - This BC perform PosCreateReport with appropriate type of receipt
+ * Return - true if ok
+ */
+function PosCreateKioskReceiptJS(kioskDup,szDataType,szScript,szFlags,szCustParams,szPODtype,szServiceList,szPOSList) {
+	
+	
+	var hlp = new BusinessObjectHelper;
+	var vatNumber = hlp.findParamInSectionWide("VatNumber","VAT");
+	if(undefined == szCustParams) {
+		szCustParams="";
+	}
+	if( hlp.findParamInSectionWide("FirstReceiptEmpty", "PrintFromKioskOnCounter") == "1")
+	{
+		PosSetSessionProperty("FirstReceiptEmpty", "1", false);
+	}
+	// Kiosk receipt - 18-08-2008 - Removed str ":0:" - This is used by NewKiosk
+	PosCreateReport(szDataType,"receiptkioskTPUI@reports.nps",szFlags,szCustParams+""+vatNumber,szPODtype,szServiceList,szPOSList);
+	PosSetSessionProperty("FirstReceiptEmpty", "0", false);
+
+	//22.06.2010 OI set copy to true
+	PosSetSessionProperty("CopyForDualPoint", "1", false);
+
+	//print receipts from Kiosk on a printer in the network.
+	var PrinterList = hlp.findParamInSectionWide("PrinterList", "PrintFromKioskOnCounter");
+	var PrinterAliases = hlp.findParamInSectionWide("PrinterAliases", "PrintFromKioskOnCounter");
+	// ask for a barcode on the second receipt
+	if(hlp.findParamInSectionWide("DuplicateReceiptWithBarCode", "PrintFromKioskOnCounter") == "1")
+	{
+		PosSetSessionProperty("SecondPrintOutWithBarCode", "1", false);
+	}
+	//print the second receipt
+	if(hlp.findParamInSectionWide("DuplicateReceiptOnSecondPrinter", "PrintFromKioskOnCounter") == "1")
+	{
+		PosCreateReport(szDataType,"receiptkioskTPUI@reports.nps",szFlags+"|ALIAS",szCustParams+""+vatNumber, PrinterAliases, PrinterList);
+	}
+	//Reset the Bar Code
+	PosSetSessionProperty("SecondPrintOutWithBarCode", "0", false);
+	
+	//ask for a bar code on the picklist
+	if(hlp.findParamInSectionWide("PicklistWithBarCode", "PrintFromKioskOnCounter") == "1")
+	{
+		PosSetSessionProperty("SecondPrintOutWithBarCode", "1", false);
+	}
+	//print a picklist on a printer in the network
+	if(hlp.findParamInSectionWide("PicklistOnSecondPrinter", "PrintFromKioskOnCounter") == "1")
+	{
+		PosSetSessionProperty("PickListForORB", "1", false);
+		PosCreateReport(szDataType,"reportPickList@reports.nps",szFlags+"|ALIAS",szCustParams+""+vatNumber, PrinterAliases, PrinterList);
+		PosSetSessionProperty("PickListForORB", "0", false);
+	}
+
+	//Reset the Bar Code
+	PosSetSessionProperty("SecondPrintOutWithBarCode", "0", false);
+
+	//22.06.2010 OI reset copy to true
+	PosSetSessionProperty("CopyForDualPoint", "0", false);
+	
+	// PLE-279 - (Eduardo Navikas) Salad Claim Receipt needed for German D10 (new Kiosk GUI) - ACSP6384396
+	if(PosCheckParameter("UserInterface","PrintLocalSaladClaim","true")) {
+		PosCreateReport(szDataType,"reportSaladWrapClaim@reports.nps","NOPREVIEW",szCustParams,szPODtype,szServiceList,szPOSList);
+	}
+	// PLE-279 - (Eduardo Navikas) Salad Claim Receipt needed for German D10 (new Kiosk GUI) - ACSP6384396
+	if(PosCheckParameter("UserInterface","PrintRemoteSaladClaim","true")) {
+		PosCreateReport(szDataType,"reportSaladWrapClaim@reports.nps","NOPREVIEW|ALIAS",szCustParams,"SALADREC",szServiceList,szPOSList);
+	}	
+		
+	return (true);
+
+}
+
+/**PosCreateReceiptKioskJS
+ *
+ * @brief - This BC perform PosCreateReport with appropriate type of receipt
+ * @return - true if ok
+ * @author - Kalil
+ */
+function PosCreateReceiptKioskJS(szDataType,szScript,szFlags,szCustParams,szPODtype,szServiceList,szPOSList) {
+	var hlp = new BusinessObjectHelper;
+	var vatNumber = hlp.findParamInSectionWide("VatNumber","VAT");
+	if(undefined == szCustParams) {
+		szCustParams="";
+	}
+	return PosCreateReport(szDataType,"receiptkiosk@reports.nps",szFlags,szCustParams+":0:"+vatNumber,szPODtype,szServiceList,szPOSList);
+}
+
+/** PosDoActionFinishKioskJS
+ *
+ * @brief - Creates the summarized view for external applicaiton, such as: TP UI.
+ * @return - view - summarized view.
+ * @see BCEvents::onWorkFlowAfterExec()
+ * @author - Kalil
+ */
+function PosDoActionFinishKioskJS(wfName, status, view)
+{
+	var grillView = lGetGrillView();
+	var xml = createActionFinish(wfName, status, (grillView == null ? getKioskView(view) : grillView));
+	return PosSendUICmd(xml);
+	
+	/** createActionFinish
+	 *
+	 * @brief - Creates the summarized view for external applicaitons, such as: TP UI.
+	 * @return - view - summarized view.
+	 */
+	function createActionFinish(actionName, status, data) {
+	    var xml = new StringBuffer();
+	    xml.append(GLOBAL_UTF8_PROLOG_XML);
+	    xml.append("<Event ");
+	    {
+	        xml.append(" type=\"ASYNC\"");
+	        xml.append(" name=\"UI_ACTION_FINISH\"");
+	        xml.append(" status=\"" + status + "\"");
+	        xml.append(" action=\"" + actionName + "\"");
+	        xml.append(">\n");
+        	if (data == null) {
+		        xml.append("\t<Payload/>\n");
+        	} else {
+		        xml.append("\t<Payload>\n");
+			        xml.append("\t\t<![CDATA[");
+		           	xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+		        	xml.append(data);
+			        xml.append("]]>\n");
+		        xml.append("\t</Payload>\n");
+	        }
+	        
+	    }
+	    xml.append("</Event>");
+	    return xml.toString();
+	}
+}
+
+/** getKioskView
+ *
+ * @brief - Converts the view for the TPUI pattern.
+ * @return - view - summarized view.
+ * @author - Kalil
+ */
+function getKioskView(sView) {
+
+	if (sView==null) {
+	    return null;
+	}
+	
+	if (false) {
+		return sView;
+	}
+	
+	var xmlView = new XML(sView);
+	var viewChildren = xmlView.children();
+	var xmlOut = new XML('<ProdInfo/>');
+	
+	//##################################################################################################################
+	// HEADER TAG AND ATTRIBUTES
+	//##################################################################################################################
+	xmlOut.Header.@command = '0';
+	xmlOut.Header.@version = '2';
+	
+	//##################################################################################################################
+	// ORDER TAG AND ATTRIBUTES
+	//##################################################################################################################
+	orderKey = xmlView.@orderKey;
+	storedOrderKey = orderKey.split(":");
+	xmlOut.Order.@storedOrderKey	= storedOrderKey[1];
+	xmlOut.Order.@major 			= xmlView.@major;
+	xmlOut.Order.@minor 			= xmlView.@minor;
+	xmlOut.Order.@totalAmount 		= xmlView.@totalAmount;			//TODO : Verify which is the total amount and tax to be sent to the client
+	xmlOut.Order.@totalTax 			= xmlView.@totalTax;
+	xmlOut.Order.@totalDue 			= xmlView.@totalDue;			
+	xmlOut.Order.@saleDate 			= xmlView.@saleDate;
+	xmlOut.Order.@saleTime 			= xmlView.@saleTime;
+	xmlOut.Order.@status 			= xmlView.@saleStatus;
+	xmlOut.Order.@trackStatus 		= xmlView.@trackSaleStatus;
+	xmlOut.Order.@saleType			= xmlView.@type;				
+	xmlOut.Order.@businessDate 		= xmlView.@businessDay;
+	
+	var lastItem = 'x';
+	var lastLevel = 0;
+	var level = 0;
+	var item = null;
+	var product = null;
+	var newProduct = null;
+	var changedAfterTotal = false;
+	var isVoided = false;
+	var realIndex = 0;
+			
+	//##################################################################################################################
+	// ITEMS OF THE ORDER
+	//##################################################################################################################
+	for each (itemView in xmlView.ItemView) {
+		if(lastItem!=itemView.itemCode) {
+			if(item!=null) {
+				if(changedAfterTotal) {
+					item.@changedAfterTotal='true';
+				}
+				xmlOut.Order.appendChild(item);
+			}
+			
+			isVoided=((itemView.quantity==0) && (itemView.grilledQuantity==0));
+			
+			//Item Element
+			item = new XML('<Item/>');
+			item.@voided 			= isVoided;
+			item.@qtyPromo 			= itemView.quantityPromo;
+			item.@currentSelected 	= itemView.currentSelected;
+			item.@indexInternal 	= itemView.itemCode;
+
+			if (isVoided) {
+				item.@index = -1;
+			} else {
+				item.@index = realIndex;
+			    realIndex++;
+			}
+			
+			changedAfterTotal 	= false;
+			lastItem 			= itemView.itemCode;
+			lastLevel 			= 0;
+	
+		}
+		level 	= Number(itemView.level);
+		defQty 	= Number(itemView.componentDefaultQtd);
+		qty 	= Number(itemView.quantity);
+	
+		if (itemView.isGrillLine=='true') {
+			//##################################################################################################################
+			// PRODUCT IS GRILLED
+			//##################################################################################################################
+			newProduct = new XML('<Grill/>');
+			newProduct.@modifiers = itemView.specialModifiers;
+			newProduct.@defQty = defQty;
+			if(itemView.specialModifiers!="0") {
+				newProduct.@qty = defQty;
+			} else if(defQty>0) {
+				newProduct.@qty = (defQty + qty);
+				newProduct.@modQty = qty;
+			} else {
+				// PLE-283 - Merged from Australia
+				newProduct.@modQty = qty;
+				newProduct.@qty = qty;
+			}
+	
+		} else {
+			newProduct = new XML('<Product/>');
+			newProduct.@qty = qty;
+		}
+	
+		newProduct.@code 		= itemView.productCode;
+		newProduct.@unitPrice 	= itemView.unitPrice;
+		newProduct.@unitTax 	= itemView.unitTax;
+		newProduct.@totalPrice 	= itemView.totalPrice;
+		newProduct.@totalTax 	= itemView.totalTax;
+		newProduct.@name 		= itemView.longName;
+		
+		if(!changedAfterTotal) {
+			changedAfterTotal = ((itemView.quantityChanged=='true') || (itemView.quantityChanged=='TRUE'));
+		}
+	
+		//check levels
+		if (level > lastLevel) {
+			product.appendChild(newProduct);
+			product = newProduct;
+		} else if ((level<=lastLevel) && (level!=0)) {
+			for(j=0; j<((lastLevel-level)+1); j++) {
+				product = product.parent();
+			}
+			product.appendChild(newProduct);
+			product = newProduct;
+
+		} else {
+			product = newProduct;
+			item.appendChild(product);
+		}
+		lastLevel=level;
+	}
+	if(item!=null) {
+		if(changedAfterTotal) {
+			item.@changedAfterTotal='true';
+		}
+		xmlOut.Order.appendChild(item);
+	}
+	
+	var cashless = null;
+	cashlessCounter = 0;
+	
+	//##################################################################################################################
+	// TENDERS AND CASHLESS
+	//##################################################################################################################
+	for each (itemTenderView in xmlView.ItemTenderView) {
+		item = new XML('<Tender/>');
+		item.@code 		= itemTenderView.code;
+		item.@kind		= itemTenderView.kind;						// 0=Payment,1=Allowance,2=Crew Meal,3=Manager Meal,4=Change,5=Change kept,6=returned tender,8=discount coupon,9=payment that was replaced (Gift Card => Cash) -- see: npAdpAccTypes.h
+		item.@name 		= itemTenderView.description;
+		item.@qty 		= itemTenderView.qty;
+		item.@value 	= itemTenderView.value;
+		item.@srcPOSId 	= itemTenderView.srcPOSId;
+		item.@discMode 	= itemTenderView.discMode;
+		//Cashless
+		if(itemTenderView.cat == "TENDER_ELECTRONIC_PAYMENT") {
+			cashless = new XML('<Cashless/>');
+			stripCashlessString(cashless, xmlView.Cashless[cashlessCounter]);
+			item.appendChild(cashless);
+			cashlessCounter++;
+		}
+		xmlOut.Order.appendChild(item);
+	}
+	
+	//##################################################################################################################
+	// TIMES TAG
+	//##################################################################################################################
+	for each (itemViewTimes in xmlView.ViewTimes) {
+		item = new XML('<Times/>');
+		item.@totalTime = itemViewTimes.@totalTime;
+		item.@storeTime = itemViewTimes.@storeTime;
+		item.@orderTime = itemViewTimes.@orderTime;
+		xmlOut.Order.appendChild(item);
+		//Only one by XML
+		break;
+	}
+	computeChildrenTotals(xmlOut);
+	
+	return xmlOut.toXMLString();
+	
+	/**computeChildrenTotals
+	 *
+	 * @brief - Computes the VM totals.
+	 * @return - xmlOut - Kiosk XML.
+	 */
+	function computeChildrenTotals(xmlOut) {
+		for each (productLvl0 in xmlOut.Order.Item.Product) {
+			var totalPrice = Number(productLvl0.@totalPrice);
+			var totals = computeRecursively(productLvl0);
+			productLvl0.@totalPrice	= Number(productLvl0.@totalPrice) 	+ totals[0];
+			productLvl0.@totalTax	= Number(productLvl0.@totalTax) 	+ totals[1];
+		}
+		/***
+		 * Computes its children totals.
+		 */
+		function computeRecursively(parent) {
+			var child       = null; //PLE-283 - Merged from Australia
+			var totPrice 	= 0; //grillTotals[0];
+			var totTax 		= 0; //grillTotals[1];
+			for each (child in parent.Product) {
+				var totals 	= computeRecursively(child);
+				totPrice	+= Number(child.@totalPrice)+ totals[0];
+				totTax 		+= Number(child.@totalTax) 	+ totals[1];
+			}
+			for each (child in parent.Grill) {
+				totPrice	+= Number(child.@totalPrice);
+				totTax 		+= Number(child.@totalTax);
+			}
+			return Array(totPrice, totTax);
+		}
+	}
+	
+	/**stripCashlessString
+	 *
+	 * @brief - Adds the cashless attributes.
+	 * @return - none
+	 */
+	function stripCashlessString(cashless, cashlessStr) {
+		//TODO : check cashless string format
+		//function ParseTrackInfo(retcode,cardType)
+		//function cashlessPayment(tenderId,tenderValue,refund)
+		//TODO : check the split
+		splitStr = cashlessStr.split("@");
+		if (splitStr.length < 9) {
+			return;
+		}
+		cashless.@cardProv = splitStr[1];
+		cashless.@cardNum = splitStr[2];
+		cashless.@expireDt = splitStr[3];
+		cashless.@authNum = splitStr[4];
+		cashless.@printFlag = splitStr[5];
+		cashless.@seqNum = splitStr[6];
+		cashless.@gcBalance = splitStr[8];
+		cashless.@accountNum = splitStr[9];
+	}
+}
+
+/** PosSwitchKioskUIJS
+ *
+ * @brief - Switches the UI driver between "npposGUI.dll" and "npGUIExt.dll".
+ * @return - true when the action was successfully performed.
+ * @author - Kalil
+ */
+function PosSwitchKioskUIJS() {
+	try {
+		var hlp 			= new BusinessObjectHelper;
+		var prolog			= "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+		var posDataPath		= hlp.PosGetDataDir();
+		var posDbName		= hlp.PosGetPosDbName();
+		var driverDefault 	= "npposGUI.dll";
+		var driverTPUI 		= "npGUIExt.dll";
+		var posDbFullName	= (posDataPath + "/" + posDbName);
+		var xmlBuffer 		= hlp.PosReadFile(posDbFullName);
+		
+		if (xmlBuffer != null) {
+			// <?xml version="1.0" encoding="utf-8"?> ---> spidermonkey bugzilla 336551
+			xmlBuffer = xmlBuffer.replace("<?xml","<!-- bug_336551");
+			xmlBuffer = xmlBuffer.replace("?>","bug_336551 -->");
+			var posDb = new XML(xmlBuffer);
+			for each(service in posDb.Services.Service) {
+				if ((service.@type == "POS") && (service.@startonload == "true")) {
+					for each(adaptor in service.Adaptors.Adaptor) {
+						if ((adaptor.@name == "standard.ui") && (adaptor.@startonload == "true")) {
+							for each(parameter in adaptor.Section.Parameter) {
+								if (parameter.@name == "drivername") {
+									if (parameter.@value == driverDefault) {
+										// From NPGUI to Kios kGUI
+										parameter.@value = driverTPUI;
+									} else {
+										if(PosCheckSessionProperty("KioskCanLogin","true")) {
+											// From Kiosk GUI to NPGUI
+											parameter.@value = driverDefault;
+										} else {
+											// kiosk can not access to manager menu the McD logo is disabled.
+											return false;
+										}
+									}
+									hlp.PosWriteFile(posDbFullName, prolog + posDb.toString());
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	} catch(ex) {
+		PosShowMessage("Failed to switch UI, reason: " + ex);
+		hlp.PosWriteFile(posDataPath + "/" + "pos-db_failed.xml", xmlBuffer);
+	}
+	return false;
+}
+
+/**PosDoCloneItemKioskJS
+ *
+ * @brief - Clones a given sale item based on the products list.
+ * @return - TRUE - when well succeeded.
+ * @author - Kalil
+ */
+function PosDoCloneItemKioskJS(LstProducts, ItemIndex) {
+	/*
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoCloneItem">
+			<Parameter name="ProductCodes" value="2050"/>
+			<Parameter name="ItemIndex" value="0"/>
+		</Action>
+		
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoReduceLine">
+			<Parameter name="ItemIndex" value="0"/>
+			<Parameter name="Quantity" value="1"/>
+		</Action>
+		
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoSale">
+			<Parameter name="ProductCode" value="2970|3011|2995|7015"/>
+		</Action>
+	
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoCloneItem">
+			<Parameter name="ProductCodes" value="2970|3011|2995|7015"/>
+			<Parameter name="ItemIndex" value="0"/>
+		</Action>	
+	*/	
+
+	var ctx=new SessionContext;
+	var hlp=new BusinessObjectHelper;
+	var view=getKioskView(hlp.getCurrentView());
+	var hasStartGrill = false;
+
+	if (PosDoSaleKioskJS(LstProducts)) {
+		var xmlView = new XML(view);
+		for each(itemView in xmlView.Order.Item) {
+			if (ItemIndex == itemView.@index) {
+				for each(product in itemView.Product) {
+					searchGrillProduct(product);			
+					searchGrillProduct(product.Product);			
+				}
+				if (hasStartGrill) {
+					if (!PosDoGrillEnd("3")) {
+						PosShowMessage("CLONE: Could not finish the grill");
+						return false;
+					}
+				}
+			}
+		}	
+	
+	}
+	return true;
+	
+	/**searchGrillProduct
+	 *
+	 * @brief - Searches for the grilled items.
+	 * @return - none.
+	 * @author - Kalil
+	 */	
+	function searchGrillProduct(productNode) {
+		for each(grillNode in productNode.Grill) {
+			if (!hasStartGrill) {
+				hasStartGrill = true;
+				if (!PosDoGrillStart(ctx.get("baseScreenId"))) {
+					PosShowMessage("CLONE: Could not start grill");
+					return false;
+				}
+			}
+			grillClone(grillNode);
+		}
+	}
+	
+	/**grillClone
+	 *
+	 * @brief - Performs the grill clone.
+	 * @return - none.
+	 * @author - Kalil
+	 */	
+	function grillClone(grillNode) {
+		var parentCode  	= grillNode.parent().@code;
+		var grillCode 		= grillNode.@code;
+		var grillDefQty 	= Number(grillNode.@defQty);
+		var grillCurQty 	= Number(grillNode.@qty);
+		var grillDifQty		= Number(grillNode.@modQty);
+		var grillModifier	= Number(grillNode.@modifiers);
+		var tabIndex		= getTabIndex(parentCode)
+		
+		if (tabIndex == null) {
+			PosShowMessage("CLONE: Could not find tab for code parent=" + parentCode + ", Grill code=" + grillCode + ", name=" + grillNode.parent().@name);
+		} else {
+			if (!PosDoSelGrillIndex(tabIndex)) {
+				PosShowMessage("CLONE: Could not selected tab index " + tabIndex + " for code " + parentCode);
+			} else {
+				var recipeIndex = getRecipeIndex(grillCode);
+				if (recipeIndex == -1) {
+					PosShowMessage("CLONE: Could not recipe index for code " + grillCode);
+				} else {
+					if (grillModifier == 1) {								// MODIFIER (LIGHT)
+							PosDoGrillOper('0','1',recipeIndex);
+					} else if (grillModifier == 2) {						// MODIFIER (ONLY)
+							PosDoGrillOper('0','2',recipeIndex);
+					} else if (grillModifier == 0) {                        // NO MODIFIER (only quantity was changed)
+                        if (grillDifQty > 0) {                                // PLUS QUANTITY
+							for (var y=1 ;y<=grillDifQty;y++) {
+								PosDoGrillOper('p','-1',recipeIndex);
+							}
+						} else if (grillDifQty < 0) {							// MINUS QUANTITY
+								for (var y=1 ;y<=(grillDifQty*-1);y++) {
+									PosDoGrillOper('m','-1',recipeIndex);
+								}
+						}
+					}
+					else
+					{
+					    // We expects only MODIFIERS 0, 1 or 2.
+                        PosShowMessage("CLONE: Unexpected grill modifier on product code: " + grillCode);   
+					}
+				}
+			}
+		}
+		
+		/**getRecipeIndex
+		 *
+		 * @brief - Gets the recipe index based on the given product code.
+		 * @return - recipe index.
+		 */			
+	 	function getRecipeIndex(productCode) {
+			var grillView = lGetGrillView();
+			var xmlView = new XML(grillView);
+			for each(grillComp in xmlView.Component) {
+				for each(recipe in grillComp.Item) {
+					if (recipe.@code == productCode) {
+						return Number(recipe.@index);
+					}
+				}
+			}
+			return -1;
+		}
+		
+		/**getTabIndex
+		 *
+		 * @brief - Gets the tab index based on the given product code.
+		 * @return - tab index.
+		 */			
+		function getTabIndex(productCode) {
+			var grillView = lGetGrillView();
+			var xmlView = new XML(grillView);
+			for each(grillComp in xmlView.Component) {
+				if (grillComp.@code == productCode) {
+					return grillComp.@index;
+				}
+			}
+			return null;
+		}
+	}
+}
+
+
+/**PosDoGrillOperKioskRemAddMultiJS
+ *
+ * @brief - Reduces recipes to its minimum or increases it to its maximum.
+ * @return - TRUE - when the operation was well succeeded.
+ * @see - WF_Kiosk_DoGrillRemAddAllMulti
+ * @author - Kalil
+ */			
+function PosDoGrillOperKioskRemAddMultiJS(oper, bit) {
+
+	/*
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoGrillRemAddAllMulti">
+			<Parameter name="Oper" value="m"/>
+		</Action>
+	*/
+
+	var grillView = lGetGrillView();
+	var xmlView = new XML(grillView);
+	for each(grillComp in xmlView.Component) {
+		if (grillComp.@isSelected == 'true') {
+			for each(recipeItem in grillComp.Item) {
+				var index = Number(recipeItem.@index);
+				PosDoGrillOperKioskRemAddJS(oper, bit, index);
+			}
+		}
+	}
+	return true;
+}
+
+/**PosDoGrillOperKioskRemAddJS
+ *
+ * @brief - Removes or adds the grilled quantities until it reaches the default quantity.
+ * @return - true - when at leas once was successfully performed.
+ * @author - Kalil
+ */
+function PosDoGrillOperKioskRemAddJS(oper, bit, index) {
+
+	if (oper == null || bit == null || index == null) {
+		PosShowMessage("PosDoGrillOperKioskRemAddJS: Invalid null parameter.");
+		return false;
+	}
+	while (canPerform(oper, index)) {
+		PosDoGrillOper(oper, bit, index);
+	}
+	return (true); 
+
+	/**canPerform
+	 *
+	 * @brief - Verifies if the a given operation can be performed.
+	 * @return - true - when can be performed.
+	 */
+	function canPerform(oper, index) {
+		/*
+		
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoSale">
+			<Parameter name="ProductCode" value="2970|3011|2995|7015"/>
+		</Action>
+		
+		<?xml version="1.0" encoding="UTF-8"?>
+		<Action type="WORKFLOW" name="WF_Kiosk_DoGrillRemAddAll">
+			<Parameter name="Oper" value="m"/>
+			<Parameter name="ItemIndex" value="0"/>
+		</Action>
+
+		*/	
+		var grillView = lGetGrillView();
+		var xmlView = new XML(grillView);
+		
+		for each(grillComp in xmlView.Component) {
+			var isSelected = grillComp.@isSelected;
+			if (isSelected == "true") {
+				for each(grillItem in grillComp.Item) {
+					var grillIndex = grillItem.@index;
+					if (Number(grillIndex) == Number(index)) {
+						var grillCurQty		= Number(grillItem.@curQty);
+						var grillDefQty		= Number(grillItem.@defQty);
+						var grillMinQty		= Number(grillItem.@minQty);
+						var modifiers		= Number(grillItem.@modifiers);
+						var grillCanRemove 	= grillItem.@canRemove;
+						var grillCanAdd 	= grillItem.@canAdd;
+						var isDefaultQty 	= grillItem.@isDefaultQty;
+						var canPerform 		= false;
+						if (oper == "+" || oper == "p") {
+							// Wants to reach the default qty
+							canPerform = (grillCurQty < grillDefQty);
+						} else if (oper == "-" || oper == "m") {
+							// Wants to reach the min qty
+							canPerform = (grillCurQty > grillMinQty);
+						} else {
+							PosShowMessage("Expecting only: -/+ or m/p");
+						}
+						if (modifiers > 0) {
+							// Clears the modifiers
+							PosDoGrillOper('c','-1',index);
+							PosDoGrillOper('0','1',index);
+						}
+						return (canPerform);
+					}
+				}
+			}
+		}
+		return false;
+	}
+}
+	
+/** lGetGrillView
+ *
+ *  <GrillInfo>
+ *  	<Header>
+ *  		<Component>
+ *  			<Item/>
+ *  		</Component>
+ *  </GrillInfo> 
+ *
+ * @brief - Gets the grll view used on the kiosk.
+ * @return - view - summarized grill view.
+ * @author - Kalil
+ */
+function lGetGrillView() {
+	var hlp = new BusinessObjectHelper;
+	var grillView = hlp.getGrillView();
+	
+	if (grillView != null) {
+		var regs			= grillView.split("<@");
+	    var xmlGrill		= new XML('<GrillInfo/>');
+	    var summaryLst		= null;
+		var recipeLst		= null;
+		var compDetailsLst	= null;
+		var grillableLst	= null;
+		var selectedComp	= null;
+		for (var i=0;i<regs.length;i++) {
+			var reg = regs[i];
+			if (reg.length > 0) {
+				if (reg.substr(0, 1) == "0") { 										// 0-GRILL VIEW
+					summaryLst = reg.substr(1, reg.length-3).split("|");
+				} else if (reg.substr(0, 1) == "1") { 								// 1-RECIPE COMPONENTS
+					recipeLst = reg.substr(1, reg.length-3).split("|");
+				} else if (reg.substr(0, 1) == "2") { 								// 2-COMP DETAILS
+					compDetailsLst = reg.substr(1, reg.length-3).split("|");
+				} else if (reg.substr(0, 1) == "3") { 								// 3-GRILLABLE LIST
+					grillableLst = reg.substr(1, reg.length-2).split("|");
+					var lstIndex = (grillableLst.length - 1);
+					var lstComp = grillableLst[lstIndex];
+					grillableLst[lstIndex] = lstComp.substr(0, lstComp.length-1);
+				} else if (reg.substr(0, 1) == "4") { 								// 4-SELECTED COMPONENT (MX SZ 99)
+					selectedComp = ltrim(reg.substr(1, 2));
+				}
+			}
+		}
+		
+	    /** ADDS THE GRILLABLE ITEMS (COMPONENTS) */
+	    for (var i=0; i<grillableLst.length;i++) {
+	    	var isSelected = ((i + "") == selectedComp);
+	    	var xmlComp = new XML('<Component/>');
+			xmlComp.@index 		= i;
+			xmlComp.@code 		= rtrim(grillableLst[i].substr(0, 40));
+			xmlComp.@name 		= rtrim(grillableLst[i].substr(40));
+			xmlComp.@isSelected = (isSelected ? "true" : "false");
+			if (isSelected) {
+				addRecipeItems(recipeLst, compDetailsLst, xmlComp);
+			}
+			xmlGrill.appendChild(xmlComp);
+	    }
+	    
+	    if (false) {
+		    /** ADDS THE SUMMARY VIEW, IF ANY. */
+		    xml.append("\t<Summary>\n");
+			    for (var i=0; i<summaryLst.length;i++) {
+					xml.append("\t\t<Line ");
+						addXMLAttribute(xml, "index", i);
+						addXMLAttribute(xml, "name"	, summaryLst[i]);
+				    xml.append("/>\n");
+			    }
+		    xml.append("\t</Summary>\n");
+	    }
+	    return xmlGrill.toXMLString();
+	}
+	return null;
+	
+	
+	/** Adds recipe items **/
+	function addRecipeItems(recipeLst, compDetailsLst, xmlComp) {
+		
+		for (var i=0; (recipeLst!=null) && (i<recipeLst.length); i++) {
+			if (recipeLst[i].length > 4) {
+				var aux 	= 0;
+				var gIndex 	= Number(getField(recipeLst[i]	,  4));
+				var gDesc 	= getField(recipeLst[i]			, 47);
+				var gPrice	= getField(recipeLst[i]			, 13);
+				var gGroup 	= getField(recipeLst[i]			,  2); // not used (so far)
+				var gX 		= getField(recipeLst[i]			,  6); 
+				
+				var szStr = recipeLst[i].length;
+				var start = szStr-12;
+
+				var gCurQty	= recipeLst[i].substring(start, start + 3);    start+=3; 
+				var gDefQty = recipeLst[i].substring(start, start + 3);    start+=3;
+				var gMinQty = recipeLst[i].substring(start, start + 3);    start+=3;
+				var gMaxQty = recipeLst[i].substring(start, start + 3);    
+				
+				// TRUE when the quantity was not change (operations minus neither plus were performed)
+				var isDefaultQty =  (!PosCheckGrillProperty('?', '-1', gIndex));
+
+				// Standard operations
+				var canRemove	= getGrillStatus('-', gIndex);
+				var canAdd		= getGrillStatus('+', gIndex);
+				
+				// Creates the XML grill view.
+				var xmlItem = new XML('<Item/>');
+
+				// Basic attributes of the recipe
+				xmlItem.@index			= gIndex;
+				xmlItem.@code			= compDetailsLst[i];
+				xmlItem.@name			= rtrim(gDesc);
+				xmlItem.@unitPrice		= ltrim(rtrim(gPrice));
+				xmlItem.@curQty			= ltrim(rtrim(gCurQty));
+				xmlItem.@defQty			= ltrim(rtrim(gDefQty));
+				xmlItem.@minQty			= ltrim(rtrim(gMinQty));
+				xmlItem.@maxQty			= ltrim(rtrim(gMaxQty));
+				xmlItem.@isDefaultQty	= isDefaultQty;
+				// Available operations.
+				xmlItem.@canRemove		= canRemove;
+				xmlItem.@canAdd			= canAdd;
+				// Collection of all set modifiers for byte 0 (zero)
+				xmlItem.@modifiers		= hlp.getGrillModifiers(0, gIndex);
+								
+				xmlComp.appendChild(xmlItem);
+			}
+		}
+		
+		/** Gets a fiels based on the given size **/
+		function getField(grillItem, sz) {
+			var field = grillItem.substring(aux, aux + sz);
+			aux += sz;
+			return field;
+		}
+	}
+	
+	/** Adds a xml attribute in the given XML buffer **/
+	function addXMLAttribute(xml, name, value) {
+		xml.append(" " + name + "=\"" + value + "\"");
+	}
+	
+	/** Gets the grill status **/
+	function getGrillStatus(type, index) {
+		// Based on WF_ShowButtonGrill
+		if (PosCheckGrillPropertyMulti('c','80000005','-1')) {
+			return false;
+		} else if (PosCheckGrillProperty(type, '-1', index)) {
+			return (!PosCheckGrillProperty('0', '-1', index));
+		}
+		return false;
+	}
+}
+
+/** Remove left spaces of String **/
+function ltrim(s)
+{
+	var l=0;
+	while(l < s.length && s[l] == ' ')
+	{	l++; }
+	return s.substring(l, s.length);
+}
+
+/** Remove right spaces of String **/
+function rtrim(s)
+{
+	var r=s.length -1;
+	while(r > 0 && s[r] == ' ')
+	{	r-=1;	}
+	return s.substring(0, r+1);
+}	
+
+/** PosDoStopWhenOnGrillModeJS
+ *
+ * @brief - Verifies if the NP6 kernel context is on grill process.
+ * @return - TRUE if the kernel is on grill process.
+ * @author - Kalil
+ */
+function PosDoStopWhenOnGrillModeJS(isSilenceMode) {
+	var hlp = new BusinessObjectHelper;
+	var isOnGrill = hlp.isGrilling();
+	if ((isOnGrill) && (isSilenceMode == null || isSilenceMode == "false")) {
+		PosShowMessage("MSG_BC_INV_OPER_WHEN_GRILLING");
+	}
+	return (!isOnGrill);
+}
+
+/** PosGoAheadIfOnGrillModeJS
+ *
+ * @brief - Verifies if the NP6 kernel context is on grill process.
+ * @return - TRUE if the kernel is on grill process.
+ * @author - Kalil
+ */
+function PosGoAheadIfOnGrillModeJS(isSilenceMode) {
+	var hlp = new BusinessObjectHelper;
+	var isOnGrill = hlp.isGrilling();
+	
+	if (isOnGrill) {
+		return (true);
+	} else {
+		if ((isSilenceMode == null || isSilenceMode == "false")) {
+			PosShowMessage("Invalid action, grill mode is not active.");
+		}
+	}
+	return (false);	
+}
+
+/** PosDoShowScreenKioskJS
+ *
+ * @brief - Creates a XML event informing the UI to change its screen number.
+ * @return - TRUE when could send the XML to the UI driver.
+ * @author - Kalil
+ */
+function PosDoShowScreenKioskJS(scrNumber) {
+	var params = Array("Number|" + scrNumber);
+	var xml = lCreateKioskEvent("ASYNC", "UI_SHOW_SCREEN", params);
+	return PosSendUICmd(xml);
+}
+
+/** lCreateKioskEvent
+ *
+ * @brief - Local function responsible for creating the XML event for the TP UI.
+ * @return - view - XML event.
+ * @author - Kalil
+ */
+function lCreateKioskEvent(type, name, params) {
+    var xml = new StringBuffer();
+    xml.append(GLOBAL_UTF8_PROLOG_XML);
+    xml.append("<Event ");
+    {
+        xml.append(" type=\"" + type + "\"");
+        xml.append(" name=\"" + name + "\"");
+        xml.append(">\n");
+        for (var i=0; i<params.length; i++) {
+			var p = params[i].split("|");
+			xml.append("\t<Parameter name=\"" + p[0] + "\" value=\"" + p[1] + "\"/>\n");
+        }
+    }
+    xml.append("</Event>");
+    return xml.toString();
+}
+
+/**PosDoWFExitKioskJS
+ *
+ * @brief - Drives the workflow (last step) finalization to a given result code.
+ * @return - rval - true when given true.
+ * @author - Kalil
+ */
+function PosDoWFExitKioskJS(rc)
+{
+	return ((rc == "true") ? (true) : (false));
+}
+
+/**PosIsTrnInProgressKioskJS
+ *
+ * @brief - Verifies if there is a transaction in progress, if there isn't it shows a msg box and return false.
+ * @return - rval - True
+ * @author - Kalil
+ */
+function PosIsTrnInProgressKioskJS(isSilenceMode)
+{
+	var isInProgress = (!PosNotATransactionInProgress("true"));
+	
+	if (isInProgress) {
+		return (true);
+	} else {
+		if (isSilenceMode == 'false') {
+			PosShowMessage("MSG_BC_NO_ORDER_IN_PROGRESS");
+		}
+		return (false);
+	}
+}
+
+/**PosDoSaleKioskJS
+ *
+ * @brief - Sells a given product code.
+ * @return - rval - true if allowed to continue
+ * @author - Kalil
+ */
+function PosDoSaleKioskJS(productCode, quantity)
+{
+	var products = productCode.split("|");
+
+	for (var i=0; i<products.length; i++) {
+		var code = products[i];
+		if (!lDoKioskSale(code, quantity)) {
+			return false;
+		}
+	}
+	return true;
+	
+	function lDoKioskSale(productCode, quantity) {
+		var qty = Number(quantity);
+		// Lets check if the quantity was informed.
+		if ((quantity != null) && (!isNaN(qty))) {
+			// Resets the previous quantity (if any)
+			PosDoQuantum(-1);
+			// Sets the given quantity (if the quantity is ZERO a void item will be performed when it is not last line)
+			PosDoQuantum(qty);
+		}
+		if(!PosDoChoice(productCode)) {
+			// Sale did not end with a choice
+			if(PosDoSale(productCode)) {
+				return(true);
+			} else {
+				return(false);
+			}
+		}
+		return(true);
+	}
+}
+		
+/**PosDoTenderKioskJS
+ *
+ * @brief - This BC tenders a sale
+ * @return - rval - true if allowed to continue
+ * @author - Kalil
+ */
+function PosDoTenderKioskJS(tenderId, amount)
+{
+	if (tenderId == null) {
+		return false;
+	}
+	if (amount == null) {
+		amount = '-1';
+	}
+	// Clears info area
+	PosDisplayText("",1);
+
+	API.dbg("processing cashless for tender id=" + tenderId);
+	
+	var bEndOfSale=PosDoTender(tenderId, amount);		// Amount equals '-1' performs an exact tender.
+	if (bEndOfSale) {
+		API.dbg("Cashless process SUCCEEDED.");
+		return PosDoEndOfSale(true);
+	} else {
+		API.dbg("Cashless process FAILED.");
+		var hlp 	= new BusinessObjectHelper;
+		var curView = hlp.getCurrentView();
+		var flag 	= "NOPREVIEW|SAVE";
+		var ctx		= new SessionContext;
+		if(null == curView) {
+			API.dbg("Current view is NULL, nothing to do.");
+			return(false);
+		}
+		//if (PosDoStore()) {
+			PosDoVoidSale('false','false');
+			API.dbg("Order has been voided SUCCESSFULLY.");
+			//PosCreateReceiptJS(1,"VIEW","receipt@reports.nps","NOPREVIEW|SAVE");	
+			var view = new XML(curView);	
+			ctx.set(KEY_REMVIEW,view.toString(),true);
+			var showCanceledItems=hlp.findParamInSectionConfig("showCanceledItems","UserInterface");
+			var custMsg = hlp.getSysMessage("MSG_PICKLST_CASHLESS_FAILED");
+			if (custMsg == "MSG_PICKLST_CASHLESS_FAILED") {
+				// Default message //PLE-94
+				custMsg = "Take your ticket to the front counter\nto complete your order.";
+			}
+			//we must select the correct flag for getting the data.
+			var storedbPath = "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"Kiosk\").Parameter.(@name==\"ConsolidatedReportPickList\").@value";
+			var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"Kiosk\").Parameter.(@name==\"ConsolidatedReportPickList\").@value";
+			var consolidate = getConfigValue(storedbPath , posdbPath);
+
+			if(consolidate == "false")
+			{			
+				PosCreateReport("VIEW","reportPickList@reports.nps",flag+"|REMOTE",showCanceledItems+":1:"+custMsg);
+			}
+			else
+			{
+				PosCreateReport("FULLCONSVIEW","reportPickList@reports.nps",flag+"|REMOTE",showCanceledItems+":1:"+custMsg);
+			}
+			PosShowMessage(custMsg);
+		//} else {
+		//	API.dbg("Store failed.");
+		//	PosDoVoidSale('false','false');
+		//	PosShowMessage("Could not store this order, please contact the manager.");
+		//}
+		return(false);
+	}
+}
+ 
+/**PosDoStoreDuetJS
+ *
+ * @brief - This BC handles store for CSO/Duet
+ * Return - rval - true 
+ */
+function PosDoStoreDuetJS(reason,buttonNumber) {
+
+	if(PosNotATransactionInProgress("true")) {
+		return(true);
+	}
+	// Stops Bill Acceptor, if configured...
+	if(typeof(PosBillAcceptorJS) == "function") {
+		PosBillAcceptorJS(1);
+	}
+	if(0 == Number(reason)) {
+		PosAutoChoice();
+	}
+	PosDoStore();
+	PosRefreshSalePanel();
+	PosCreateReceiptJS(1,"VIEW","receipt@reports.nps","NOPREVIEW",reason);
+	PosChangeButtonProperties(buttonNumber,"font|regular");
+	var ctx=new SessionContext;
+	PosShowScreen(ctx.get("baseScreenId"));
+	return(true);
+}
+ 
+/**IfParameterEmptyGoScreenJS
+ *
+ * @brief - This BC shows a screen if the received parameter is not empty, goes to a kiosk base screen if < 0, otherwise shows the previous screen 
+ * Return - true if changed, false otherwise
+ */
+function IfParameterEmptyGoScreenJS(screenNumber) {
+	if(PosParameterIsEmpty(screenNumber)) {
+		return(PosBackToPreviousScreen());
+	}
+	if(Number(screenNumber) < 0) {
+		if(-2 == Number(screenNumber)) {
+			var ctx=new SessionContext;
+			var subBaseScreen=ctx.get("subBaseScreen");
+			if(subBaseScreen != null) {
+				screenNumber=subBaseScreen;
+			}
+		}
+		if(Number(screenNumber) < -1) {
+			screenNumber=(PosIsBreakfastTimeJS())?1102:1103;
+		}
+	}
+	return(PosShowScreen(screenNumber));
+}
+
+/**IfNoChoiceOpenGoScreenJS
+ *
+ * @brief - This BC shows a screen choice screen if there are open choices left, otherwise
+ *			if the received parameter is not empty, goes to a kiosk base screen if < 0, otherwise shows the previous screen 
+ * Return - true if changed, false otherwise
+ */
+function PosChoiceOpenJS(choices,screenNbr) {
+
+	if((choices != undefined) && (choices != null)) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				var choice_screen=choiceArray[i].split("|");
+				if(choice_screen != null) {
+					if(!PosCheckChoice(choice_screen[0])) {
+						var screenToGo=choice_screen[1];
+						if(screenToGo.indexOf("-") >= 0) {
+							var screens=screenToGo.split("-");
+							if("10000005" == choice_screen[0]) {
+								// Special handling
+								var hlp=new BusinessObjectHelper;
+								var curProdDescr=hlp.getSaleItem(-1,0);
+								if(curProdDescr != null) {
+									var prDescr=new XML(curProdDescr);
+									if(prDescr != null) {
+										var listOfSelects="9241|7428|9929,9926|7429|9932,1401|1875|1405";
+										screenToGo=(listOfSelects.indexOf(prDescr.@id) >= 0)?screens[0]:screens[1];
+									}
+								}
+							}
+							else {
+								screenToGo=(PosIsBreakfastTimeJS())?screens[0]:screens[1];
+							}
+						}
+						PosShowScreen(screenToGo);
+						return(true);
+					}
+				}
+			}
+		}
+	}
+	return(IfParameterEmptyGoScreenJS(screenNbr));
+}
+
+/**PosAdviceBeforeTotalJS
+ *
+ * @brief - This BC checks the sale end, make suggestion and might go to a complete choices screen... 
+ * Return - true if breakfast time, false otherwise
+ */
+function PosAdviceBeforeTotalJS(sauceChoices,screenNbr) {
+
+	if(PosIsInSaleMode("false")) {
+		if(!PosNotATransactionInProgress("true")) {
+			return(PosChoiceOpenJS(sauceChoices,screenNbr));
+		}
+	}
+	PosShowMessage("MSG_BC_NO_ORDER_IN_PROGRESS");
+	var ctx=new SessionContext;
+	return(PosShowScreen(ctx.get("baseScreenId")));
+}
+
+/**PosLoadSizeImageDrinkJS
+ *
+ * @brief - This BC checks if a given size is available for a product to solve a choice and if so shows image and price 
+ * Return - true
+ */
+function PosLoadSizeImageDrinkJS(btnNbr,size,prCode,choices) {
+
+	var prForOpenChoice=null;
+	var choiceCode=null;
+	if((choices != undefined) && (choices != null)) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				var choice_ref=choiceArray[i].split("|");
+				if(choice_ref != null) {
+					if(!PosCheckChoice(choice_ref[0])) {
+						choiceCode=choice_ref[0];
+						prForOpenChoice=choice_ref[1];
+						if(prForOpenChoice.indexOf("-") >= 0) {
+							var prAux=prForOpenChoice.split("-");
+							if(PosIsBreakfastTimeJS()) {
+								prForOpenChoice=prAux[0];
+							}
+							else {
+								prForOpenChoice=prAux[1];
+								// Special handling
+								var hlp=new BusinessObjectHelper;
+								var curProdDescr=hlp.getSaleItem(-1,0);
+								if(curProdDescr != null) {
+									var prDescr=new XML(curProdDescr);
+									if(prDescr != null) {
+										var listOfMights="7505|7503|7787|7785";
+										if((listOfMights.indexOf(prDescr.@id) >= 0) && (prAux.length > 2)) {
+											prForOpenChoice=prAux[2];
+										}
+									}
+								}
+							}
+						}
+						var ctx=new SessionContext;
+						var tierSize=ctx.get("TierSize");
+						if(tierSize != null) {
+							prForOpenChoice=lGetProdUpgradedJS(tierSize,prForOpenChoice);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+	if(prForOpenChoice != null) {
+		if(PosCanSolveChoice(prCode,size,choiceCode) /* && (Number(size) >= Number(tierSize))*/) {
+			PosChangeButtonProperties(btnNbr,"visible|true");
+			if(PosGetPriceForButton(btnNbr,size,prCode,-2,prForOpenChoice)) {
+				PosChangeButtonProperties(btnNbr,"extra|true");
+			}
+			return(true);
+		}		
+		PosChangeButtonProperties(btnNbr,"visible|false");
+	}
+	else {
+		PosLoadSizeImageJS(btnNbr,size,prCode);
+	}
+	return(true);
+}
+
+/**PosSelectDrinkGoScreenJS
+ *
+ * @brief - This BC checks if a given size is available for a product to solve a choice and if so sells the product, otherwise goes to a screen
+ * Return - true
+ */
+function PosSelectDrinkGoScreenJS(prCode,choices,choiceSauce,screenNumber,screenSold,tierSize) {
+
+	var prForOpenChoice=null;
+	var choiceCode=null;
+	if((choices != undefined) && (choices != null)) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				var choice_ref=choiceArray[i].split("|");
+				if(choice_ref != null) {
+					if(!PosCheckChoice(choice_ref[0])) {
+						choiceCode=choice_ref[0];
+						prForOpenChoice=prCode;
+						var size=choice_ref[1];
+						prForOpenChoice=lGetProdUpgradedJS(tierSize,prForOpenChoice);
+						break;
+					}
+				}
+			}
+		}
+	}
+	if(prForOpenChoice != null) {
+		if(PosCanSolveChoice(prForOpenChoice,"-1",choiceCode) && (size < tierSize)) {
+			PosDoSaleSizeJS(tierSize,prCode);
+			return(PosChoiceOpenJS(choiceSauce,screenSold));
+		}		
+	}
+	PosSelectProduct(prCode);
+	PosShowScreen(screenNumber);
+	PosProtectQuantity();
+	return(true);
+}
+
+/**PosLoadPriceImageDrinkJS
+ *
+ * @brief - This BC shows a drink price, testing if there is an open drink choice
+ * Return - true
+ */
+function PosLoadPriceImageDrinkJS(btnNbr,size,prCode,choices,showPrice) {
+
+	var prForOpenChoice=null;
+	var choiceCode=null;
+	if((choices != undefined) && (choices != null)) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				var choice_ref=choiceArray[i].split("|");
+				if(choice_ref != null) {
+					if(!PosCheckChoice(choice_ref[0])) {
+						choiceCode=choice_ref[0];
+						prForOpenChoice=choice_ref[1];
+						if(prForOpenChoice.indexOf("-") >= 0) {
+							var prAux=prForOpenChoice.split("-");
+							if(PosIsBreakfastTimeJS()) {
+								prForOpenChoice=prAux[0];
+							}
+							else {
+								prForOpenChoice=prAux[1];
+								// Special handling
+								var hlp=new BusinessObjectHelper;
+								var curProdDescr=hlp.getSaleItem(-1,0);
+								if(curProdDescr != null) {
+									var prDescr=new XML(curProdDescr);
+									if(prDescr != null) {
+										var listOfMights="7505|7503|7787|7785";
+										if((listOfMights.indexOf(prDescr.@id) >= 0) && (prAux.length > 2)) {
+											prForOpenChoice=prAux[2];
+										}
+									}
+								}
+							}
+							
+						}
+						var ctx=new SessionContext;
+						var tierSize=ctx.get("TierSize");
+						if(tierSize != null) {
+							prForOpenChoice=lGetProdUpgradedJS(tierSize,prForOpenChoice);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+	if(prForOpenChoice != null) {
+		var hlp=new BusinessObjectHelper;
+		var curProdDescr=hlp.getProductDescr(prForOpenChoice);
+		if(curProdDescr != null) {
+			var prDescr=new XML(curProdDescr);
+			if(prDescr != null) {
+				if((undefined == size) || (null == size) || (Number(size) == -1)) {
+					size=hlp.getSizeSel();
+				}
+				if(Number(size) >= 0) {
+					var sizeSel=prDescr.SizeSelection.Size;
+					if(sizeSel != null) {
+						for(i=0; i<sizeSel.length(); ++i) {
+							if(Number(sizeSel[i].@entry) == Number(size)) {
+								prForOpenChoice=sizeSel[i].@code;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		if(PosCanSolveChoice(prCode,-1,choiceCode)) {		
+			if(showPrice == "true") {
+				if(PosGetPriceForButton(btnNbr,-1,prCode,-2,prForOpenChoice)) {
+					PosChangeButtonProperties(btnNbr,"extra|true");
+				}
+			}
+		}
+		else {
+			PosChangeButtonProperties(btnNbr,"visible|false");
+		}
+	}
+	else {
+		if(showPrice == "true") {
+			if(PosGetPriceForButton(btnNbr,-1,prCode)) {
+				PosChangeButtonProperties(btnNbr,"extra|true");
+			}
+		}
+	}
+	return(true);
+}
+
+/**PosDoSaleDrinkJS
+ *
+ * @brief - This BC sells an item, remaining in the screen if no choice was solved
+ * Return - rval - true if allowed to continue
+ */
+function PosDoSaleDrinkJS(size,productCode,choices,choiceSauce,screenNumber,productAdd,dlgScreen,refresh)
+{
+	var bOpenChoices=PosCheckChoicesJS(choices);
+	PosDoSaleSizeJS(size,productCode);
+	if(!bOpenChoices) {
+		if(refresh == "true") {
+			PosRefreshButtons();
+		}
+	}
+	else {
+		if(PosIsBreakfastTimeJS()) {
+			PosCheckAddProductJS(productAdd,dlgScreen);
+		}
+		else {
+			return(PosChoiceOpenJS(choiceSauce,screenNumber));
+		}
+	}
+	IfParameterEmptyGoScreenJS(screenNumber);
+	return(true);
+}
+
+/**VoidLineBackScreenJS
+ *
+ * @brief - This BC voids (items of) a line and go to a screen
+ * Return - true
+ */
+function VoidLineBackScreenJS(screenNumber) {
+
+	if(!PosNotATransactionInProgress("true")) {
+		var bDone=PosDoVoidLine("1");
+		PosSetSessionProperty("CanChangeIndex","false");
+		if(!bDone) {
+			return(false);
+		}
+	}
+	IfParameterEmptyGoScreenJS(screenNumber);
+	return(true);
+}
+
+/**PosCheckAddProductJS
+ *
+ * @brief - This BC checks if should add a product to the sale 
+ * Return - true
+ */
+function PosCheckAddProductJS(productAdd,dlgScreen) {
+
+	if(PosCheckSessionProperty("CanAddHashBrown","true")) {
+		var price="";
+		var hlp=new BusinessObjectHelper;
+		var curProdDescr=hlp.getProductDescr(productAdd);
+		if(curProdDescr != null) {
+			var prDescr=new XML(curProdDescr);
+			if(prDescr != null) {
+				var priceDescr=null;
+				switch(hlp.getSaleType()) {
+				case 0:
+					priceDescr=prDescr.PriceList.Pricing.(@priceCode == "EATIN");
+					break;
+				case 1:
+					priceDescr=prDescr.PriceList.Pricing.(@priceCode == "TAKEOUT");
+					break;
+				case 2:
+					priceDescr=prDescr.PriceList.Pricing.(@priceCode == "OTHER");
+					break;
+				}
+				if(priceDescr != null) {
+					price=priceDescr.@price;
+				}
+			}
+		}
+		var dlgScreenMsg=hlp.getSysMessage(dlgScreen,price);
+		if(PosShowConfirmationMessage(dlgScreenMsg,"MSG_YES","MSG_NO")) {
+			var selIndex=hlp.getSelIndex();
+			PosDoSaleJS(productAdd);
+			PosSetSessionProperty("CanChangeIndex","true");
+			PosDoSelIndex(selIndex);
+			PosSetSessionProperty("CanChangeIndex","false");
+		}
+		else {
+			PosSetSessionProperty("CanAddHashBrown","false");
+		}
+	}
+	return(true);
+}
+
+/**PosResetCSOContextJS
+ *
+ * @brief - This BC resets session context specific to CSO 
+ * Return - true
+ */
+function PosResetCSOContextJS(productAdd,dlgScreen) {
+
+	PosSetSessionProperty("TenderAccepted","false");
+	PosSetSessionProperty("CanAddHashBrown","true");
+	PosSetSessionProperty("TierSize","-1");
+}
+
+/**PosCanTotalizeDuetJS
+ *
+ * @brief - This BC totalizes a sale for duet 
+ * Return - true if ok
+ */
+function PosCanTotalizeDuetJS(screenNumber) {
+	if(!PosNotATransactionInProgress(true)) {
+		PosAutoChoice();
+		if(!PosDoTotal()) {
+			return(false);
+		}
+		// Zeroed sale?
+		var hlp=new BusinessObjectHelper;
+		var view=new XML(hlp.getCurrentView());
+		var totalDue=view.@totalDue;
+		if(totalDue == "0.00") {
+			PosDoTenderJS(-1,-1,'NOPREVIEW');
+			//PosDoEndOfSaleJS(false,"NOPREVIEW|SAVE",1); --> Called inside PosDoTenderJS
+			var showNbr=hlp.findParamInSectionConfig("timeoutShowNumber","UserInterface");
+			if(showNbr == null) {
+				showNbr=-1;
+			}
+			if(Number(showNbr) >= 0) {
+				var NumberFormat = hlp.findParamInSectionConfig("orderNbrFormat","UserInterface");
+				if(NumberFormat == null) {
+					NumberFormat = 0;
+				}
+				var ordId=PosMountOrderIdJS(NumberFormat,view.@orderKey,view.@major,view.@minor);
+				var message=(PosCheckSessionProperty("POD","CSO"))?"MSG_BC_STORECSO":"MSG_BC_STOREID";
+				PosShowMessage(message,"FNT_LARGE",ordId);
+			}
+			PosRefreshSalePanel();
+			return(true);
+		}
+		PosShowScreen(screenNumber);
+		return(true);
+	}
+	return(false);
+}
+
+/**PosDoTotalDuetJS
+ *
+ * @brief - This BC totalizes a sale for duet 
+ * Return - true if ok
+ */
+function PosDoTotalDuetJS(type,screenNumber,flags) {
+
+	if(!PosNotATransactionInProgress(true)) {
+		if(Number(type) == 0) {
+			var hlp=new BusinessObjectHelper;
+			var iSrv=hlp.getServiceIndex();
+			if(typeof(PosBillAcceptorStsJS) == "function") {
+				rc=PosBillAcceptorStsJS(iSrv);
+				if(Number(rc) != 0) {
+					PosShowMessage("BILL_ACCEPTOR_OUT2");
+					return(false);
+				}
+			}
+		}
+		if(Number(type) == 0) {
+			if(typeof(PosBillAcceptorJS) == "function") {
+				PosBillAcceptorJS(0);
+			}
+		}
+		else {
+			PosDoStore();
+			PosRefreshSalePanel();
+			PosCreateReceiptJS(1,"VIEW","receipt@reports.nps",flags);			
+		}
+		if(Number(screenNumber) < 0) {
+			var ctx=new SessionContext;
+			screenNumber=ctx.get("baseScreenId");
+		}
+		PosShowScreen(screenNumber);
+	}
+	return(true);
+}
+
+/**PosCashlessJS
+ *
+ * @brief - This BC do a kiosk cashless payment
+ * Return - rval - true if allowed to continue
+ */
+function PosCashlessJS(flags)
+{
+	// Clears info area
+	PosDisplayText("",1);
+	var bEndOfSale=PosDoTender(10,-1);
+	PosHandleCalculatorButton("clear");
+
+	var ctx=new SessionContext;
+	var hlp=new BusinessObjectHelper;
+	
+	if(bEndOfSale && PosCheckSessionProperty("CASHLESS_STATUS","0")) {
+		// Last tender -> ends sale
+		PosDoEndOfSaleJS(false,flags,1);
+		var showNbr=hlp.findParamInSectionConfig("timeoutShowNumber","UserInterface");
+		if(null == showNbr) {
+			showNbr=-1;
+		}
+		var cso=PosCheckSessionProperty("POD","CSO");
+		if((Number(showNbr) >= 0) || ((Number(showNbr) == -1) && (cso))) {
+			var NumberFormat=hlp.findParamInSectionConfig("orderNbrFormat","UserInterface");
+			if(null == NumberFormat) {
+				NumberFormat=0;
+			}
+			var lastView=hlp.getLastSaleView();
+			if(lastView != null) {
+				var view=new XML(lastView);
+				var ordId=PosMountOrderIdJS(NumberFormat,view.@orderKey,view.@major,view.@minor);
+				if(cso) {
+					PosShowMessage("MSG_BC_STORECSO","FNT_LARGE",ordId,"_TIMEOUT:csoStoreMsgTimeout");
+				} else {
+					PosShowMessage("MSG_BC_STOREID","FNT_LARGE",ordId);
+				}
+			}
+		}
+	} 
+	else {
+		var curView = hlp.getCurrentView();
+		if(null == curView) {
+			return(false);
+		}
+		var view=new XML(curView);
+		var tenders=view.ItemTenderView;
+		if(tenders.length() == 0) {
+			PosDoBackFromTotal();
+			return(false);
+		}
+		PosDoStore();
+		
+		curView = ctx.get("view");
+		if(null == curView) {
+			return(false);
+		}
+		view=new XML(curView);
+		
+		var totalDue=Number(view.@totalDue);
+		var NumberFormat = hlp.findParamInSectionConfig("orderNbrFormat","UserInterface");
+		if(NumberFormat == null) {
+			NumberFormat = 0;
+		}
+		var ordId=PosMountOrderIdJS(NumberFormat,view.@orderKey,view.@major,view.@minor);
+		// Check for gift card partial payment
+		var partialGiftCard = (PosCheckSessionProperty("CASHLESS_TENDERID","11") && (totalDue > 0));
+		if(partialGiftCard) {
+			PosShowMessage("MSG_BC_STORECSOPARTIALGC","FNT_LARGE","$" + totalDue,"_TIMEOUT:csoPartialMsgTimeout1");
+		}
+		PosCreateReceiptJS(1,"VIEW","receipt@reports.nps",flags);
+		
+		if(partialGiftCard) {
+			PosShowMessage("MSG_BC_STORECSOPARTIAL2","FNT_LARGE",ordId,"_TIMEOUT:csoPartialMsgTimeout2");
+		}			
+		
+	}
+	return(true);
+}
+
+/**PosDoGrillOperKioskMultiItemsJS
+ *
+ * @brief - Performs a given grill operation for multiple items.
+ * @return - TRUE - when the operation was well succeeded.
+ * @author - Kalil
+ */           
+function PosDoGrillOperKioskMultiItemsJS(opers, indexes, quatities) {
+    /*
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Action name="WF_Kiosk_DoGrillOperMultiItems">
+            <Parameter name="Oper" value="p|p"/>
+            <Parameter name="CompIndex" value="1|2"/>
+            <Parameter name="Quantity" value="4|3"/>
+        </Action>
+    */
+    API.dbg("PosDoGrillOperKioskMultiItemsJS: Performing multi grill operation.");
+    if ((opers == null) || (indexes == null) || (quatities == null)) {
+        PosShowMessage("PosDoGrillOperKioskMultiItemsJS: Invalid parameter. (At least one parameter is NULL)");
+        API.dbg("PosDoGrillOperKioskMultiItemsJS: Invalid parameter. (At least one parameter is NULL)");
+        return false;
+    } else {
+        var _opers         = opers.split("|");
+        var _indexes     = indexes.split("|");
+        var _quatities     = quatities.split("|");
+        if ((_opers.length != _indexes.length) || (_opers.length != _quatities.length)) {
+            PosShowMessage("PosDoGrillOperKioskMultiItemsJS: Invalid piped parameter. (Incompatible lengths)");
+            API.dbg("PosDoGrillOperKioskMultiItemsJS: Invalid piped parameter. (Incompatible lengths)");
+            return false;
+        } else {
+            var sz = _opers.length;
+            for (var i=0; i<sz; i++) {
+                var oper     = _opers[i];
+                var index     = _indexes[i];
+                var qty     = _quatities[i];
+                for (var x=0; x<qty; x++) {
+                    var rc = PosDoGrillOper(oper, '-1', index);
+                    if (!rc) {
+                        API.dbg("PosDoGrillOperKioskMultiItemsJS: PosDoGrillOper failed.");
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    API.dbg("PosDoGrillOperKioskMultiItemsJS: Multi grill operation has been successfully performed.");
+    return true;
+}
+
+/*
+* Helper function
+* Parameters: storeDbPath - path to the desired parameter in store-db
+*			  psoDbpath -path to the desired parameter in pos-db
+* Returns the value of a configuration parameter
+*/
+ function getConfigValue(storeDbPath, posDbPath)
+ {
+	if(posDbPath!="" && posDbPath!=null)
+	{
+		var value = eval("xmlPosDB."+posDbPath);
+		if(value+""!="")
+		{
+			return  value;
+		}
+	}
+	return  eval("xmlStoreDB."+storeDbPath)+"";
+		
+ }
+
+
+/*============================ Addded from BusinessComponentsCSO.nps===========================================*/
+/**lGetProdUpgradedJS
+ *
+ * @brief - This auxiliary receives a product code and a size and returns the upgraded product
+ * Return - upgraded product
+ */
+function lGetProdUpgradedJS(size,prCode) {
+
+	if((size != undefined) && (size != null) && (Number(size) >= 0)) {
+		var hlp = new BusinessObjectHelper;
+		var curProdDescr = hlp.getProductDescr(prCode);
+		if(curProdDescr != null) {
+			var prDescr = new XML(curProdDescr);
+			if(prDescr != null) {	
+				var sizeSel	= prDescr.SizeSelection.Size;
+				if(sizeSel != null) {
+					for(i=0; i<sizeSel.length(); ++i) {
+						if(Number(sizeSel[i].@entry) == Number(size)) {
+							return(sizeSel[i].@code);
+						}
+					}
+				}
+			}
+		}
+	}
+	else {
+		return(prCode);
+	}
+	return(null);
+}
+
+/**PosDoCancelOrderDuetJS
+ *
+ * @brief - This BC handles order cancelment for CSO/Duet
+ * Return - rval - true 
+ */
+function PosDoCancelOrderDuetJS() {
+
+	if(PosNotATransactionInProgress("true")) {
+		return(true);
+	}
+	if(typeof(PosBillAcceptorJS) == "function") {
+		PosBillAcceptorJS(1);
+	}
+	PosDoVoidSale("false","false");
+	if(typeof(PosResetCSOContextJS) == "function") {
+		PosResetCSOContextJS();
+	}
+	var ctx=new SessionContext;
+	PosShowScreen(ctx.get("baseScreenId"));
+	return(true);
+}
+
+/**PosSoundIntervalJS
+ *
+ * @brief - This BC plays a sound for a screen given a elapsed interval 
+ * Return - true
+ */
+function PosSoundIntervalJS(screenNumber,soundHit) {
+
+	var hlp = new BusinessObjectHelper;
+	var screenInfo = hlp.getScreenInfo(screenNumber);
+	if(null == screenInfo) {
+		// screen not configured
+		return(false);
+	}
+	var screenDescr = new XML(screenInfo);
+	if(null == screenDescr) {	
+		// screen description not available
+		return(false);
+	}
+	var sound=screenDescr.@sound;
+	if((null == sound) || (0 == sound.length)) {
+		// no sound for this screen
+		return(false);
+	}	
+	var index=sound.indexOf("|");
+	if(index < 0) {
+		// no hit sound for this screen
+		return(false);
+	}
+	var visits=screenDescr.@visits;
+	sound=sound.substr(index+1);
+	index=sound.indexOf("=");
+	if(index < 0) {
+		// No restrictions, plays always
+		PosPlaySound(sound);
+		return(true);
+	}
+	else {
+		index=sound.indexOf((visits+"-"+soundHit));
+		if(index >= 0) {
+			// Sound configured for this hit
+			var index1=sound.lastIndexOf(";",index);
+			if(index1 >= 0) {
+				index1++;
+			}
+			else {
+				index1=0;
+			}
+			index=sound.indexOf("=",index1);
+			if(index > index1) {
+				PosPlaySound(sound.substring(index1,index));
+				return(true);
+			}
+		}
+	}		
+	return(false);
+}
+
+/**ChangeSaleTypeGoScreenJS
+ *
+ * @brief - This BC checks if CSO is in sale mode and if so goes to a screen 
+ * Return - true
+ */
+function ChangeSaleTypeGoScreenJS(saleType,screenNumber,bkfScreenNumber) {
+
+	if(PosIsInSaleMode("false")) {
+		var hlp = new BusinessObjectHelper;
+		var iSrv = hlp.getServiceIndex();
+		var rc=0;
+		if(typeof(PosPrinterStsJS) == "function") {
+			rc=PosPrinterStsJS(iSrv);
+		}
+		if(0 == Number(rc)) {
+			if(typeof(PosBillAcceptorStsJS) == "function") {
+				rc=PosBillAcceptorStsJS(iSrv);
+				if(Number(rc) != 0) {
+					if(!PosShowConfirmationMessage("BILL_ACCEPTOR_OUT1","MSG_YES","MSG_NO")) {
+						return(false);
+					}
+				}
+			}
+			PosChangeButtonProperties("1000","visible|true");
+			PosSetSaleType(saleType,"true");
+			if(PosIsBreakfastTimeJS()) {
+				PosShowScreen(bkfScreenNumber);
+			}
+			else {
+				PosShowScreen(screenNumber);
+			}
+			return(true);
+		}
+		else {
+			// Printer error
+			if(typeof(PosGetPrinterErrorJS) == "function") {
+				PosRemoteExecute("PosShowMessage","PRINTER_ERR",PosGetPrinterErrorJS(rc));
+			}
+		}
+	}
+	PosShowMessage("MSG_BC_NOT_READYORDER");
+	return(false);
+}
+
+/**PosLoadSizeImageJS
+ *
+ * @brief - This BC checks if a given size is available for a product and if so shows image and price 
+ * Return - true
+ */
+function PosLoadSizeImageJS(btnNbr,size,prCode) {
+
+	prCode=lGetProdUpgradedJS(size,prCode);
+	if((prCode != undefined) && (prCode != null)) {
+		PosChangeButtonProperties(btnNbr,"visible|true");
+		PosChangeButtonProperties(btnNbr,"extra|true");
+		PosGetPriceForButton(btnNbr,size,prCode);
+		return(true);
+	}		
+	PosChangeButtonProperties(btnNbr,"visible|false");
+	return(true);
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437004cc2a6d7ee7b5997b022d3ae9d07c855f45504d19e22d4968ff1e08a63a689134ccc3cb6735356aeea08ed2e35a9c332d0030010
+ * =================================================================================================================================
+*/

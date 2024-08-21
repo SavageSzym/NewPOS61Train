@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="DYNAMIC PRODUCTION">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+			<Section name="Messaging">
+				<Parameter name="serverPort" value="60004"/>
+			</Section>
+	</Configuration>
+	<Services>
+		<Service name="8000" type="STO" classname="com.ngpos.arch.services.update.UpdatePosData" startonload="true" quitOnFail="true">
+			<Configuration imports="STO.PRD"/>
+		</Service>
+		<Service name="8000" type="PST" classname="com.ngpos.newprod.persistence.HsqlPersistenceNode" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="PST">
+					<Member name="8001" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Persistence"/>
+		</Service>
+		<Service name="8004" type="QUE" classname="com.ngpos.newprod.core.StoreArea" startonload="true" quitOnFail="true">
+			<Configuration imports="StoreProduction">
+				<Section name="KvsOptions">
+					<Parameter name="bumpOnTotal" value="false"/>
+					<Parameter name="enableDisplay" value="ONSTART"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8007" type="QUE" classname="com.ngpos.newprod.core.StoreArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="8001" alias="DT EXPO"/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="StoreProduction"/>
+			<Adaptors>
+				<Adaptor name="external.system" imports="external.system" startonload="true">
+					<Section name="main">
+						<Parameter name="port" value="2221"/>
+						<!-- <Parameter name="ip" value="10.164.251.219"/> -->
+						<Parameter name="ip" value="127.0.0.1"/>
+						<Parameter name="includeKVSSide" value="false"/>
+						<Parameter name="logicalname" value="CODDriver1"/>
+					</Section>
+				</Adaptor>
+			</Adaptors>
+		</Service>
+		<Service name="8010" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="1001" alias="MFY1-Expo"/>
+				</UsedService>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+				<UsedService serviceType="QUE">
+					<Member name="8011" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8011" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="1002" alias="KVS002 MFY2"/>
+				</UsedService>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+				<UsedService serviceType="QUE">
+					<Member name="8010" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<!-- RED PRODUCTION ROUTING QUEUE -->
+		<Service name="8009" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="WayOfWork">
+					<Parameter name="forwardAlias" value="false"/>
+				</Section>
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8029" type="QUE" classname="com.ngpos.newprod.core.RouterNode" startonload="true" quitOnFail="true">
+			<Configuration imports="Router">
+				<Section name="KvsRoutes">
+					<Parameter name="queueSource" value="QUE8004"/>
+					<Parameter name="routes" value="109,110,112,261,262"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="9000" type="QUE" classname="com.ngpos.newprod.core.RouterNode" startonload="true" quitOnFail="true">
+			<Configuration imports="Router">
+				<Section name="KvsRoutes">
+					<Parameter name="queueSource" value="QUE8007"/>
+					<Parameter name="routes" value="109,110,112,114,261,262,265,268,269,270,273,301"/>
+				</Section>
+			</Configuration>
+		</Service>
+	</Services>
+</PosDB>

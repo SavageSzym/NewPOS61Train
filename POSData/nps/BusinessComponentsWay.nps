@@ -1,0 +1,29 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BusinessComponentsWay.nps
+* This NPS file implements Local Business Componentes.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d3739343700b13e3a926eb5594a5288b151abc22fcfed89f7764f7cb839bc03a1ca8d7ebeb92635cfefc1ff00e66c1b564304705481dd040010
+ * =================================================================================================================================
+*/

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="POS020 DT">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+		<Section name="OperationMode">
+			<Parameter name="DTStoreMode" value="REGULAR"/>
+		</Section>
+		<Section name="Messaging">
+			<!-- <Parameter name="serverPort" value="60002"/> -->
+		</Section>
+				<!-- Added For NP6 6.1.15  29th December 2009 -->
+		<Section name="ValueMealDisplay">
+			<Parameter name="VMDisplay_ShowAsSinglePrice" value="Disabled" />
+			<Parameter name="VMDisplay_SuppressDiscount" value="Enabled"/>
+			<Parameter name="VMDisplay_ShowUpCharge" value="Enabled"/>
+			<Parameter name="VMDisplay_UpChargeText" value="UPCHARGE"/>
+			<Parameter name="VMDisplay_ShowDiscount" value="Enabled"/>
+			<Parameter name="VMDisplay_DiscountText" value="DISCOUNT"/>
+			<Parameter name="VMDisplay_InLineText" value="Enabled"/>
+		</Section>
+		<Section name="NPScripts">
+			<!-- <Parameter name="posCashless" value="eurecs.nps"/> -->
+			<!-- <Parameter name="posCashless" value="everestEMU.nps"/> -->
+		</Section>
+		<Section name="Security">
+			<Parameter name="managerAuthorization" value="login"/>
+		</Section>
+	</Configuration>
+	<Services>
+		<!--<Service name="020" type="RPR" classname="com.ngpos.arch.services.printer.core.PrinterController" startonload="true" quitOnFail="true">
+			<Adaptors>
+				<Adaptor name="npAdpRpr" imports="npAdpRpr" startonload="true">
+					<Section name="main">
+						<Parameter name="drivername" value="npSerPrn.dll"/>
+						<Parameter name="portname" value="RPR002.txt"/>
+					</Section>
+				</Adaptor>
+			</Adaptors>
+		</Service>-->
+		<Service name="002" type="STO" classname="npUpdtRcv.dll" startonload="true" quitOnFail="true">
+			<Configuration imports="STO"/>
+		</Service>
+		<Service name="020" type="POS" classname="com.ngpos.pos.NewPOS" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<!--<UsedService serviceType="RPR">
+					<Member name="002" alias=""/>
+				</UsedService>-->
+				<UsedService serviceType="PST">
+					<Member name="8000" alias=""/>
+					<Member name="8001" alias=""/>
+				</UsedService>
+				<UsedService serviceType="WAY">
+					<Member name="300" alias=""/>
+				</UsedService>
+				<UsedService serviceType="PSW">
+					<Member name="300" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="POS">
+				<Section name="PosType">
+					<Parameter name="POD" value="DRIVE_THRU"/>
+					<Parameter name="RemPOD" value="STAND_ALONE"/>
+				</Section>
+				<Section name="UserInterface">
+					<Parameter name="showCursor" value="true"/>
+					<Parameter name="showCloseButton" value="true"/>
+				</Section>
+			</Configuration>
+			<!-- <Adaptors>			
+				<Adaptor name="npCLayer" imports="npCLayer" startonload="true">
+					<Section name="Everest">
+						<Parameter name="MerchantID" value="KB17576924001"/>
+						<Parameter name="EftServerIP" value=""/>
+						<Parameter name="SerialPort" value=""/>
+						<Parameter name="EftServerPort" value="30004"/>
+						<Parameter name="extname" value="Eurecs.dll"/>
+					</Section>
+					<Section name="Telequipt">
+						<Parameter name="CoinPort" value="7"/>
+						<Parameter name="extname" value = "Telequip.dll"/>
+						<Parameter name="baudRate" value="9600"/>
+					</Section> 
+				</Adaptor>
+				<Adaptor name="DSLDevDrv.linedisplay" imports="DSLDevDrv.linedisplay" startonload="true">
+					<Section name="RCD">
+						<Parameter name="workingMode" value="orderTaker|both"/>
+					</Section>
+					<Section name="main">
+						<Parameter name="portname" value="COM3"/>
+						<Parameter name="effectInfoText" value="-1"/>
+					</Section>
+					<Section name="HWConfiguration">
+						<Parameter name="POSCashLogicalName" value="DRAWER1"/>
+					</Section>
+				</Adaptor>
+				<Adaptor name="DSLDevDrv.cash" imports="DSLDevDrv.cash" startonload="true">
+					<Section name="main">
+						<Parameter name="model" value="JS930"/>
+						<Parameter name="logicalname" value="DRAWER1"/>
+					</Section>
+					<Section name="HWConfiguration">
+						<Parameter name="POSCashLogicalName" value="DRAWER1"/>
+					</Section>
+				</Adaptor>
+				<Adaptor name="panasonic.card.reader" imports="panasonic.card.reader" startonload="true"/>	
+				<Adaptor name="xmlrpccli" imports="xmlrpccli" startonload="true"/>	
+				<Adaptor name="tlog" imports="tlog" startonload="true"/> 			
+			</Adaptors> -->
+			<Adaptors>
+			<Adaptor name="standard.ui" startonload="true">
+					<Section name="main">
+						<Parameter name="drivername" value="npposNewGUI.dll"/>
+					</Section>
+	    	</Adaptor>
+				<!--<Adaptor name="npCLayer" imports="npCLayer" startonload="true">
+					<Section name="Everest">
+						<Parameter name="extname" value="everest.dll"/>
+					</Section>
+				</Adaptor>
+				<Adaptor name="virtual.card.reader" imports="virtual.card.reader" startonload="true"/>-->
+				<Adaptor name="xmlrpccli" imports="xmlrpccli" startonload="true">
+					<Section name="main">
+						<Parameter name="url" value="http://127.0.0.1:8080/goform/RPC2"/>
+					</Section>
+				</Adaptor>
+				<!--<Adaptor name="virtual.cashdrawer" imports="virtual.cashdrawer" startonload="true"/>
+				<Adaptor name="virtual.linedisplay" imports="virtual.linedisplay" startonload="true">
+					<Section name="RCD">
+						<Parameter name="workingMode" value="orderTaker|both"/>
+					</Section>
+					<Section name="main">
+						<Parameter name="effectInfoText" value="-1"/>
+						<Parameter name="LoadDriver" value="LD|RCD"/>
+					</Section>
+				</Adaptor>-->
+				<Adaptor name="tlog" imports="tlog" startonload="true"/>
+			</Adaptors>
+		</Service>
+	</Services>
+</PosDB>

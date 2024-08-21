@@ -1,0 +1,516 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* PTCOD.nps
+ This NPS file implements Portugal specific COD functionality
+* Author - Jon Smith, Sotec
+*
+* SOTEC History Changes
+* Version		Date			Name			Detail Description
+*
+*
+*
+*/
+
+var gnOnNewSaleList = 0;
+var gnOnNewSaleLines = 0;
+var gsOperatorSuggestion = "";
+
+function PosShowMsgJS(message) {
+//	PosShowMessage(message);
+//	API.dbg(message);
+}
+
+/**PTCODToken
+ *
+ * @brief - Write or delete token in COD xml file
+ * @param - sAction: WriteToken or DeleteToken
+ * @param - sFileType: orders or COD
+ * @param - sToken: token name and parameters
+ * Return - true
+ */
+function PTCODToken(sAction, sFileType, sToken) {
+	var sFile = npTCLXmlGetINI("xmlCOD", sFileType + "File");
+	if (null == sFile || "" == sFile) {
+		sFile = "/COD/" + sFileType + ".xml";
+	}
+	var sCODText = sAction + " " + sFile + " " + sToken;
+	var Result = npTCLEvalEx(sCODText);
+	API.dbg("CODToken: " + sCODText + " Result: " + Result);
+	return Result;
+}
+
+/**PTCODEnabled
+ *
+ * @brief - Check if PT COD enabled
+ * Return - true if enabled
+ */
+function PTCODEnabled() {
+	return ("true" == npTCLXmlGetINI("xmlCOD", "Enabled"));
+}
+
+/**PTCODSetTag
+ *
+ * @brief - Set tag value
+ * Return - true
+ */
+function PTCODSetTag(sTag, sValue) {
+	if (PTCODEnabled()) {
+		PTCODToken("WriteToken", "COD", "COD/" + sTag + " " + sValue + " 0 1");
+	}
+	return(true);
+}
+
+/**PTCODSetAttribute
+ *
+ * @brief - Set tag first attribute
+ * Return - true
+ */
+function PTCODSetAttribute(sTag, sAttributeValue) {
+	if (PTCODEnabled()) {
+		PTCODToken("WriteToken", "COD", "COD/" + sTag + " " + sAttributeValue + " 0 2");
+	}
+	return(true);
+}
+
+/**PTCODPOSCloseSet
+ *
+ * @brief - Set COD POSClose value
+ * Return - true
+ */
+function PTCODPOSCloseSet(sValue) {
+	return(PTCODSetTag("General/POSClose", sValue));
+}
+
+/**PTCODStandBySet
+ *
+ * @brief - Set COD StandByCOD value
+ * Return - true
+ */
+function PTCODStandBySet(sValue) {
+	return(PTCODSetTag("General/StandByCOD", sValue));
+}
+
+/**PTCODSuggestionFamilyOp
+ *
+ * @brief - Set COD StandByCOD value
+ * @param - suggestion family group code (1-5)
+ * Return - true
+ */
+function PTCODSuggestionFamilyOp(nSuggestionFamily) {
+	var aSuggestionFamily = new Array("Sandes", "Batata", "Bebidas", "Sobresma", "Café");
+	var sSuggestionFamily = npTCLXmlGetINI("xmlCOD", "suggestionFamily" + nSuggestionFamily);
+	if (null == sSuggestionFamily || "" == sSuggestionFamily) {
+		sSuggestionFamily = "";
+		if (nSuggestionFamily > 1 && nSuggestionFamily <= 5) {
+			sSuggestionFamily = aSuggestionFamily[nSuggestionFamily - 1];
+		}
+	}
+	return sSuggestionFamily;
+}
+
+/**PTCODReadFamilyFile
+ *
+ * @brief - Read product COD suggestion family group
+ * @param - sFileParam - name of parameter to try to read filename from
+ * @param - sProduct - product to get COD suggestion family group
+ * Return - 0 if not found else family group 1-5
+ */
+function PTCODReadFamilyFile(sFileParam, sProduct) {
+	var sFile = npTCLXmlGetINI("xmlCOD", sFileParam);
+	if (null == sFile || "" == sFile) {
+		sFile = "../PosData/VendaSugestiva.xml";
+	}
+	return npTCLEvalEx("ReadFamiliaVSToken " + sFile +  " " + sProduct);
+}
+
+/**PTCODReadFamily
+ *
+ * @brief - Read product COD suggestion family group
+ * @param - sProduct - product to get COD suggestion family group
+ * Return - 0 if not found else family group 1-5
+ */
+function PTCODReadFamily(sProduct) {
+	return Number(PTCODReadFamilyFile("itemSuggestionFile", sProduct));
+}
+
+/**PTCODReadSuggestionFile
+ *
+ * @brief - Read product COD suggestion image name
+ * @param - sFileParam - name of parameter to try to read filename from
+ * @param - nFamilyGroup - family group code
+ * Return - image file name if found
+ */
+function PTCODReadSuggestionFile(sFileParam, nFamilyGroup) {
+	var sFile = npTCLXmlGetINI("xmlCOD", sFileParam);
+	if (null == sFile || "" == sFile) {
+		sFile = "/COD/SugSales.xml";
+	}
+	return npTCLEvalEx("ReadSuggestiveSalesToken " + sFile +  " " + nFamilyGroup);
+}
+
+/**PTCODReadSuggestion
+ *
+ * @brief - Read product COD suggestion image name
+ * @param - sFileParam - name of parameter to try to read filename from
+ * @param - sProduct - product to get COD suggestion family group
+ * Return - image file name if found
+ */
+function PTCODReadSuggestion(nFamilyGroup) {
+	return PTCODReadSuggestionFile("suggestSalesFile", nFamilyGroup);
+}
+
+/**onLoadScreen
+ *
+ * @brief - This function handles onLoadScreen event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLoadScreen(scrNbr) {
+	var curMode=0;
+	if((900<=Number(scrNbr)) && (1000>Number(scrNbr))) {
+		curMode=1; // Manager Mode
+	}
+	// npAdpTlog_RequestSrv(Service,Type,parameters,..);	
+	npAdpTlog_RequestSrv(NPSRVTLOG_API_SET_STATE,ADPTLOG_INT_MANAGER_MODE,curMode);
+
+	// additions Jon Smith from BCEvents.nps version start
+	if (PTCODEnabled()) {
+		var sLockScreen = npTCLXmlGetINI("xmlCOD", "lockScreen");
+		if (null == sLockScreen || "" == sLockScreen) {
+			sLockScreen = "200";	// default to this screen number as the lock screen
+		}
+		if (!PosCheckState("POS_OpLogged") || scrNbr == sLockScreen) {
+			PTCODPOSCloseSet("1");
+		} else {
+			PTCODPOSCloseSet("0");
+		}
+	}
+	// additions Jon Smith from BCEvents.nps version end
+
+	return(true);
+}
+
+/**onEndOfSale
+ *
+ * @brief - Hook function.  Send tender information to PT COD.
+ * @param - TandemEnabled,TandemMode,nTandemBooth,szCurOrderId: unused
+ * Return - true
+ */
+function onEndOfSale(TandemEnabled, TandemMode, nTandemBooth, szCurOrderId) {
+//	if (PTCODEnabled() && PosCheckTransactionKind("0")) {
+	if (PTCODEnabled() && (gnOnNewSaleList > 0)) {			// Not using PosCheckTransactionKind as changes when discounted
+		var hlp = new BusinessObjectHelper;
+		var currentView = hlp.getCurrentView();
+	    var xmlSales = new XML(currentView);
+		var nCashTender = 0.00;
+		var nEcashTender = 0.00;
+		var nOtherTender = 0.00;
+		var nDiscount = 0.00;
+		API.dbg("onEndOfSale: " + xmlSales);
+		for each (tender in xmlSales.ItemTenderView){
+			if (tender.cat == "TENDER_NATIVE") {
+				if (tender.kind == "4") {
+					change = Number(tender.value);
+				} else {
+					nCashTender = Number(tender.value);
+				}
+			} else if (tender.cat == "TENDER_ELECTRONIC_PAYMENT") {
+				nEcashTender = Number(nEcashTender) + Number(tender.value);
+			} else if (tender.kind == "1") {
+				nDiscount = Number(nDiscount) + Number(tender.value);
+			} else {
+				nOtherTender = Number(nOtherTender) + Number(tender.value);
+			}
+			code = tender.code;
+			PosShowMsgJS("tender.code: " + tender.code + "tender.value: " + tender.value);
+		}
+		if (nCashTender > 0.00) {
+			PTCODToken("WriteToken", "orders", "Order/CashAmountTendered " + nCashTender + " " + "EUR0" + " 0");
+		}
+		if (nEcashTender > 0.00) {
+			PTCODToken("WriteToken", "orders", "Order/E-cash " + nEcashTender + " " + "ECASH" + " 0");
+		}
+		if (nDiscount > 0.00) {
+			PTCODToken("WriteToken", "orders", "Order/PercentDiscount " + nDiscount + " " + "OTHER" + " 0");
+		}
+		if (nOtherTender > 0.00) {
+			PTCODToken("WriteToken", "orders", "Order/TenderByType " + nOtherTender + " " + "OTHER" + " 0");
+		}
+		npTCLEvalEx("EndOrder");
+		PTCODToken("WriteToken",  "orders", "Order/EndOrder 1 0 0");
+	}
+	return(true);
+}
+
+/*
+function onEndOfSaleExit(rc) {
+	PosShowMessage("onEndOfSaleExit");
+	return(true);
+}
+*/
+	
+/**onStore
+ *
+ * @brief - Hook function.  Send order ended info to PT COD when order stored.
+ * @param - TandemEnabled,TandemMode,nTandemBooth,szCurOrderId: unused
+ * Return - true
+ */
+function onStore(TandemEnabled,TandemMode,nTandemBooth,szCurOrderId) {
+	if (PTCODEnabled() && PosCheckTransactionKind("0")) {
+		PosShowMsgJS("onStore");
+		npTCLEvalEx("EndOrder");
+		PTCODToken("WriteToken",  "orders", "Order/EndOrder 1 0 0");
+	}
+	return(true);
+}
+
+/**onTotal
+ *
+ * @brief - Hook function.  Clear tender information on PT COD when ordered totalled.
+ * @param - none
+ * Return - true
+ */
+function onTotal() {
+	if (PTCODEnabled() && PosCheckTransactionKind("0")) {
+		PTCODToken("DeleteToken", "orders", "Order/TenderByType");
+		PTCODToken("DeleteToken", "orders", "Order/ExactDollarBillTendered");
+		PTCODToken("DeleteToken", "orders", "Order/CashAmountTendered");
+		PTCODToken("DeleteToken", "orders", "Order/E-Cash");
+		PTCODToken("DeleteToken", "orders", "Order/PercentDiscount");
+		PTCODSetAttribute("SuggestiveSales", "2");
+	}
+	return(true);
+}
+
+/**onBackFromTotal
+ *
+ * @brief - Hook function.  Clear tender information on PT COD on back from total (order modify after total).
+ * @param - none
+ * Return - true
+ */
+function onBackFromTotal() {
+	if (PTCODEnabled() && PosCheckTransactionKind("0")) {
+		PTCODToken("DeleteToken", "orders", "Order/TenderByType");
+		PTCODToken("DeleteToken", "orders", "Order/ExactDollarBillTendered");
+		PTCODToken("DeleteToken", "orders", "Order/CashAmountTendered");
+		PTCODToken("DeleteToken", "orders", "Order/E-Cash");
+		PTCODToken("DeleteToken", "orders", "Order/PercentDiscount");
+// suggestion
+	}
+	return(true);
+}
+/*
+function onDiscount(discountId,discountType) {
+	PosShowMessage("onDiscount");
+	return(true);
+}
+*/
+/**onCreatedSale
+ *
+ * @brief - This function handles onCreateSale event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onCreatedSale(nTransactionType, nRecalled) {
+	gnOnNewSaleList = 0;
+	gnOnNewSaleLines = 0;
+	return (true);
+}
+
+/**onRecalled
+ *
+ * @brief - This function handles onRecalled event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onRecalled() {
+	gnOnNewSaleList = 0;
+	gnOnNewSaleLines = 0;
+	return (true);
+}
+
+
+/*
+function onItemSell() {
+	PosShowMessage("onItemSell");
+	return (true);
+}
+*/
+
+/**onNewSaleListCOD
+ *
+ * @brief - Send order information to PT COD if in progress or totalled.
+ * @param - none
+ * Return - true
+ */
+function onNewSaleListCOD() {
+	if (PTCODEnabled() && PosCheckTransactionKind("0")) {
+		if (gnOnNewSaleList++ == 0)
+		{
+			return true;							// early exit - called twice on first sale in order
+		}
+		var hlp = new BusinessObjectHelper;
+		var currentView = hlp.getCurrentView();
+		var xmlSales = new XML(currentView);
+		var nSaleStatus = Number(xmlSales.@saleStatus);
+		PosShowMsgJS("onNewSaleListCOD nSaleStatus=" + nSaleStatus);
+		if (nSaleStatus == 1 || nSaleStatus == 2) { // if order in progress or totalled
+			var sCODText;
+			var nSaleStatus;
+			var nLine = 0;
+			var nQty = 0;
+			var nQtyPromo = 0;
+			var nQtyMain = 0;
+			var nQtyPromoMain = 0;
+			var nLineTotal = 0.00;
+			var nOrderTotal = 0.00;
+			var nLastLevel = 0;
+			var sLongName;
+			var sLineTotal;
+			var sOrderTotal;
+			var nSuggestionGroup = 0;
+			var bEnableSuggestion = false;
+			var aSuggestionCount = new Array(0, 0, 0, 0, 0);
+			var Result = PTCODToken("WriteToken", "orders", "Order/EndOrder 0 0 0");
+			if (nSaleStatus == 1) {					// if order in progress
+				sEnableSuggestion = npTCLXmlGetINI("xmlCOD", "enableSuggestion");
+				if (null == sEnableSuggestion || "" == sEnableSuggestion) {
+					sEnableSuggestion = "false";
+				}
+				bEnableSuggestion = ("true" == sEnableSuggestion);
+			}
+			if (bEnableSuggestion) {
+				PTCODSetTag("SuggestiveSales/CurrentFile", "");
+				PTCODSetAttribute("SuggestiveSales", "0");
+			}
+			Result = npTCLEvalEx("StartOrder");
+			PosShowMsgJS("StartOrder " + Result);
+			API.dbg("onNewSaleListCOD: " + xmlSales);
+			for each (item in xmlSales.ItemView)
+			{
+				nQty = Number(item.quantity);
+				nQtyPromo = Number(item.quantityPromo);
+				nLineTotal = Number(item.ADTotalPrice);
+				nOrderTotal = nOrderTotal + nLineTotal;
+				sLongName = String(item.longName);
+				if (item.level > 0) {
+					sLongName = "< " + sLongName;
+				}
+				if (nLastLevel == 0 && item.level > 0) {
+					nQty = nQtyMain;
+					nQtyPromo = nQtyPromoMain;
+				} else {
+					nQtyMain = nQty;
+					nQtyPromoMain = nQtyPromo;
+					nLastLevel = 0;
+				}
+				if (nQty != 0 && bEnableSuggestion) {
+					nSuggestionGroup = PTCODReadFamily(item.productCode);
+					if (nSuggestionGroup > 0 && nSuggestionGroup < 6) {
+						aSuggestionCount[nSuggestionGroup - 1] += nQty;
+					}
+				}
+				sLongName = sLongName.replace(/ /g, "|");
+				if (nQty > nQtyPromo || nQty == 0) {
+					if (nQty == 0) {
+						sLineTotal = "VOID";
+					} else {
+						sLineTotal = ltrim(API.formatNumber(nLineTotal, "###0.00", 7));
+						sLineTotal = sLineTotal.replace(/ /g, "");
+					}
+					sCODText = "WriteItem 0 " + String(++nLine) + " " + (nQty - nQtyPromo) + "|" + sLongName + "|" + sLineTotal + " " + item.productCode;
+					Result = npTCLEvalEx(sCODText);
+					PosShowMsgJS(sCODText + " " + Result);
+				}
+				if (nQty > 0 && nQtyPromo > 0) {
+					sCODText = "WriteItem 0 " + String(++nLine) + " " + nQtyPromo + "|" + sLongName + "|FREE " + item.productCode;
+					Result = npTCLEvalEx(sCODText);
+					PosShowMsgJS(sCODText + " " + Result);
+				}
+			}
+			var nOnNewSaleLines = nLine;
+			while (nLine < gnOnNewSaleLines) { 								// workaround for value meal re-composition
+				sCODText = "WriteItem 0 " + String(++nLine) + " \x7F 0";	// blank line for PT COD display - clear old entries
+				Result = npTCLEvalEx(sCODText);
+				PosShowMsgJS(sCODText + " " + Result);
+			}
+			gnOnNewSaleLines = nOnNewSaleLines;
+			if (bEnableSuggestion) {
+				nSuggestionGroup = 0;
+				for (var j = 3; j >= 0; --j) {
+					if (0 == aSuggestionCount[j]) {
+						nSuggestionGroup = j + 1;
+					} else if (aSuggestionCount[j] > aSuggestionCount[j + 1]) {
+						nSuggestionGroup = j + 2;
+					}
+//API.DbgMessageBox("j: " + j + " " + aSuggestionCount[j] + " " + aSuggestionCount[j + 1] + " nSuggestionGroup: " + nSuggestionGroup + " nSaleStatus=" + nSaleStatus);
+				}
+				if (nSuggestionGroup > 0) {
+					var sOperatorSuggestion = "";
+					var sCustomerSuggestion = "";
+					sCODText = PTCODReadSuggestion(nSuggestionGroup);
+					if ("" !== sCODText) {
+						var aCODText = sCODText.split(";");
+						if ("" !== aCODText[0]) {
+							sOperatorSuggestion = aCODText[0];
+						}
+						if ("" !== aCODText[1]) {
+							sCustomerSuggestion = aCODText[1];
+						}
+					}
+					if ("" == sOperatorSuggestion) {
+						sOperatorSuggestion = PTCODSuggestionFamilyOp(nSuggestionGroup);
+					}
+					if ("" != sCustomerSuggestion) {
+						PTCODSetTag("SuggestiveSales/CurrentFile", sCustomerSuggestion);
+						PTCODSetAttribute("SuggestiveSales", "1");
+						gsOperatorSuggestion = "Sugira " + sOperatorSuggestion;
+						PosDisplayText(gsOperatorSuggestion, 1); // this gets overwritten by MSG_BC_SALEOK "Order Ok"
+					}
+					PosChangeTitleBar("hasUpdate", "Sugira " + sOperatorSuggestion);  // FOR TEST
+//					PosShowMessage("sCustomerSuggestion: " + sCustomerSuggestion + " sOperatorSuggestion: " + sOperatorSuggestion);
+				}
+			}
+			sOrderTotal = ltrim(API.formatNumber(nOrderTotal, "###0.00", 7));
+			var nFlash = 0;
+			if (nSaleStatus > 1) {	// if totalled
+				nFlash = 1;
+			}
+			sCODText = "WriteItem " + nFlash + " 1 " + "Tax:"  + sOrderTotal + " 0";
+			Result = npTCLEvalEx(sCODText);
+			PosShowMsgJS(sCODText + " " + Result);
+		}
+	}
+	return(true);
+}
+
+ /** onNewSaleList
+ *
+ * @brief - Hook function.  Formats the incoming order view to be used by the sale panel (display purposes only, this data will not be persisted).
+ *			The incoming order view is sent to this function on the fly (after every ordered/changed item).
+ *			Invokes onNewSaleListCOD for PT COD order information.
+ * @return - changed order view (if necessary) to be displayed on sale panel.
+ * @author - Kalil, modified Jon Smith
+ */
+
+function onNewSaleList(sSalePanelType, sView) {
+	onNewSaleListCOD();
+	if (typeof(consolidateACPanel) == 'function') {
+		sView = consolidateACSalePanel(sView);	// Calls the consolidation mechanism for autocondiment items.
+	}
+	return sView;
+}
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437008b399adfc3c4c55c183f03f598cf6f46e9c23f940be59e81c1643e4dcc390e0b24d1f2f37cda4e7df4a624509321d31d48400010
+ * =================================================================================================================================
+*/

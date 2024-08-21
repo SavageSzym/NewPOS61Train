@@ -1,0 +1,413 @@
+WinEPTS Client 2.5.x Release History
+==============================================
+
+2010-03-11
+----------
+NCRClient.dll: 2.5.1.510
+WE_Client.exe: 2.5.1.432
+wecommon.bpl: 2.5.0.113
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. Repackaged for UK
+
+
+2010-03-09
+----------
+NCRClient.dll: 2.5.1.502
+WE_Client.exe: 2.5.1.430
+wecommon.bpl: 2.5.0.113
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. Generic: 1F8200 tag (RegisterID) removed from Extra data 
+in Auth Req to WinEPTS Server. (This tag is used with TSA only.)
+
+
+2010-03-08
+----------
+NCRClient.dll: 2.5.1.499
+WE_Client.exe: 2.5.1.427
+wecommon.bpl: 2.5.0.107
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+HYPClient.bpl: 2.5.1.74
+HYPKioskCHClient.bpl: 2.5.0.16
+FileLogExtractorSvc.exe 2.5.0.1
+
+1. Generic: Issue in WEClient Interface module (NCRClient.dll) 
+occuring when SetLanguage request is starting while the current 
+CheckCardStatus step is still in progress. In a situation like 
+that, WEClient Interface stops waiting for CheckCardStatus 
+response from WEClient service, but sets a timeout (DefaultTimo, 
+2 min) on waiting of the response to SetLanguage. Since the 
+SetLanguage request was inapropriate, the response to it never 
+comes. So WEClient Interface quits waiting for the response after 
+DefaultTimo expires (after 2 min). From that moment it enables 
+the card checking activity again. 
+
+Raised by: CH. 
+Fixed.
+
+
+2010-03-05
+----------
+NCRClient.dll: 2.5.1.458
+WE_Client.exe: 2.5.1.424
+wecommon.bpl: 2.5.0.111
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. Generic: Parsing of cancellation receipts ended in 'not a valid 
+integer value' exception. Fixed.
+
+
+2010-03-04
+----------
+NCRClient.dll: 2.5.1.456
+WE_Client.exe: 2.5.1.424
+wecommon.bpl: 2.5.0.111
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. Generic: Auth requests (5A) for messages longer than 255
+bytes fixed.
+
+2010-03-01
+----------
+NCRClient.dll: 2.5.1.449
+WE_Client.exe: 2.5.1.420
+wecommon.bpl: 2.5.0.104
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. Repackaged for local use. (English INI)
+2. WEClientConfig: IP port control added on service start.
+
+
+2010-03-01
+----------
+NCRClient.dll: 2.5.1.449
+WE_Client.exe: 2.5.1.420
+wecommon.bpl: 2.5.0.104
+Trace.bpl: 2.5.0.25
+wenet.bpl: 2.5.0.43
+
+1. HU, Loyalty: Handling of chip card operations online added.
+The following new parameter has to be set to 1 in WE_Client.ini:
+
+[Loyalty-001]
+...
+ChipOnline=1
+
+If missing or set to 0, loyalty chip cards are processed offline
+(old-school mode)
+
+
+2010-02-26
+----------
+NCRClient.dll: 2.5.1.448
+WE_Client.exe: 2.5.1.417
+wecommon.bpl: 2.5.0.103
+Trace.bpl: 2.5.0.24
+wenet.bpl: 2.5.0.42
+
+1. N5P5-R implemented. 
+Internal tests only! Not to release to customers!
+
+
+2010-02-22
+----------
+NCRClient.dll: 2.5.1.447
+WE_Client.exe: 2.5.1.395
+wecommon.bpl: 2.5.0.102
+Trace.bpl: 2.5.0.8
+wenet.bpl: 2.5.0.41
+
+1. Regression: Exception for payments without pinpads.
+(Both manual card data and MSR affected.)
+Fixed.
+
+
+2010-02-22
+----------
+NCRClient.dll: 2.5.1.447
+WE_Client.exe: 2.5.1.383
+wecommon.bpl: 2.5.0.102
+Trace.bpl: 2.5.0.8
+wenet.bpl: 2.5.0.41
+
+1. Repackaged for PL
+
+
+2010-01-25
+----------
+NCRClient.dll: 2.5.1.447
+WE_Client.exe: 2.5.1.383
+wecommon.bpl: 2.5.0.102
+Trace.bpl: 2.5.0.8
+wenet.bpl: 2.5.0.41
+
+1. Generic: Hadnling of incoming POS messages with wrong 
+length and code is fixed.
+
+
+2010-01-21
+----------
+NCRClient.dll: 2.5.1.353
+WE_Client.exe: 2.5.1.239
+wecommon.bpl: 2.5.0.76
+Trace.bpl: 2.5.0.8
+wenet.bpl: 2.5.0.37
+
+1. HU Loyalty: First Pinpad Init mode is now managed.
+
+
+2010-01-20
+----------
+NCRClient.dll: 2.5.1.352
+WE_Client.exe: 2.5.1.234
+wecommon.bpl: 2.5.0.75
+Trace.bpl: 2.5.0.8
+wenet.bpl: 2.5.0.37
+
+1. Generic: Regression: Receipt ACK forwarding issue fixed.
+2. Generic: E0 message management fixed.
+
+
+2010-01-20
+----------
+NCRClient.dll			2.5.1.352
+WE_Client.exe			2.5.1.207
+wecommon.bpl			2.5.0.71
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.37
+
+1. Generic: The following functions added to NCRClient.dll:
+function NCRCLPing: integer stdcall;
+function NCRUPBPing: integer stdcall;
+function NCRUPBInit(hClient: THandle; var pOut: tcNCRUPBInitResult; var pIn: tcNCRUPBInitData): longbool stdcall;
+
+
+2010-01-19
+----------
+NCRClient.dll			2.5.1.349
+WE_Client.exe			2.5.1.205
+wecommon.bpl			2.5.0.67
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.37
+
+1. Generic: BerTLV object reading procedure fixed (for lengths > 127)
+according to ISO/IEC 8825.
+
+2. Generic: Extra empty lines on WinEPTS receipt removed.
+
+
+2010-01-13
+----------
+NCRClient.dll			2.5.1.345
+WE_Client.exe			2.5.1.205
+wecommon.bpl			2.5.0.63
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.37
+
+1. HU Loyalty Offline: Sernum returned as Pan now.
+2. Generic: NCRCLRESULT.amount returned now in the format of NCRCLINPUT.amount, 
+that is according to Decimals/CorrectDecimals values of NCRClient.ini.
+
+
+2010-01-12
+----------
+NCRClient.dll			2.5.1.344
+WE_Client.exe			2.5.1.203
+wecommon.bpl			2.5.0.63
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.37
+
+1. Generic: Releasing of UDPServer object leads to high CPU comsuption.
+Fixed.
+
+
+2009-12-17
+----------
+NCRClient.dll			2.5.1.339
+WE_Client.exe			2.5.1.184
+wecommon.bpl			2.5.0.62
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.16
+
+1. Generic: Card Balance operation disabled due to incorrect posID within
+5A Auth request. Fixed.
+
+2. HU: Shell offline: WEClientConfig saves wrong base64 value of the PP crypt
+key. Fixed.
+
+3. HU: Shell offline: WEClient returns the approved result with the receipt
+regardless there was an encryption error while reading from or writing to
+the pinpad. Fixed.
+
+
+2009-12-14
+----------
+NCRClient.dll			2.5.1.339
+WE_Client.exe			2.5.1.173
+wecommon.bpl			2.5.0.61
+Trace.bpl				2.5.0.8
+wenet.bpl				2.5.0.16
+
+1. Generic: WE Interface: Incoming messages from WEClient are now managed 
+via the event queue (TList).
+
+
+2009-12-09
+----------
+NCRClient.dll			2.5.1.333
+WE_Client.exe			2.5.1.157
+wecommon.bpl			2.5.0.60
+Trace.bpl				2.5.0.8
+
+1. Generic, UPB: C6 error response to C3 request has not to containt 
+the receipt field filled in.
+
+2. Generic: Error with WaitForCard after denying a second payment request 
+from POS. Fixed.
+
+3. Generic: bWaitBeforeClearPPDisplay removed for the following cases:
+- Timeout on waiting for input from pinpad
+- No card data read
+- Manual card data input required
+
+4. Generic: 'REMOVE CARD' second line missing in some cases fixed.
+
+
+2009-12-03
+----------
+NCRClient.dll			2.5.1.333
+WE_Client.exe			2.5.1.151
+wecommon.bpl			2.5.0.60
+Trace.bpl				2.5.0.8
+
+1. Unexpected ACKs from POS app are ignored.
+
+2. UPB: No feedback to POS in case of UPB server timeout. Fixed.
+
+3. WEClient blocked and PP in WaitForCard state after PP timeout.
+Regression. Fixed.
+
+4. PP Timeout for WaitForCard command adjusted according to WE_Client.ini
+setting. 
+
+5. WaitForCard repetition + manual card data flow fixed.
+
+6. No ACK forward to WE if CheckCArdRemoval enabled.
+Regression. Fixed.
+
+
+
+2009-12-01
+----------
+NCRClient.dll			2.5.1.330
+WE_Client.exe			2.5.1.131
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.8
+
+1. Generic: UPB error message management fixed
+
+2. Generic: application ping delay fixed.
+
+3. Generic: 'Please wait' after reading a card is back on
+PP display
+
+4. Generic: Repetition of sending of ACK to WE on error if
+ACK received from POS removed.
+
+5. Generic: Trace management: Double message dump towards POS
+removed.
+
+6. Generic: If no data read from a card, no request is sent to
+the server. An immediate response sent to POS instead.
+
+
+2009-11-27
+----------
+NCRClient.dll			2.5.1.328
+WE_Client.exe			2.5.1.99
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.7
+HYPClient.bpl			2.5.1.68
+HYPKioskCHClient.bpl	2.5.0.8
+
+1. CH: Default Information Messages feature implemented.
+
+
+2009-11-26
+----------
+NCRClient.dll			2.5.1.328
+WE_Client.exe			2.5.1.99
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.7
+
+1. Generic: Parsing of Cashback Amount (1F800B) fixed.
+
+
+2009-11-25
+----------
+NCRClient.dll			2.5.1.326
+WE_Client.exe			2.5.1.99
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.7
+
+1. Generic: UPB transaction error management fixed.
+
+
+2009-11-23
+----------
+NCRClient.dll			2.5.1.319
+WE_Client.exe			2.5.1.97
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.7
+
+1. Generic: Card read repetition on card read error is fixed.
+
+
+2009-11-20
+----------
+NCRClient.dll			2.5.1.317
+WE_Client.exe			2.5.1.87
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.6
+
+1. Generic: NCRClient.dll now uses socket functions instead of those
+of Indy.
+
+
+2009-11-20
+----------
+NCRClient.dll			2.5.1.314
+WE_Client.exe			2.5.1.87
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.6
+
+1. Generic: Receiving of multiple-packet UDP messages from PP fixed.
+
+
+2009-11-19
+----------
+NCRClient.dll			2.5.1.314
+WE_Client.exe			2.5.1.80
+wecommon.bpl			2.5.0.59
+Trace.bpl				2.5.0.6
+
+1. Generic: Cancel option added to Option Selection dialog.
+
+2. Generic: New parameter section added to NCRClient.ini:
+[SelectFormCaptions]
+ContinueButton=Continue
+CancelOption=Cancel
+AddCancelOption=1
+
+3. Generic: Removed recreatoin of WE_Client.ini entries in NCRClient.ini.
+
+4. Generic: Numeric key input added for option selection.
+
+5. This is the official release of 2.5.

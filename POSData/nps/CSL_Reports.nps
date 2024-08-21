@@ -1,0 +1,418 @@
+  /** 
+ * @file CSL_Reports.nps
+ * @brief This NPS file implements BusinessComponents Reports.
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Reports
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Reports.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_REPORTS_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_REPORTS='CSL_Reports.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCreateReport</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCreateReport is responsible for creating and printing reports. It's behaviour can be changed by the received parameters.
+ * In java script it should be called:<b>PosCreateReport(dataType, script, flags, custParams, PODtype, serviceList, POSList)</b>
+ * @param dataType - String - Pipe-separated list of data types that should be sent to script for formatting.\n
+ *							  Valid data types are:CASH,PMIX,SOS,HOURLYSALES and VIEW.\n
+ * @param script - String - Optional, NPS script that will format the report. The format of this string is "functionName@npsfile.nps",\n
+ *							where functionName defines a function that will be called in the script npsfile.nps to process the report.\n
+ *							This parameter can be null only in the case that the flag <B>NOSCRIPT</B> is set (see below).\n
+ * @param flags - String - Optional, this parameter can be null or a pipe-separated list of flags to process.\n
+ *							Some flags are understood by the kernell, all defined flags are passed to the NPS script.\n
+ * @param custParams - String - Optional, this optional parameter may contain a string that will be passed to the NPS script.\n
+ *							It can be used if it's needed at any time for a script to receive a customized data.\n
+ * @param PODtype - String - Optional, this optional parameter should only be set if the report flag <B>CONSOLIDATED</B> is defined.\n
+ *							It will then define witch POD Types should be included in the report.\n
+ *							Note that if the flag <B>CONSOLIDATED</B> is defined and this parameter is not set or is null, all POD types will be consolidated.\n
+ *							Possible values for this parameter are any Short POD Name.\n
+ * @param serviceList - String - Optional, this parameter can be null or a pipe-separated list of ServicesIds\n
+ *							To ask which service number the user wants. This can be only the  service type code.\n
+ *							In this case a dialog will be displayed asking the user which is the service number.\n
+ *							The response will be grouped with the service code received to generate a service id.\n
+ * @param POSList - String - Optional, this optional parameter should only be set if the report flag <B>CONSOLIDATED</B> is defined.\n
+ *							It will then define a list of POS that should be included in the report.\n
+ *							Note that if the flag <B>CONSOLIDATED</B> is defined and this parameter is not set or is null, it will enquire all POS configured in Way Station.\n
+ *							Possible values for this parameter are any POS name from network.\n
+ *							POS names must be separeted by a white space character.\n
+ * @success Report was created successfully.
+ * @failure <i>Argument missing</i> - dataType parameter is missing.
+ * @failure <i>Invalid Type</i> - Invalid report type entered.
+ * @failure <i>Invalid State</i> - POS is in an invalid state for generating reports.
+ * @failure <i>POS state Error</i> - failed to get POS state.
+ * @failure <i>No Elements</i> - no elements in the list to create a report.
+ * @sessioncontext <i>"reportPOD"</i> - Read to get report POD type.
+ * @sessioncontext <i>"view"</i> - Read to get the sale view.
+ * @remarks
+ *
+ * Available report flags:
+ *	- <i>CONSOLIDATED:</i>
+ *	Flag used when the report should be consolidated. (Will be processed at Way Station)
+ *	- <i>NOSCRIPT:</i>
+ *	Flag used to skip report script (the resulting report will be the XML). The resulting report will be the raw data.
+ *	- <i>NOPREVIEW:</i>
+ *	Flag used to skip report preview (automatic prints it).
+ *	- <i>DATE:</i>
+ *	Flag used when the report needs a date.
+ *	- <i>TIME:</i>
+ *	Flag used when the report needs a time.
+ *	- <i>NEED_OPENED:</i>
+ *	Flag used to prevent report generation if the POS is not opened.
+ *	- <i>NEED_LOGGED:</i>
+ *	Flag used to prevent report generation if an operator is not logged.
+ *	- <i>SAVE:</i>
+ *	Flag used to save the report for further re-print.
+ *	- <i>MANDATORY:</i>
+ *	Flag used to indicate that the report is mandatory. BC will not return before the report is printed. The BO will not return while the report is not printed.\n
+ *	If any error prevents the report generation, a dialog will pop, asking for the user to select a new printer or retry the report printing.\n
+ *	- <i>ALIAS:</i>
+ *	Flag used to indicate that there is a printer alias.
+ *	- <i>REMOTE:</i>
+ *	Flag used to indicate to use a view with a remote key.
+ *	- <i>SKIP:</i>
+ *	Flag used to skip report printing.
+ *
+ * Property Messages:\n
+ * 	MSG_BC_INVRPTTYPE: Invalid report type.\n
+ *	MSG_BC_PROCESSING: Shown while request is being processed.\n
+ *	MSG_BC_WAYCOMUNIC: Failed to connect to WayStation.\n
+ *	MSG_BC_NOREPORT: Shown when there is no data for business date entered.\n
+ *	MSG_BC_REPSCRITP: Shown when there is an error processing report script.\n
+ */
+function PosCreateReport(dataType, script, flags, custParams, PODtype, serviceList, POSList) {
+	var cmd = "PosCreateReport";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [dataType, script, flags, custParams, PODtype, serviceList, POSList]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosHttpRequest</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosHttpRequest is responsible for sending a post request over the Internet using HTTP protocol.
+ * In java script it should be called:<b>PosHttpRequest(requestType, requestData, URL, acceptType, contentType)</b>
+ * @param requestType - String - Type of request method.\n
+ *							Valid data types are:POST and GET.\n
+ * @param requestData - String - Data to be submited to the server.
+ * @param URL - String - Optional parameter. URL where data should be submited.
+ * @param acceptType - String - Optional parameter. List of accept type expected by the application.
+ * @param contentType - String - Optional parameter. List of content type expected by the application.
+ * @success HTTP request successfully sent.
+ * @failure <i>Response Error</i> - HTTP request response error.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_NOPARAM: Shown when a parameter is missing.\n
+ */
+function PosHttpRequest(requestType, requestData, URL, acceptType, contentType) {
+	var cmd = "PosHttpRequest";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [requestType, requestData, URL, acceptType, contentType]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosPrintNonFiscalReceipt</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosPrintNonFiscalReceipt is responsible for print a receipt.
+ * In java script it should be called:<b>PosPrintNonFiscalReceipt(operation)</b>
+ * @param operation - String - transaction kind (sale, refund, waste, mgrmeal, empmeal etc).
+ * @success Report printed.
+ * @failure <i>Argument Missing</i> - operation parameter is missing.
+ * @failure <i>Create View Error</i> - Cannot create a new view.
+ * @failure <i>Not a String</i> - operation parameter is not a valid string.
+ * @todo This BC needs a revision, it should be deprecated.
+ */
+function PosPrintNonFiscalReceipt(operation) {
+	var cmd = "PosPrintNonFiscalReceipt";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [operation]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosPrintPreview</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosPrintPreview is responsible for open a report screen and shows a print preview.
+ * In java script it should be called:<b>PosPrintPreview(report, alias)</b>
+ * @param report - String - The text (report) to be showed.
+ * @param alias - String - Optional, printer alias name to be set.
+ * @success report preview screen shown.
+ * @failure <i>Argument Missing</i> - report parameter is missing.
+ */
+function PosPrintPreview(report, alias) {
+	var cmd = "PosPrintPreview";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [report, alias]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosPrintText</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosPrintText is responsible for check the Applier program results, send the whole ApplyUpdate process log file
+ * to the waystation and perform final clean up operations.
+ * In java script it should be called:<b>PosPrintText(text)</b>
+ * @param text - String - text to print.
+ * @success Always return true.
+ */
+function PosPrintText(text) {
+	var cmd = "PosPrintText";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [text]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosReportController</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosReportController is Deprecated. Use PosCreateReport instead!.
+ * In java script it should be called:<b>PosReportController()</b>
+ * @failure Show the message: "Deprecated BC PosReportController has been called! Please review your configuration.".
+ * @deprecated Use PosCreateReport instead.
+ */
+function PosReportController(args) {
+	var cmd = "PosReportController";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [args]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRePrintLastReceipt</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRePrintLastReceipt is responsible for send and empty report to the printer.
+ * In java script it should be called:<b>PosRePrintLastReceipt()</b>
+ * @success An empty report was sent to the printer.
+ */
+function PosRePrintLastReceipt() {
+	var cmd = "PosRePrintLastReceipt";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRePrintReport</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRePrintReport is responsible for reprinting a report.
+ * In java script it should be called:<b>PosRePrintReport(dataType, custParams)</b>
+ * @param dataType - String - type of reprint ("ALL","LAST","FILE").
+ * @param custParams - String - Optional custom parameters.
+ * @failure <i>Argument Missing</i> - dataType parameter is missing.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_INVRPTTYPE: Invalid report type.\n
+ */
+function PosRePrintReport(dataType, custParams, preamble) {
+	var cmd = "PosRePrintReport";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [dataType, custParams, preamble]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetDefaultPrinter</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetDefaultPrinter is responsible for setting default printer.
+ * In java script it should be called:<b>PosSetDefaultPrinter(alias)</b>
+ * @param alias - String - Optional parameter, alias to send to the printer.
+ * @success Default printer successfully set.
+ * @failure <i>Just One Printer</i> - Cannot change default printer because there is only one.
+ * @failure <i>List Error</i> - Error retrieving printer list.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_DEFAULTPRINTER: Title of the screen to select new default printer.\n
+ *	MSG_BC_1PRINTER: Shown when there is just one printer or when printer list cannot be retrieved.\n
+ */
+function PosSetDefaultPrinter(alias) {
+	var cmd = "PosSetDefaultPrinter";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [alias]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetReportScope</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetReportScope is responsible for setting some Session Context variables that will be used by PosCreateReport.\n
+ * The variables "reportFlags","reportPOD" and "reportServiceIds" can be set with the use of this BC.\n
+ * They controll PosSetReportScope behaviour.\n
+ * In java script it should be called:<b>PosSetReportScope(flags, PODtype, serviceList)</b>
+ * @param flags - String - Optional, this parameter can be null or a pipe-separated list of flags to process.\n
+ *							This will be set in "reportFlags" session context variable\nPlease see available values bellow.\n
+ * @param PODtype - String - Optional, this optional parameter should only be set if the report flag <B>CONSOLIDATED</B> is defined.\n
+ *							It will then define witch POD Types should be included in the report.\n
+ *							Note that if the flag <B>CONSOLIDATED</B> is defined and this parameter is not set or is null, all POD types will be consolidated.\n
+ *							Possible values for this parameter are any Short POD Name\n
+ *							This will be set in "reportPOD" session context variable\n
+ * @param serviceList - String - Optional, this parameter can be null or a pipe-separated list of ServicesIds\n
+ *							To ask which service number the user wants. This can be only the  service type code.\n
+ *							In this case a dialog will be displayed asking the user which is the service number.\n
+ *							The response will be grouped with the service code received to generate a service id.\n
+ *							This will be set in "reportServiceIds" session context variable.\n
+ * @success Session context variables set.
+ * @failure <i>User Cancelled</i> - User cancelled calculator when asking for service number.
+ * @failure <i>User Confirmation</i> - User do not accepted when asking for confirmation.
+ * @sessioncontext <i>"reportServiceIds"</i> - set with the value received by serviceList parameter followed by entered service number.
+ * @sessioncontext <i>"reportPOD"</i> - set with the value received by PODtype parameter.
+ * @sessioncontext <i>"reportFlags"</i> - set with the value received by flags parameter.
+ * @remarks
+ *
+ * Available report flags:
+ *	- <i>CONSOLIDATED:</i>
+ *	Flag used when the report should be consolidated. (Will be processed at Way Station)
+ *	- <i>NOSCRIPT:</i>
+ *	Flag used to skip report script (the resulting report will be the XML). The resulting report will be the raw data.
+ *	- <i>NOPREVIEW:</i>
+ *	Flag used to skip report preview (automatic prints it).
+ *	- <i>DATE:</i>
+ *	Flag used when the report needs a date.
+ *	- <i>TIME:</i>
+ *	Flag used when the report needs a time.
+ *	- <i>NEED_OPENED:</i>
+ *	Flag used to prevent report generation if the POS is not opened.
+ *	- <i>NEED_LOGGED:</i>
+ *	Flag used to prevent report generation if an operator is not logged.
+ *	- <i>SAVE:</i>
+ *	Flag used to save the report for further re-print.
+ *	- <i>MANDATORY:</i>
+ *	Flag used to indicate that the report is mandatory. BC will not return before the report is printed. The BO will not return while the report is not printed.\n
+ *	If any error prevents the report generation, a dialog will pop, asking for the user to select a new printer or retry the report printing.\n
+ *	- <i>ALIAS:</i>
+ *	Flag used to indicate that there is a printer alias.
+ *	- <i>REMOTE:</i>
+ *	Flag used to indicate to use a view with a remote key.
+ *	- <i>SKIP:</i>
+ *	Flag used to skip report printing.
+ *
+ * Property Messages:\n
+ * 	MSG_BC_REPSRV_INPUT: Shown when asking for service number.\n
+ *	MSG_BC_REPSRV_CONFIRM: Shown in confirmation screen.\n
+ *	MSG_SRV_x: Shown when an specific service type (where x is the service type).\n
+ */
+function PosSetReportScope(flags, PODtype, serviceList) {
+	var cmd = "PosSetReportScope";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [flags, PODtype, serviceList]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosShowVirtualPrinter</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosShowVirtualPrinter is responsible for creating a virtual printer on screen.
+ * In java script it should be called:<b>PosShowVirtualPrinter(simulatorMode)</b>
+ * @param simulatorMode - String - Optional parameter, default value: "floating".
+ * @success Always return true.
+ */
+function PosShowVirtualPrinter(simulatorMode) {
+	var cmd = "PosShowVirtualPrinter";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	return executeBC(cmd, [simulatorMode]);
+}
+
+/** PosReportSOS_CSL
+ *
+ * @brief - This BC creates an SOS report
+ * Return - rval - true if allowed to continue
+ */
+function PosReportSOS_CSL(dataTypes,flags) {
+	var cmd = "PosReportSOS_CSL";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	
+	var ctx=new SessionContext;
+	var report="";
+	var pod="";
+	switch(Number(ctx.get("SelectedButtonValue"))) {
+	case 0:
+		report="reportSosMfy@reports.nps";
+		pod="MFY";
+		break;
+	case 1:
+		report="reportSosDTHourly@reports.nps";
+		pod="DT|*WT";
+		break;
+	case 2:
+		report="reportSosFc@reports.nps";
+		pod="FC";
+		break;
+	case 3:
+		report="reportSosCsr@reports.nps";
+		pod="DT|*WT|FC|MFY";
+		break;
+	case 4:
+		report="reportSosDTDiagnostic@reports.nps";
+		pod="DT|*WT";
+		break;
+	default:
+		return(true);
+	}
+	PosCreateReport(dataTypes,report,flags,"","",pod);
+	return(true);
+}
+
+/** PODFilter_CSL
+ *
+ * @brief - This BC shows/changes the POD Filter used in reports
+ * Return - rval - true if allowed to continue
+ */
+function PODFilter_CSL(change) {
+	var cmd = "PODFilter_CSL";
+	CSL_dbglog(7, SRC_BC_REPORTS, cmd, "Start");
+	
+const reportType=["ALL","FC","DT","WT"];
+const reportButton=["bitmap|postypeall.png","bitmap|postypefc.png","bitmap|postypedt.png","bitmap|postypewt.png"];
+
+	var i=0;
+	// Loops up to length because the very first time reportPOD might not be set!
+	for(;i < reportType.length;i++) {
+		if(PosCheckSessionProperty("reportPOD",reportType[i])) {
+			break;
+		}
+	}
+	if("true"==change) { // Next
+		i++;
+	}
+	if(i >=reportType.length) {
+		i=0;
+	}
+	// either reportPOD was not set or changing from the last to the first...
+	PosChangeButtonProperties(0,reportButton[i]);
+	if("true"==change) { // Next
+		PosSetReportScope("CONSOLIDATED",reportType[i]);
+	}
+	return(true);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d37393437003c5529ad3deaef3f6855a0c6fc8dd8bc2e9408eeb625a5edfa6268360a07d1df1d69cfca1f6477b26e713d2d4b7c2d5106410010
+ * =============================================================================================================================
+*/

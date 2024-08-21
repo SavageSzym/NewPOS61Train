@@ -1,0 +1,319 @@
+ /**
+ * @file CSL_Choices.nps
+ * @brief This NPS file implements BusinessComponents Choices.
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Choices
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Choices.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_CHOICES_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable. */
+SRC_BC_CHOICES='CSL_Choices.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosAutoChoice</b>.
+ *
+ * Persistence:<b>Persisted if auto choice performed</b>\n
+ * The PosAutoChoice is responsible for check the Applier program results, send the whole ApplyUpdate process log file
+ * In java script it should be called:<b>PosAutoChoice()</b>
+ * @success Auto choice successfully executed, new sale list is sent to the UI.
+ * @success No missing choices, just return true.
+ * @failure <i>Serialize auto choice error</i> - An error occurred while serializing the request to auto choice.
+ */
+function PosAutoChoice() {
+	var cmd = "PosAutoChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCanSolveChoice</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCanSolveChoice is responsible for verify if a given product of a selected size can solve a given choice.
+ * In java script it should be called:<b>PosCanSolveChoice(prodCode, sizeSel, choiceCode)</b>
+ * @param prodCode - String - code of product to check.
+ * @param sizeSel - String - size selection, that may modify the original product code.
+ * @param choiceCode - String - choice to verify.
+ * @success The product can solve the given choice.
+ * @failure <i>Argument Missing</i> - any parameter is missing.
+ * @failure <i>Get Description Error</i> - Failed to get product description.
+ * @failure <i>Size Not Found</i> - Size selection not found for the given product.
+ * @failure <i>Not a Choice</i> - Given choiceCode is not a choice.
+ * @failure <i>Choice can not bet solved</i> - This product can not solve given choice.
+ * @sessioncontext <i>"selectedProductWithSize"</i> - read to get the product code if failed to retrieve received prodCode.
+ */
+function PosCanSolveChoice(prodCode, sizeSel, choiceCode) {
+	var cmd = "PosCanSolveChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [prodCode, sizeSel, choiceCode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckChoice</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckChoice is responsible for check if there is an open choice in the sale.\n
+ * If the parameter prodCode is NULL all open choices are checked, otherwise just the ones related to prodCode.\n
+ * Also, if a message is configured it is exhibited, otherwise a default message is shown.\n
+ * Before its execution, this BC checks if the drawer is closed and the system is in sale mode.\n
+ * If a missing choice is found and scrNbr parameter is set, it loads the correspondent screen.
+ * In java script it should be called:<b>PosCheckChoice(prodCode, scrNbr, warning, msg)</b>
+ * @param prodCode - String - code of product (type choice) to check (or null in case of open choice check).
+ * @param scrNbr - String - Optional, screen number to go if the choice is open.
+ * @param warning - String - Optional, indication if a warning message should be shown, it can be "true" or "false".
+ * @param msg - String - Optional, if the warning parameter is "true" this parameter is the message that should be shown.
+ * @param checkCurrentOnly - String - Optional, indication if only the current selected sale item should be checked, it can be "true" or "false", default value is false.
+ * @success Operator not logged or not in an active sale.
+ * @success No pending choices found.
+ * @failure <i>Cash Drawer Opened</i> - The cash drawer is opened.
+ * @failure <i>Argument Missing</i> - prodCode parameter is missing.
+ * @failure <i>Waste or Refund</i> - Transaction is a refund or waste, so no choice validation is performed.
+ * @failure <i>Pending Choices</i> - There is at least one pending choice.
+ * @sessioncontext <i>"selectedProductWithSize"</i> - read to get the product code if prodCode parameter is missing.
+ * @todo Check return codes.
+ * @remarks
+ *
+ * This BC calls PosCheckCashDrawer().\n
+ *
+ */
+function PosCheckChoice(prodCode, scrNbr, warning, msg, checkCurrentOnly) { 
+     var cmd = "PosCheckChoice"; 
+     CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start"); 
+    return executeBC(cmd, [prodCode, scrNbr, warning, msg, checkCurrentOnly]); 
+} 
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckFakeChoices</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckFakeChoices is responsible for check a sale verifying if fake choices are open and asks the
+ * user to fullfill these choices.\n
+ * Fake choices are choices of products that have the default quantity equals to 0 (zero).
+ * In java script it should be called:<b>PosCheckFakeChoices(cancelBtn, sellClosingChoices)</b>
+ * @param cancelBtn - String - bitmap file name of the cancel button for display dialogs.
+ * @param sellClosingChoices - String - Optional, "true" (Default): Closing choices are added to current sale, "false": Closing choices are not added to the sale.
+ * @success Current transaction is Refund or Waste.
+ * @success Current sale is in an undefined sale status.
+ * @success All missing fake choices were fullfilled/checked, according to sellClosingChoices value.
+ * @success There is no missing fake choices in the current sale.
+ * @failure <i>Argument Missing</i> - cancelBtn parameter is missing.
+ * @failure <i>Error Creating List</i> - Error creating list of unsolved choices.
+ * @failure <i>Error Cloning Sale</i> - Error while trying to clone current sale.
+ * @failure <i>Product not salable</i> - Selected product is not salable.
+ * @failure <i>Add item Error</i> - Error adding selected item to the sale.
+ * @failure <i>Error selling Item</i> - Error selling an item.
+ * @failure <i>Error getting product description</i> - An error occurred while trying to get product description.
+ * @failure <i>Invalid Item</i> - Selected item index is invalid.
+ * @remarks
+ *
+ * This BC calls PosDoSale().\n
+ *
+ * Property Messages:\n
+ *   MSG_BC_MISSITEM: Message displayed when a dialog window is used.\n
+ *   MSG_BC_MISSITEM_TITLE: Message used as title of the dialog window.\n
+ */
+function PosCheckFakeChoices(cancelBtn, sellClosingChoices) {
+	var cmd = "PosCheckFakeChoices";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [cancelBtn, sellClosingChoices]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckSaleLineChoice</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckSaleLineChoice is responsible for check if a given sale line or the current selected sale line has open choices.
+ * In java script it should be called:<b>PosCheckSaleLineChoice(saleIndex)</b>
+ * @param saleIndex - String - Optional sale line index, if ommited currently selected line is used.
+ * @success No Choices are open.
+ * @failure <i>Choice Open</i> - Given sale Item has open choices.
+ */
+function PosCheckSaleLineChoice(saleIndex) {
+	var cmd = "PosCheckSaleLineChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [saleIndex]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosClearChoice</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosClearChoice is responsible for clear a choice previously made.\n
+ * Before its execution, this BC checks if the drawer is closed and the system is in sale mode.\n
+ * In java script it should be called:<b>PosClearChoice(prodCode, msg)</b>
+ * @param prodCode - String - Optional, if "true" cancel all choices made, otherwise just the selected (default).
+ * @param msg - String - Optional, if configured this parameter is the message that should be shown in error condition.
+ * @success Selected choice was removed.
+ * @failure <i>Cash Drawer Opened</i> - Cash Drawer is opened.
+ * @failure <i>Operator not logged</i> - There is no operator logged in.
+ * @failure <i>Invalid Index</i> - Selected item index is invalid.
+ * @failure <i>Clear Choice Error</i> - Error trying to clear selected choice.
+ * @failure <i>Reduction not Authorized</i> - This reduction was not authorized.
+ * @failure <i>Serialize Error</i> - Error serializing the request to clear selected choice.
+ * @hook <i>onClearChoiceFail()</i> - called when an error ocurred.
+ * @hook <i>onClearChoice()</i> - called when the clear choice operation is successfull.
+ * @hook <i>onEachReduction()</i> - when a reduction occurs and configured to generate event on each reduction.
+ * @hook <i>onReductionHILOAfterTotal()</i> - when a reduction occurs and also a HILO after total and configured to generate event on limits.
+ * @hook <i>onReductionHALOAfterTotal()</i> - when a reduction occurs and also a HALO after total and configured to generate event on limits.
+ * @hook <I>onReductionHILOBeforeTotal()</i> - when a reduction occurs and also a HILO before total and configured to generate event on limits.
+ * @remarks
+ *
+ * This BC calls PosCheckCashDrawer().
+ *
+ */
+function PosClearChoice(prodCode, msg) {
+	var cmd = "PosClearChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [prodCode, msg]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDisableChoice</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDisableChoice is responsible for allow that a choice, given by a received product code or codes (list), remains unsolved.
+ * In java script it should be called:<b>PosDisableChoice(prodCodes)</b>
+ * @param prodCodes - String - list of choice product codes (separeted by |) that can remain unsolved in a sale.
+ * @success Choices successfully disabled for the given product codes.
+ * @failure <i>Argument Missing</i> - prodCodes parameter is missing.
+ * @failure <i>Disable Choice Failed</i> - Error disabling choice for given product codes.
+ */
+function PosDisableChoice(prodCodes) {
+	var cmd = "PosDisableChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [prodCodes]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoChoice</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoChoice is responsible for performs the choice operation. It checks and decides if an item is a
+ * part of a sold choice product, i.e., it checks if a product (that is going to be sold)
+ * can be sold as a 'choice' of another product.\n
+ * It can also be used to clear a choice previouly made, in which case the parameter scrNbr must be -1.\n
+ * To check if a there is an open choice in the sale, the parameter prodCode must be NULL and no previous product selected.\n
+ * When trying to make a choice, if the choice was not made and the parameter screen is configured, the system loads the screen.\n
+ * Also, if a message is configured it is exhibited, otherwise a default message is shown.\n
+ * Before its execution, this BC checks if the drawer is closed and the system is in sale mode.\n
+ * In java script it should be called:<b>PosDoChoice(prodCode, scrNbr, warning, msg)</b>
+ * @param prodCode - String - code of product to sell (or null in case of open choice check).
+ * @param scrNbr - String - Optional, screen number to go if the choice is possible (-1 to clear a choice).
+ * @param warning - String - Optional, indication if a warning message should be shown, can be "true" or "false".
+ * @param msg - String - Optional, if the warning parameter is "true" this parameter is the message that should be shown.
+ * @success The choice was removed.
+ * @success The choice was completely made.
+ * @success No pending choices found.
+ * @success Not authorized by Maximum Distinct Items (MDI) or Maximum Total Items (MTI) limits.
+ * @success Not authorized by High Quantity Lock Out (HILO) or High Amount Lock Out (HALO) limits.
+ * @failure <i>Cash Drawer Opended</i> - The cash drawer is opened.
+ * @failure <i>Argument Missing</i> - prodCode parameter is missing.
+ * @failure <i>Error removing Choice</i> - Error removing choice.
+ * @failure <i>Pending Choices</i> - There is at least one pending choice.
+ * @failure <i>User not logged</i> - No user logged in.
+ * @failure <i>Not Salable</i> - Given product is not salable.
+ * @failure <i>Error serializing</i> - Error while trying to serialize a product.
+ * @sessioncontext <i>"selectedProductWithSize"</i> - Read if proCode is NULL to check if there is no previous selected product.
+ * @remarks
+ *
+ *	This BC calls: PosCheckCashDrawer()\n
+ *				   PosClearChoice()\n
+ *				   PosCheckChoice()\n
+ *
+ * Property Messages:\n
+ * 	MSG_BC_DESQTY_NOTALLOWED: Shown when still have products to sell, however product is not salable.\n
+ */
+function PosDoChoice(prodCode, scrNbr, warning, msg) {
+	var cmd = "PosDoChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [prodCode, scrNbr, warning, msg]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSaleLineHasOpenChoices</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSaleLineHasOpenChoices is responsible for check if a given sale line or the current selected sale line has open choices.
+ * In java script it should be called:<b>PosSaleLineHasOpenChoices(saleIndex)</b>
+ * @param saleIndex - String - Optional sale line index, if ommited currently selected line is used.
+ * @success No Choices are open.
+ * @failure <i>Choice Open</i> - Given sale Item has open choices.
+ */
+function PosSaleLineHasOpenChoices(saleIndex) {
+	var cmd = "PosSaleLineHasOpenChoices";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd, [saleIndex]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSolveChoiceByTaxRange</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSolveChoiceByTaxRange is responsible for checking a sale filling/redistributing choices solution according to tax rate.
+ * In java script it should be called:<b>PosSolveChoiceByTaxRange()</b>
+ * @success Always return true.
+ */
+function PosSolveChoiceByTaxRange() {
+	var cmd = "PosSolveChoiceByTaxRange";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSolveLineChoices</b>.
+ *
+ * Persistence:<b>Persisted if solve choices performed</b>\n
+ * The PosSolveLineChoices is responsible for check a sale line verifying if open choices can be solved with one of its other lines.
+ * In java script it should be called:<b>PosSolveLineChoices()</b>
+ * @success Successfull execution.
+ * @failure <i>Choices not Solved</i> - Error when trying to solve choices with one of its other lines.
+ */
+function PosSolveLineChoices() {
+	var cmd = "PosSolveLineChoices";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+    return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoMultiChoice</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoMultiChoice counts the quantity of open choices that can be satisfied by the product passed as parameter.
+ * In java script it should be called:<b>PosDoMultiChoice(prodCode)</b>
+ * @param prodCode - String - product code.
+ * @success Successfull execution.
+ * @failure <i>Choices not Solved</i> - Error when trying to solve choices with one of its other lines.
+ */
+function PosDoMultiChoice(prodCode) {
+	var cmd = "PosDoMultiChoice";
+	CSL_dbglog(7, SRC_BC_CHOICES, cmd, "Start");
+	return executeBC(cmd, [prodCode]);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d37393437009f2521094b61f277a27df64fe39a5d57c4041c2d01167adb13a765227e694dce709749f5b17aa328c533db3c9991700dc2430010
+ * =============================================================================================================================
+*/

@@ -1,0 +1,3641 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCEvents.nps
+* This NPS file implements Event Handlers for Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00	25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*			28.01.2010	Olga Illenseer		Changed all API.SLog true API.dbg (reason: VSI suggestion)
+* 2.50.03	19.02.2010	MihaiSecareanu	Add start cumstom program at POS start up (onBeginInitiliaze)
+* 2.52.00	08.04.2010	Mihai Secareanu	Correct onItemSell to show indicator on KVS every time; modify onSaleStartJS and uncomment onChoiceMade according to VSI sugesstion
+* 2.53.00	30.04.2010	Mihai Secareanu    correct fix for onItemSell function
+* 2.54.00	25.04.2010	Mihai Secareanu	optimise the call for poscretereport for getting the businesdate, storeid and operator id (set global variables for log out and day close event in order to call the 		*									poscreatereport
+*										OnSelectedItem implement parameter to ignore the ERC logic
+*										optimize the call for ondbiteration (the sot-redb values are read just once)
+* 2.54.06 	08.07.2010	Mihai Secaraenu	PT manager card login, use the StoreLegacyId now 
+*
+* 2.55.00	29.07.2010	Mihai Secareanu 
+*	 		14.07.2010	Mihai Secareanu	Add support for discount authority
+*			16.07.2010 	Mihai Secareanu   	Family pack Voucher implementation	
+*			20.07.2010 	Mihai Secaraenu   	Do not alow to log cashier on ot/cs or cs mode.		
+*			22.07.2010	Mihai Secareanu   	Remove manager authorization for reduce item and amount after total in case of kiosk. 
+*								           	Update familyVoucher for on reduce item before total in order to always return true even for kiosk in pos mode
+* 2.55.01	12.08.2010 	Mihai Secareanu
+*			09.08.2010 	Mihai Secareanu 	Script error for in promo authority (wrong commented line)in function onPromoItem)  
+* 2.55.02	18.08.2010	Olga Illenseer		implement batch hook in onWorkFlowAfterExec for defined workflows
+*										implement reboot in hook onDayOpened
+*
+* 2.56.02	07.10.2010	Mihai Secareanu		correct e-cash cashless call for FR in onEndofDay ; remove initiCashelss in case of order taker
+* 2.56.05	08.11.2010	Mihai Secareanu 		change the place where the store id is readed for PT card login
+* 2.56.07	07.12.2010	Mihai Secareanu  	update the place from where the PromoItemAuthorityLevel, PromoItemAuthorityLimits , DiscountAuthorityLevel, DiscountAuthorityLimits are read
+								enable or disable the kiosk network status check at start up	
+* 2.56.16	18.03.2011	Mihai Secareanu
+* 							add support for MCR alert and blocked products 		
+*							call KioskInitEurecs (for FR CSO) in onEndInitialize		
+*		30.05.2011	Mihai Secaraenu	Add 6.11.6 implementation for print reduction receipts				
+*
+* 2.58.00	18.06.2011	Mihai Secareanu	change onItemListPos according to newPos6.1.17 RC14 sample scripts
+*							add onAdjustViewForEvmrOverride from RC15 sample scripts			
+*							change onChoiceMade according to RC16 sample scripts
+*							add onDeniedSizeSelection according to RC17 sample scripts
+* 2.58.02	13.07.2011	Mihai Secarenu	add constants PROD_SALABLE
+ */
+
+var TENDER_BILLABLE_SALE=16
+
+var GLOBAL_OUTAGEFILE_LAST_ACCESS_TIME=-1;			// Part of TP-UI feature (Kiosk)
+var GLOBAL_DAY_PART_DEFAULT=-9;						// Part of TP-UI feature (Kiosk)
+var GLOBAL_DAY_PART_MENU=GLOBAL_DAY_PART_DEFAULT;	// Part of TP-UI feature (Kiosk)
+var GLOBAL_CARD_READER_EVT=-1;						// NPS-5801 - Contains the last received card reader event.
+var GLOBAL_ERC = false;								//parameter that will disable/enable the ERC logic in onSelectedItem
+var GLOBAL_DBIterate = false;						//this is a counter for dbIterate to be sure that we just read once the store-db configuration.
+var GLOBAL_familypackflag ="";
+
+// Product "salability"
+const PROD_SALABLE_OK=0;						//!< Product is salable
+const PROD_SALABLE_UPGRADE=1;					//!< Product not salable due to upgrade
+const PROD_SALABLE_POD=2;						//!< Product not salable due to POD
+const PROD_SALABLE_NOTFOUND=3;					//!< Product not salable becuase was not found
+const PROD_SALABLE_NOTINPROGRESS=4;				//!< Product not salable because sale is not in progress
+
+ /** onNewSaleList
+ *
+ * @brief - Formats the incoming order view to be used by the sale panel (display purposes only, this data will not be persisted).
+ *			The incoming order view is sent to this function on the fly (after every ordered/changed item).
+ * @return - changed order view (if necessary) to be displayed on sale panel.
+ * @author - Kalil
+ */
+function onNewSaleList(sSalePanelType, sView) {
+	// Calls the consolidation mechanism for autocondiment items.
+	return consolidateACSalePanel(sView);
+}
+ 
+/** consolidateACSalePanel
+ *
+ * @brief - Consolidates the autocondiment items and changes its level to zero. (Part of feature PLE-194 : Auto condiment)
+ * @return - New order view having all autocondiments consolidated and its level set to zero.
+ * @author - Kalil
+ */
+function consolidateACSalePanel(sView) {
+ 	if (sView == null) {
+		return null;
+	} else {
+		try {
+			var view 			= new XML(sView);
+			var acItemsList 	= new Array();
+			var viewWrapper		= new StringBuffer();
+			// assertPromoQuantities(view);
+			// Removes all the auto-condiment items from the view.
+			for (var j = 0; j < view.ItemView.length(); ++j) {
+				var isAC 		= view.ItemView[j].AutoCondiment;
+				var acDisplay 	= view.ItemView[j].ACDisplay;
+				if (isAC=='true') {
+					var acItemView 	= view.ItemView[j];
+					var acLevel 	= new Number(acItemView.level);
+					var parentsQty 	= getParentsQuantity(view, j, acLevel);
+					if (displaySalePanel(acDisplay)) {
+						acItemView.quantity *= parentsQty;
+						// Consolidates the ACs based on the product code.
+						consolidateACItem(acItemView);
+					}
+					delete view.ItemView[j]; 
+				}
+			}		
+			// Removes the AC zombie parents.
+			removeACZombieParents(view);
+			// Re-adds the joined auto-condiment items to the view.
+			for (var x=0; x < acItemsList.length; x++) {
+				view.appendChild(acItemsList[x]);
+			}
+			viewWrapper.append(view.toXMLString());
+			return viewWrapper;
+		} catch(ex) {
+			API.dbg("FATAL ERROR: Could not handle auto-condiments on the view, due to: " + ex);
+			return sView;
+		}
+	}
+	
+	function assertPromoQuantities(view) {
+		try {
+			var promoId  = 0;
+			var promoQty = 0;
+			for (var j = 0; j < view.ItemView.length(); ++j) {
+				var isAC 	= view.ItemView[j].AutoCondiment;
+				var item  	= view.ItemView[j];
+				var level 	= new Number(item.level);
+				//item.dtName = "(" + item.quantity + "x)" + item.productCode + "." + item.dtName;
+				if (level == 0) {
+					promoQty = new Number(item.quantityPromo);
+					promoId = item.promo.@id;
+				} else if ((promoQty > 0) && (isAC=='true')) {
+					var parentQty 	= getLevelQuantity(view, j, level);
+					item.quantityPromo = (promoQty * parentQty * new Number(item.quantity));
+					delete item.promo;
+					var promo = new XML('<promo>' + item.quantityPromo + '</promo>');
+					promo.@id = promoId;
+					item.appendChild(promo);
+				}
+			}
+		} catch (ex) {
+			API.dbg("FATAL ERROR: Could not fix promo quantities, due to: " + ex);
+		}
+		/*
+		 * Gets the quantity of a given level. 
+		 * @author - Kalil
+		 */	
+		 function getLevelQuantity(view, curIndex, level) {
+			try {
+				for (var x=curIndex;x>=0;x--) {
+					if (new Number(view.ItemView[x].level) < level) {
+						return new Number(view.ItemView[x].quantity);
+					}
+				}
+			} catch (ex) {
+				API.dbg("FATAL ERROR: Could not get the quantity of the previous level, due to: " + ex);
+			}
+			return 1;
+		}	
+	}	
+	
+	/*
+	 * Removes the AC zombie parents.
+	 * @author - Kalil
+	 */
+	function removeACZombieParents(view) {
+		//addLogKFG("===>STARTED CLEANUP<===");
+		for (var j=0; j<view.ItemView.length(); ++j) {
+			var acDNAPath		= new Number(view.ItemView[j].acDNAPath);
+			var isLastElement 	= (j == view.ItemView.length() - 1);
+			//addLogKFG(API.replicate(" ", new Number(view.ItemView[j].level)) + new Number(view.ItemView[j].level) + ", Sel:" + view.ItemView[j].currentSelected + ", Index:" + j + ", Name:" + view.ItemView[j].productCode + "-" + view.ItemView[j].dtName + " =>[" + acDNAPath + "]");
+			if (acDNAPath==1) {
+				if (!hasChild(j)) {
+					// Has no child and it was linked to an AC item, lets check if it is a zombie parent.
+					//addLogKFG("    NO CHILD.");
+					if (removeZombieParent(j)) {
+						//addLogKFG("    ***<RESETED>***    ");
+						// Lets reset it and starts again, we dont know if we left the grandparent as a zombie.
+						j=-1;
+					}
+				}
+			}
+		}
+		// Lets remove the DNA information.
+		for (var j = 0; j < view.ItemView.length(); ++j) {
+			var acDNAPath = new Number(view.ItemView[j].acDNAPath);
+			if (acDNAPath == 1) {
+				delete view.ItemView[j].acDNAPath;
+			}
+		}
+		//addLogKFG("===>FINISHED<===");
+		
+		/*
+		 * Verifies if the given item index has children items.
+		 * @author - Kalil
+		 */
+		 function hasChild(curIndex) {
+			var level = new Number(view.ItemView[curIndex].level);
+			var isLastElement = (j == view.ItemView.length() - 1);
+			if ((!isLastElement) && (level < new Number(view.ItemView[curIndex+1].level))) {
+				return true;
+			}
+			return false;
+		}
+
+		/*
+		 * Removes the zombie parent. It will only be preserved if it has at least one of the following characteristics:
+		 * 		1) OPENED CHOICE (MUST SHOW OPENED CHOICES)
+		 * 		2) GRILLED ITEMS (MUST SHOW GRILLED PRODUCTS)
+		 * 		3) NON ZERO PRICE (COST NOT INCLUSE)
+		 *      4) QUANTITY GREATER THAN ZERO (MUST SHOW VOID ITEM)
+		 *		5) PROMO QUANTITY NOT EQUALS TO ZERO (MUST SHOW PROMOTED ITEMS)
+		 * @author - Kalil
+		 */
+		function removeZombieParent(index) {
+			var quantity = new Number(view.ItemView[index].quantity);
+			var promoQty = new Number(view.ItemView[index].quantityPromo);
+			var totalPrice = new Number(view.ItemView[index].totalPrice);
+			var totalPriceBP = new Number(view.ItemView[index].BPTotalPrice);
+			var isGrillLine = view.ItemView[index].isGrillLine;
+			var productType = new Number(view.ItemView[index].productType);	// OPEN CHOICE=4
+			if ((totalPriceBP == 0) 	&& 
+				(promoQty == 0) 		&& 
+				(quantity > 0) 			&& 
+				(productType != 4) 		&& 
+				(isGrillLine == 'false')&& 
+				(totalPrice == 0)) {
+				//view.ItemView[index].dtName = "(DEL)" + view.ItemView[index].dtName;				
+				//addLogKFG("    **REMOVED** " + view.ItemView[index].dtName);
+				delete view.ItemView[index]; 
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	/*
+	 * Calculates the parents quantity. 
+	 * @author - Kalil
+	 */	
+	 function getParentsQuantity(view, curIndex, curLevel) {
+		try {
+			var qty = 1;
+			for (var x=curIndex;x>=0;x--) {
+				if (new Number(view.ItemView[x].level) < curLevel) {
+					curLevel = new Number(view.ItemView[x].level);
+					qty *= new Number(view.ItemView[x].quantity);
+					// Creates the AC DNA indicating the genealogy path, so we 
+					// can find the its possible zombie parents.
+					view.ItemView[x].acDNAPath = "1"; 
+					if (curLevel == 0) {
+						break;
+					}
+				}
+			}
+			return qty;
+		} catch (ex) {
+			API.dbg("FATAL ERROR: Could not calculate parents quantity for auto-condiments, due to: " + ex);
+			return 1; // At least keeps the AC default quantity.
+		}
+	}
+	
+	/*
+	 * Verifies the AC item can be shown on sale panel.
+	 *
+	 *  1) OT: 		Does not display auto condiments (In any situation).
+	 *  2) OT/CS: 	Displays the auto condiments on the sales panel only if the order was recalled
+	 *  3) CS: 		Displays the auto condiments on the sales panel
+	 * @author - Kalil
+	 */	
+	 function displaySalePanel(acDisplay) {
+		if ((PosCheckSessionProperty("workingMode","orderTaker")) || 
+			((PosCheckSessionProperty("workingMode","both") && (!PosCheckSessionProperty("saleRecalled","true"))))) {
+			return false;
+		}
+		var props = acDisplay.split("|");
+		for (var w=0;w<props.length;w++) {
+			if (props[w]=="pos") {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/*
+	 * Consolidates the incoming order items.
+	 * @author - Kalil
+	 */
+	function consolidateACItem(acItemView) {
+		// Auto-condiment must be in the level zero.
+		acItemView.level 			= 0; 	
+		// Auto-condiment item does not accept non-zero price.
+		acItemView.unitPrice		= 0;	
+		acItemView.netUnitPrice		= 0;
+		acItemView.unitTax			= 0;
+		acItemView.totalPrice		= 0;
+		acItemView.netTotalPrice	= 0;
+		acItemView.totalTax			= 0;
+		acItemView.ADTotalPrice		= 0;
+		acItemView.ADNetTotalPrice	= 0;
+		acItemView.ADTotalTax		= 0;
+		// Is not selected any more.
+		acItemView.currentSelected  = 'false';
+		var sz = acItemsList.length;
+		for (var x=0; x < sz; x++) {
+			var item = acItemsList[x];
+			if (item.productCode == acItemView.productCode) {
+				// By design, does not support grilled quantities. (AC items are not grillable)
+				var promoQty		= (new Number(item.quantityPromo) 	+ new Number(acItemView.quantityPromo));
+				item.quantity 		= (new Number(item.quantity) 		+ new Number(acItemView.quantity));
+				item.quantityPromo	= promoQty;
+				if (promoQty > 0) {
+					var promo = new XML('<promo>' + promoQty + '</promo>');
+					promo.@id = getPromoId(item, acItemView);
+					delete item.promo;
+					item.appendChild(promo);
+				}
+				return;
+			}
+		}
+		// Item was not found in the list, lets add it.
+		acItemsList[sz] = acItemView;
+	}
+
+	function getPromoId(item, acItemView) {
+		if (new Number(item.quantityPromo) > 0) {
+			return item.promo.@id;
+		} else {
+			return acItemView.promo.@id;
+		}
+	}
+}
+
+/**
+ * \brief Entry point called by kernel in order to consolidate a view
+ * \param [in] view - View to consolidate in string format
+ * \return Consolidated view in string format
+ */
+function onConsolidateView(view) {
+    var cnView = new ConsolidatedView(view);
+    return cnView.consolidate();
+}
+
+ /** onCardReaderEvt
+ *
+ * @brief - Receives an external card reader event. This function is called by the library nGUICL:GuiCLCardReaderEvent() as
+ *          a callback from external drivers sych as Eurecs/Sotec.
+ * 
+ * XML sample:
+ * 
+ *	<Event type="ASYNC" name="CARD_READER">
+ *	   <Parameter name="Event" value="1"/> // 1=CARD INSERTED, 2=CARD REMOVED, 3=INCOMPLETE READ
+ *	</Event>
+ *
+ * @return - TRUE when the event could be sent to UI driver.
+ * @author - Kalil
+ */
+function onCardReaderEvt(crEvt) {
+	var params = Array("Event|" + crEvt);
+	var xml = lCreateKioskEvent("ASYNC", "CARD_READER", params);
+	GLOBAL_CARD_READER_EVT = crEvt;
+	return PosSendUICmd(xml);
+}
+
+/** onTPUIHook
+ *
+ * @brief - This feature is part of external Kiosk UI (TPUI). This function is called by the npGUIExt driver every (n) seconds.
+ * @return - Always TRUE.
+ * @author - Kalil
+ */
+function onTPUIHook() {
+
+	// Verifies if the outage file was changed/created and sends it to the TPUI.
+	handleOutageFileChanges();
+	
+	// Verifies which is the state of the daypart menu (breakfast, day, both, default).
+	handleDayPartMenuChanges();
+	
+	return(true);
+	
+	/*
+	 * @brief - Sends the outage file (when change) to TP UI.
+	 * 
+	 * XML Sample:
+	 * 
+	 * <?xml version="1.0" encoding="UTF-8"?>
+	 * <Event type="ASYNC" name="CONFIGURATION" action="PROD_OUTAGE_DB">
+	 * 	  <Payload>..Outage file as an inner XML (CDATA)...</PayLoad>
+	 * </Event>
+	 * 
+     * @author - Kalil
+	 */
+	function handleOutageFileChanges() {
+		try {
+			var hlp 		= new BusinessObjectHelper();
+			var posDataPath	= hlp.PosGetDataDir();
+			var outageFile  = posDataPath + "/prodoutage.xml";
+			var szProps 	= hlp.PosGetFileProperties(outageFile);
+			if (szProps == null) {
+				GLOBAL_OUTAGEFILE_LAST_ACCESS_TIME = 0;
+			} else {
+				var fProps 			= szProps.split("|");
+				var fSize 			= Number(fProps[0]);
+				var fCreationTime 	= Number(fProps[1]);
+				var fLstAccessTime 	= Number(fProps[2]);
+				var fLstWriteTime 	= Number(fProps[3]);
+				if (GLOBAL_OUTAGEFILE_LAST_ACCESS_TIME != fLstAccessTime) {
+					if (GLOBAL_OUTAGEFILE_LAST_ACCESS_TIME != -1) {
+						var outageFileBuffer = hlp.PosReadFile(outageFile);
+						if (outageFileBuffer == null) {
+							return;
+						}
+						sendXML("CONFIGURATION", "PROD_OUTAGE_DB", null, outageFileBuffer);
+					}
+					GLOBAL_OUTAGEFILE_LAST_ACCESS_TIME = fLstAccessTime;
+				}			
+			}
+		} catch(ex) {
+			PosShowMessage("Failed while checking outage file changes, due to: " + ex);
+		}
+	}
+	
+	/*
+	 * @brief - Sends the new day part menu to the TP UI. If daypart is not changed (default), the XML message is not sent.
+	 * 
+	 * XML Sample:
+	 * 
+	 * <?xml version="1.0" encoding="UTF-8"?>
+	 * <Event type="ASYNC" name="CONFIGURATION" action="DAY_PART_MENU">
+	 * 	  <Parameter name="dayPartMenu" value="BREAK_FAST_MENU"/>
+	 * </Event>
+	 * 
+     * @author - Kalil
+	 */
+	function handleDayPartMenuChanges() {
+		try {
+			var hlp 	= new BusinessObjectHelper;
+			var ctx		= new SessionContext;
+			var isBF	= ctx.get("BreakfastTime");
+
+			//PosShowMessage("isBF " + isBF + ", GLOBAL_DAY_PART_MENU " + GLOBAL_DAY_PART_MENU);
+			
+			if (isBF != null && ((isBF == "true") || (isBF == "false"))) {
+				ctx.set("BreakfastTime", null);
+				if (GLOBAL_DAY_PART_MENU == GLOBAL_DAY_PART_DEFAULT) {
+					// Default was changed
+					if (isBF == "true") {
+						GLOBAL_DAY_PART_MENU = 0; // BREAKFAST
+					} else {
+						GLOBAL_DAY_PART_MENU = 2; // BOTH
+					}
+					sendXML("CONFIGURATION", "DAY_PART_MENU", ["dayPartMenu|" + decodeDPM(GLOBAL_DAY_PART_MENU)], null);
+				} else {
+					if ((isBF == "true" && GLOBAL_DAY_PART_MENU == 0)) {
+						// do nothing
+					} else if ((isBF == "false" && GLOBAL_DAY_PART_MENU == 2)) {
+						// do nothing
+					} else {
+						GLOBAL_DAY_PART_MENU = GLOBAL_DAY_PART_DEFAULT;
+						sendXML("CONFIGURATION", "DAY_PART_MENU", ["dayPartMenu|DEFAULT"], null);
+					}
+				}
+			}
+			return true;
+		} catch(ex) {
+			PosShowMessage("Failed while checking day-part menu, due to: " + ex);
+		}
+		return false;
+	
+		/**
+		 * @brief - Decodes the configured day part menu.
+		 * @return - Decoded daypart.
+		 */
+		function decodeDPM(dayPart) {
+			var DP_BF 		= 0;						// Break-Fast menu
+			var DP_DAY		= 1;						// Day menu
+			var DP_BF_DAY	= 2;						// Break-Fast and Day menu (Both)
+			if (dayPart == DP_BF) {
+				return "BREAKFAST_MENU";
+			} else if 	(dayPart == DP_DAY) {
+				return "DAY_MENU";
+			} else if 	(dayPart == DP_BF_DAY) {
+				return "BREAKFAST_DAY_MENU";
+			} else {
+				return "UNDEFINED_DAYPART_CODE";
+			}
+		}
+	}	
+
+	/*
+	 * @brief - Sends the new day part menu to the TP UI. If daypart is not changed (default), the XML message is not sent.
+	 * 
+	 * XML Sample:
+	 * 
+	 * <?xml version="1.0" encoding="UTF-8"?>
+	 * <Event type="ASYNC" name="CONFIGURATION" action="DAY_PART_MENU">
+	 * 	  <Parameter name="dayPartMenu" value="BREAK_FAST_MENU"/>
+	 * </Event>
+	 * 
+     * @author - Kalil
+	 */
+	function ______handleDayPartMenuChangesOLD() {
+		try {
+			var hlp 	= new BusinessObjectHelper;
+			var hasGot	= hlp.PosGetDayPart();
+			var ctx		= new SessionContext;
+			if (hasGot) {
+				var dpCur 		= ctx.get("CURRENT_DAYPART");		
+				var dpCfg  		= ctx.get("CONFIGURED_DAYPART");	// (-1 it the default DEFAULT)
+				var dpRemote 	= ctx.get("BreakfastTime");
+				if (dpCfg == -1) {
+					// Using the default from store-db file.
+					if (GLOBAL_DAY_PART_MENU != GLOBAL_DAY_PART_DEFAULT) {
+						// The configuration has been switched to default, need to inform the Kiosk to use the store-db configuration (default).
+						GLOBAL_DAY_PART_MENU = GLOBAL_DAY_PART_DEFAULT;
+						sendXML("CONFIGURATION", "DAY_PART_MENU", ["dayPartMenu|DEFAULT"], null);
+					}
+				} else {
+					// store wide daypart has been changed
+					if (GLOBAL_DAY_PART_MENU != dpCur) {
+						// The configuration is different from what we have. 
+						var dayPart     = Number(dpCur);			// New day part menu
+						var decodedMenu	= decodeDPM(dayPart);		// Decoded day part menu
+						// Sends the new daypart configuration
+						GLOBAL_DAY_PART_MENU = dpCur;
+						sendXML("CONFIGURATION", "DAY_PART_MENU", ["dayPartMenu|" + decodedMenu], null);
+					}
+				}
+			}
+			return true;
+		} catch(ex) {
+			PosShowMessage("Failed while checking day-part menu, due to: " + ex);
+		}
+		return false;
+	
+		/**
+		 * @brief - Decodes the configured day part menu.
+		 * @return - Decoded daypart.
+		 */
+		function decodeDPM(varPart) {
+			var DP_BF 		= 0;						// Break-Fast menu
+			var DP_DAY		= 1;						// Day menu
+			var DP_BF_DAY	= 2;						// Break-Fast and Day menu (Both)
+			if (dayPart == DP_BF) {
+				return "BREAKFAST_MENU";
+			} else if 	(dayPart == DP_DAY) {
+				return "DAY_MENU";
+			} else if 	(dayPart == DP_BF_DAY) {
+				return "BREAKFAST_DAY_MENU";
+			} else {
+				return "UNDEFINED_DAYPART_CODE";
+			}
+		}
+	}	
+	
+	/**
+	 * @brief - Sends the XML message with the given content.
+	 */
+	function sendXML(name, action, parameters, payload) {
+	    var xml = new StringBuffer();
+	    xml.append(GLOBAL_UTF8_PROLOG_XML);
+	    xml.append("<Event ");
+	    {
+	        xml.append(" type=\"ASYNC\"");
+	        xml.append(" name=\"" + name + "\"");
+	        xml.append(" action=\"" + action + "\"");
+	        xml.append(">\n");
+	        if (parameters != null) {
+				for(var zz=0;zz < parameters.length; zz++) {
+					var par = parameters[zz].split("|");
+					xml.append("\t<Parameter name=\"" + par[0] + "\" value=\"" + par[1] + "\"/>\n");
+				}
+	        }
+        	if (payload != null) {
+		        xml.append("\t<Payload>\n");
+			        xml.append("\t\t<![CDATA[");
+		        	xml.append(payload);
+			        xml.append("]]>\n");
+		        xml.append("\t</Payload>\n");
+	        }
+	    }
+	    xml.append("</Event>");
+		PosSendUICmd(xml.toString());
+	}
+}
+
+ /**onWorkFlowAfterExec
+ *
+ * @brief - Receives the workflow name which has been performed and its last step result.
+ * @return - rval - Always (true)
+ * @author - kalil
+ */
+function onWorkFlowAfterExec(wfName, rc) {
+
+	if(rc == true && typeof(BusinessObjectHelper) != "undefined")
+	{
+		//PosShowMessage("onWorkFlowAfterExec wfName: " + wfName + " rc: " + rc + "");
+		//18.08.2010 OI check if a workflow has a batch hook
+		//Example:
+		//<Section name="BatchCalls">
+		//	<Parameter name="WF_UnblockPOS" value="e:\NewPos61\bin\unblock.bat"/>
+		//</Section>
+		var hlp = new BusinessObjectHelper;
+		var cmdLine = hlp.findParamInSectionWide(wfName,"BatchCalls");
+
+		if(cmdLine != null && cmdLine!= "")
+		{
+			//PosShowMessage(cmdLine);
+			//run the batchfile
+			PosRunOSCommand(cmdLine);
+		}
+	}
+	
+	if ((PosCheckSessionProperty('EXT_UI','true')) && (wfName != "WF_Kiosk_Hook")) {
+		var boHelper = new BusinessObjectHelper();	
+		var status = ((rc) ? "SUCCESS" : "FAIL");
+		var view = boHelper.getCurrentView();
+		
+		if (PosCheckSessionProperty('ON_TENDER','true')) {
+			PosRemoveSessionProperty('ON_TENDER');
+			if (view == null) {
+				// Has reached the due amount.
+				view = boHelper.getLastSaleView()
+			}
+		}
+		return PosDoActionFinishKioskJS(wfName, status, view);
+	}
+	return(true);
+}
+ 
+/**onEndInitialize
+ *
+ * @brief - This function handles onEndInitialize event
+ * Return - rval - True
+ */
+function onCODRoutingChanged()
+{
+	// Should be in Sale mode (operator logged and not alreday performing a transaction
+	if(PosIsInSaleMode("false")) {
+		// Refresh screen
+		PosRefreshButtons();
+	}
+	return(true);
+}
+
+
+/**onBeginInitialize
+ *
+ * @brief - This function handles onBeginInitialize event
+ * Return - rval - True
+ */
+function onBeginInitialize() {
+	SetupTelequipt();
+	//SetUpEverest();
+	SetUpEurecs();
+	//write sotec version file
+	var xmlVersion		= new XML(API.getXMLFile("../posdata/nps/SOTEC_VERSION.ver"));
+	
+	API.dbg("***************SOTEC NPS  V E R S I O N***************");
+	for( var i=0; i<xmlVersion.general.Parameter.length();i++)
+	{
+		API.dbg(xmlVersion.general.Parameter[i].@name +": " + xmlVersion.general.Parameter[i].@value);
+	}
+	API.dbg("***************************************************");
+	
+	//before everything for france we need to do this test
+	hlp = new BusinessObjectHelper;
+	//test to see if the files are in there 
+	//get all files that are needed
+	var files  = hlp.findParamInSectionWide("TestingCondition","StartUpCall");
+	var programToStart =  hlp.findParamInSectionWide("ProgramToStart","StartUpCall");
+	var quitOnFail =  hlp.findParamInSectionWide("QuitOnFail","StartUpCall") =="true";
+	var folderPath =  hlp.findParamInSectionWide("FolderPath","StartUpCall");
+	if(folderPath+""=="" || folderPath ==null)  //default path set to root
+	{
+		folderPath ="/";
+	}
+	API.dbg("StartupCall "+files +" "+programToStart +" "+quitOnFail);
+	
+	var found;
+	var neededFiles="";
+	if(files+""!="" && files !=null)
+	{
+		neededFiles = files.split(";");
+	}
+	var arrProgram ="";
+	if(programToStart+""!="" && programToStart !=null)
+	{
+		arrProgram = programToStart.split(";");
+	}
+	
+	//get all files in bin
+	var filesName = File.listFiles(folderPath);
+	if(filesName == undefined)
+	{
+		PosShowMessage("Startup file verification: Wrong starting path ("+folderPath+")");
+		if(quitOnFail ==true)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	for(var i=0;i<arrProgram.length; i++)
+	{
+		found =true;
+		//get the necessary files for the first application that must be started
+		if(i< neededFiles.length)  //some fiels may not need additional files for starting
+		{
+			var appFiles = neededFiles[i].split("|");
+			for(var j=0; j< appFiles.length; j++)
+			{
+				if(searchFile(filesName, appFiles[j]) == false)
+				{   //the file was not found show a message and abort the loading
+					API.dbg("The file "+ appFiles[j] +" was not found");
+					found =false;
+					if(quitOnFail ==true)
+					{
+						PosShowMessage("MSG_STARTUPCALL_MISSINGFILE",appFiles[j]);
+						return false;
+					}
+				}
+			}
+		}
+		//all files were found so we can start the application 
+		//first test if the aplpication  that must start  exists
+		if(searchFile(filesName, arrProgram[i]) && found == true)
+		{
+			//start the application
+			if(PosRunOSCommand(arrProgram[i]) == false)
+			{
+				PosShowMessage("MSG_STARTUPCALL_WARNING_MISSINGFILE",arrProgram[i]);
+				return false;
+			}
+		}
+		else
+		{
+			API.dbg("The file "+ arrProgram[i] +"or one of it dependecy was not found");
+			if(quitOnFail ==true)
+			{
+				PosShowMessage("MSG_STARTUPCALL_MISSINGFILE",arrProgram[i]);
+				return false;
+			}
+			//if we do nto exit just show a waning message
+			PosShowMessage("MSG_STARTUPCALL_WARNING_MISSINGFILE",arrProgram[i]);
+		}
+	}
+	GLOBAL_ERC =  hlp.findParamInSectionWide("ERCForSelectedItem","ERC") =="true";
+	
+	if(familyPackVoucherActive == null)
+	{
+		familyPackVoucherActive =hlp.findParamInSectionWide("Active","FamilyPack_Voucher")=="true";
+	} 
+	if(familyPackVoucherActive == true)
+	{
+		familyVoucher_loadConfig();
+	}
+	return true;
+}
+
+/*This function is used in onBeginInitialize 
+It searches for a file names into a given directory. 
+Return false if not found.
+*/
+function searchFile(filesName, neededFiles)
+{
+	for(var i=0;i<filesName.length; i++)
+	{
+		if(filesName[i] == neededFiles)
+		{
+				return true;
+		}
+	}
+	return false;
+}
+
+/**onEndInitialize
+ *
+ * @brief - This function handles onEndInitialize event
+ * Return - rval - True
+ */
+function onEndInitialize()
+{
+	var hlp = new BusinessObjectHelper; 
+	var isCSO = PosCheckSessionProperty("POD","CSO");
+	var storeDB = new XML(API.getStoredb());
+	
+	//we need to initialize the eftpos once every time the pos starts.
+	if (PosCheckParameter("TCLExtension","everest","true")) 
+	{	
+		//var storeDB = API.getStoredb();
+		
+		API.dbg("checking for nl cso. Country: "+Country+" cso: "+isCSO);
+		if(Country == "NL" && isCSO)
+		{
+			var hlp = new BusinessObjectHelper; 
+			var repArray = hlp.getReportXML("CASH"); 
+			var repCfg = new XML(repArray[0].toString()); 
+			var posId = repCfg.PosId; 
+
+			var InitResult = npTCLEvalEx("Eft_Operation 10 " + posId.substring (3));
+			API.dbg("CCV Login sent");
+		}
+		if(Country == "FR" && isCSO)  //special e-cash terminal initialisation for kiosk
+		{
+			KioskInitEurecs();
+		}
+	}
+	else
+	{
+		API.dbg("TCLExtension not yet loaded.");
+	}	
+	
+	/*get defautl kiosk language*/
+	if(isCSO ==true)
+	{
+		var defautlKioskLanguage = hlp.findParamInSectionWide("DefaultLanguage","Kiosk");
+		if(defautlKioskLanguage+"" == "" || defautlKioskLanguage == null)
+		{
+			//get the value from the store
+			//var storeDB = new XML(API.getStoredb());
+			defautlKioskLanguage = storeDB.StoreDB.StoreProfile.Localization.Language;
+		}
+		defautlKioskLanguage = trim(defautlKioskLanguage);
+		defautlKioskLanguage = defautlKioskLanguage.toLowerCase();
+		PosSetSessionProperty("KioskLanguage", defautlKioskLanguage);
+		
+		//check the value of the parameter networkCheckAllwaysON; 
+		if(PosCheckParameter("CSO", "networkCheckAllwaysON", "1") ==true) // the network check must be enabled
+		{
+			API.dbg("Kiosk network check enabled ");
+			PosSetSessionPropertyForAllJS("CSOCheckNetwork", "true",true);
+		}
+		
+		if(PosCheckParameter("CSO", "networkCheckAllwaysON", "2") ==true) //the newtowk check must be disabled
+		{
+			API.dbg("Kiosk network check disabled ");
+			PosSetSessionPropertyForAllJS("CSOCheckNetwork", "false",true);
+		}
+	}
+
+	if(signReceiptEnable == true)
+	{
+		writesSignFiles();
+	}
+	
+	PosSetSessionProperty("EftPosNLInitialized", "false", true);
+	PosGCActivationJS("NOPREVIEW|SAVE");
+
+    // pickup Skim Amount
+    var sSkimLimit  = storeDB.StoreDB.StoreProfile.BusinessLimits.SkimAmountLimit;    
+    
+    // get TenderTypes List
+    var TenderTypeList = storeDB.StoreDB.TenderTypes.TenderType;
+
+    // First Tender Type
+	var sTenderType = new XML(TenderTypeList[0]);    		
+	var i = 0;
+	
+	// process until there are no more TenderType
+	while (	TenderTypeList[i] != null ) {
+		var KeyName = "SKIM_LIMIT_" + sTenderType.TenderId		
+		
+		PosSetSessionProperty(KeyName, sSkimLimit, false);			
+		
+		// get Next TenderType
+		i = i + 1;				
+		sTenderType = new XML(TenderTypeList[i]);		
+	}
+    
+
+	var hlp = new BusinessObjectHelper;
+	var dlgTimeout = hlp.findParamInSectionConfig("screenTimeout","UserInterface") - 0
+	dlgTimeout *= 1000;
+	dlgTimeout = "_TIMEOUT:" + dlgTimeout;
+
+	if(PosCheckSessionProperty("bAUSaleDisable","true")) {
+		if (	PosCheckSessionProperty("bGoForwardApplyUpdate", "true") || 
+				PosCheckSessionProperty("bGoForwardApplyUpdateClient", "true")
+		) {
+			PosLockSales("true", "", "MSG_GO_FORWARD_TIMEOUT");
+			PosShowMessage("MSG_GO_FORWARD_AU_EXECUTING", dlgTimeout);
+		} else {
+			PosLockSales("true", "", "MSG_BC_CFGROLLBACK_LOCKTIMEOUT");
+			PosShowMessage("MSG_BC_CFGROLLBACK_WAIT","_TIMEOUT:60000");
+		}
+	}
+	return(true);
+}
+
+/**onBeginFinalize
+ *
+ * @brief - This function handles onBeginFinalize event
+ * Return - rval - True
+ */
+function onBeginFinalize()
+{
+	if(PosCheckSessionProperty("bAUSaleDisable","true")) {
+		PosCloseStoreMessage();
+	}
+
+	return(true);
+}
+
+/**onBackFromTotal
+ *
+ * @brief - This function handles onBackFromTotal event
+ * Return - rval - if it's true the caller is allowed to back from total
+ */
+function onBackFromTotal()
+{
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	
+	if(String(view.@orderKey).search("N:") != -1) {
+		// Skip Car
+		PosShowMessage("MSG_BC_SKIPCAR_MODIFY");
+		return(false);
+	}
+	
+	var tenders	= view.ItemTenderView;
+	if(tenders.length() == 0) {
+		return(true);
+	}
+	var electronicPayment = tenders.(cat == "TENDER_ELECTRONIC_PAYMENT");
+	if(electronicPayment.length() == 0) {
+		return(true);
+	}
+	if(!PosShowConfirmationMessage("MSG_BC_VOID_GC","MSG_YES","MSG_NO")) {
+		return(false);
+	}
+	while(!PosGetAuthorization("manager"))
+		;
+	var Qty=0;
+	var Amount=new BigDecimal();
+	for(i=0; i < electronicPayment.length(); ++i) {
+		Qty+=Number(electronicPayment[i].qty);
+		Amount=Amount.add(electronicPayment[i].value);
+	}
+	PosShowMessage("MSG_BC_VOID_GC_STATUS",Qty,Amount);
+	PosDoVoidSale(true,true);
+	if((typeof(PosIsCoinDispenseLoadedJS) == 'function') && (typeof(PosDispenseCoins) == 'function')) {
+		if(PosIsCoinDispenseLoadedJS()) {
+			var value=""+Amount;
+			value=value.substr(value.length-2);
+			if(Number(value) != 0) {
+				PosDispenseCoins(value);
+			}
+		}
+	}
+	PosOpenCashDrawer(false);
+	return(true);
+}
+
+/**onCreateSale
+ *
+ * @brief - This function handles onCreateSale event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onCreateSale(tp,recall)
+{
+	var ret = true;
+	PosResetPinpad();
+	
+	//03.03.2011 Mihai Secareanu - MCR alert
+	if(PosCheckSessionProperty("POD","CSO") != true)
+	{
+	   //check if the file exists
+	   if(File.exists("../POSDATA/MCRAlert.txt") ==true)
+	   {
+			//show the message
+			PosShowMessage(API.getLocalMsg("MSG_MCR_ALERT"));
+	   }
+	   
+	   //load the content of blocke product file
+	   if(File.exists("../POSDATA/MCRBlocked.txt") ==true)
+	   {
+			var	file = new File("../POSDATA/MCRBlocked.txt");
+			file.open("r");
+			var fileContent = file.read();
+			file.close();
+			PosSetSessionProperty("McrBlockedProd", fileContent, true);
+		}
+	   
+	}
+	
+	
+	// check if it isn't refund, waste  or cashless refund
+	if(!PosCheckTransactionKind("1") && !PosCheckTransactionKind("2") &&
+	   !PosCheckTransactionKind("7")) {
+		PosSetCODRouting();
+		if((PosCheckSessionProperty("POD","DRIVE_THRU") || PosCheckSessionProperty("POD","WALK_THRU")) 
+				&& PosCheckSessionProperty("workingMode","orderTaker|both")) {
+			ret = PosSetCOD(recall);
+		}	
+	}
+	return(ret);
+}
+
+/**onCreatedSale
+ *
+ * @brief - This function handles onCreatedSale event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onCreatedSale(tp,recall)
+{
+//	PosSetCOD(recall);
+	return(true);
+}
+
+/**onPromoItem
+ *
+ * @brief - This function handles onPromoItem event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onPromoItem(tp)
+{
+	//FOR KIOSK WE JUST RETURN ALWAYS TRUE
+	if(PosCheckSessionProperty("POD","CSO"))
+	{
+		return true;
+	}
+	
+	var hlp = new BusinessObjectHelper;
+	var PromedLastItemDisabled  = hlp.findParamInSectionWide("PromedLastItemDisabled","PromoRules")=="true";
+	var authLimits=hlp.findParamInSectionConfig("PromoItemAuthorityLimits", "UserInterface");
+	
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	var items=view.ItemView.(level == 0 && quantity > 0);
+	if(null == items) {
+		return(true);
+	}
+	var i;
+	var selItem=null;
+	var balance=0;
+	for(i=0; i < items.length(); i++) {
+		var item=items[i];
+		if(item.currentSelected != "true") {
+			balance+=Number(item.quantity);
+			if(item.quantityPromo > 0) {
+				var promos=item.promo;
+				if(promos != null) {
+					var promo=promos.(@id==tp);
+					if(promo != null) {
+						balance-=Number(promo);
+					}
+				}
+			} 
+		} else {
+			selItem=items[i];
+			if((item.quantity > 0) && (item.familyGroup == GIFT_COUPON) && (item.productType == NON_FOOD_PRODUCT) && (item.category == PAPER)) {
+				// Gift Card not allowed
+				PosShowMessage("MSG_BC_PROMO_GC");
+				return(false);
+			}
+		}
+	}
+	if(null == selItem) {
+		return(true);
+	}
+	if(balance <= 0) { 
+		var promoQtty=hlp.getQuantity();
+		if(promoQtty < 0) {
+			promoQtty=0;
+			if(selItem.quantityPromo > 0) {
+				var promos=selItem.promo;
+				if(promos != null) {
+					var promo=promos.(@id==tp);
+					if(promo != null) {
+						promoQtty=Number(promo);
+					}
+				}
+			}
+			++promoQtty;
+		}
+		if(Number(selItem.quantity) <= promoQtty && PromedLastItemDisabled == true) { //we must test this otherwise we skip this test
+			PosShowMessage("MSG_BC_PROMO_LAST_ITEM");
+			return(false);
+		}
+	}
+	
+	if("enable"==authLimits) 
+	{
+		// OI 27.01.2010 add for 6.1.17
+		var bReqAuthorization=false;
+		var authorizationMsg="";
+		var authLevel=hlp.findParamInSectionConfig("PromoItemAuthorityLevel", "UserInterface");
+		var bAcceptNegativeQty=false;
+		var paramValue=hlp.findParamInSectionConfig("AcceptNegativeQty","Account");
+		 //TODO: should get this from TLOG
+		API.dbg("[onPromoItem] AcceptNegativeQty ["+paramValue+"]");
+		API.dbg("[onPromoItem] PromoItemAuthorityLevel ["+authLevel+"]");
+		if(("true"==paramValue)||("TRUE"==paramValue)) {
+			bAcceptNegativeQty=true;
+		}
+		if("manager"==authLevel) {
+			bReqAuthorization=true;
+		}
+		else if("crew"==authLevel) {
+			var quantum=hlp.getQuantity();
+			var promoQty=0;
+			var promoAmount=new BigDecimal(0);
+			var fatherQty=0;
+			var fatherPromoQty=0;
+			var fatherSelected=false;
+			var lastFather=0;
+			var iIndex;
+			for (iIndex=0; iIndex<view.ItemView.length(); iIndex++) {
+				var item = view.ItemView[iIndex];
+				if(item.quantity!=0) {
+					var meanUnitPrice=new BigDecimal(0);
+					var totalPrice=new BigDecimal(item.totalPrice);
+					var totalPriceBeforePromo=new BigDecimal(item.BPTotalPrice);
+					var zeroBD=new BigDecimal(0);
+					var itemQtty=new BigDecimal(lGetProductMultiplicity(view, iIndex, lastFather, true));
+					if(0!=totalPriceBeforePromo.compareTo(zeroBD)) {
+						// BPTotalPrice has the original total price
+						meanUnitPrice=totalPriceBeforePromo.divide(itemQtty,6);
+					}
+					else {
+						meanUnitPrice=totalPrice.divide(itemQtty,6);
+					}
+					if(0==Number(item.level)) {
+						lastFather=iIndex;
+						if(meanUnitPrice.compareTo(new BigDecimal(0))!=0) {
+							// can the meanUnitPrice be negative ?
+							if(item.currentSelected != "true") {
+								promoQty=promoQty+Number(item.quantityPromo);
+								fatherSelected=false;
+							}
+							else {
+								fatherSelected=true;
+								if(quantum<0) {
+									var itemQtyPromo=Number(item.quantityPromo);
+									promoQty=promoQty+itemQtyPromo+1;
+									if(itemQtyPromo>0) {
+										promoAmount=promoAmount.add(new BigDecimal(item.BPTotalPrice));
+										promoAmount=promoAmount.subtract(new BigDecimal(item.totalPrice));
+									}
+									// test if one more promo is possible
+									if(itemQtyPromo>=Number(item.quantity)) {
+										// more promos than items sold
+										PosShowMessage("MSG_BC_INVPROMO");
+										return(false);
+									}
+								}
+								else {
+									promoQty=promoQty+quantum;
+									meanUnitPrice=meanUnitPrice.multiply(new BigDecimal(quantum));
+									// test if the the promo can be applied
+									if(quantum>Number(item.quantity)) {
+										// more promos than items sold
+										PosShowMessage("MSG_BC_INVPROMO");
+										return(false);
+									}
+								}
+								promoAmount=promoAmount.add(meanUnitPrice);
+							}
+						}
+						fatherQty=Number(item.quantity);
+						fatherPromoQty=Number(item.quantityPromo);
+					}
+					else {
+						if(true==fatherSelected) {
+							var totalPrice=new BigDecimal(item.totalPrice);
+							var totalPriceBeforePromo=new BigDecimal(item.BPTotalPrice);
+							var zeroBD=new BigDecimal(0);
+							var isPriceGTZ=totalPrice.compareTo(zeroBD);
+							var isPriceGTZBP=totalPriceBeforePromo.compareTo(zeroBD);
+							if((item.quantity<0)&&(false==bAcceptNegativeQty)) {
+								// do not accept negative qty
+								isPriceGTZ=0;
+								isPriceGTZBP=0;
+							}
+							// ignore cost inclusive items
+							if((0!=isPriceGTZ)||(0!=isPriceGTZBP)) {
+								var multiplicity=lGetProductMultiplicity(view, iIndex, lastFather, false);
+								if(quantum<0) {
+									multiplicity*=(fatherPromoQty+1);
+								}
+								else {
+									multiplicity*=quantum;
+								}
+								meanUnitPrice=meanUnitPrice.multiply(new BigDecimal(multiplicity));
+								promoAmount=promoAmount.add(meanUnitPrice);
+							}
+						}
+					}
+					if((fatherPromoQty>0)&&(false==fatherSelected)) {
+						promoAmount=promoAmount.add(new BigDecimal(item.BPTotalPrice));
+						promoAmount=promoAmount.subtract(new BigDecimal(item.totalPrice));
+					}
+				}
+			}
+			// NPS-5766
+			API.dbg("[onPromoItem] total promo qtty ["+promoQty+"]");
+			API.dbg("[onPromoItem] total promo amount["+promoAmount.toString()+"]");
+			var promoQtyLimit=hlp.getBusinessLimitsParam("PromoItemQuantityLimit");
+			var promoAmtLimit=hlp.getBusinessLimitsParam("PromoItemAmountLimit");
+			if(""==promoQtyLimit) {
+				promoQtyLimit="1"
+			}
+			if(""==promoAmtLimit) {
+				promoAmtLimit="0.01"
+			}
+			API.dbg("[onPromoItem] PromoItemQuantityLimit ["+promoQtyLimit+"]");
+			API.dbg("[onPromoItem] PromoItemAmountLimit ["+promoAmtLimit+"]");
+			if(promoQty>=Number(promoQtyLimit)) {
+				// request manager authorization
+				authorizationMsg="MSG_PROMPTPROMOQTYAUTH";
+				bReqAuthorization=true;
+			}
+			else {
+				if(promoAmount.compareTo(new BigDecimal(promoAmtLimit))>=0) {
+					// request manager authorization
+					authorizationMsg="MSG_PROMPTPROMOAMTAUTH";
+					bReqAuthorization=true;
+				}
+			}
+		}
+		if(bReqAuthorization && !PosCheckSessionProperty ("skipPromoAuthorization", "true")) {
+			var bAuth=false;
+			if(""==authorizationMsg) {
+				bAuth=PosGetAuthorization("manager"); // SingleSignOn - false
+			}
+			else {
+				bAuth=PosGetAuthorization("manager",authorizationMsg); //SingleSignOn - false
+			}
+			if(false==bAuth) {
+				// Not Authorized
+				return(false);
+			}
+		}
+	}
+	return(true);
+}
+
+/**canAcceptTenderForFloatPrice
+ *
+ * @brief - Validates if the incoming tender has its category refused by configuration in transactions with float price items.
+ * @return - TRUE - when the incoming tender is acceptable for this order transaction.
+ * @since - NPS-5384
+ * @author - Kalil
+ */
+function canAcceptTenderForFloatPrice(tenderId,amount,nTransactionType) {
+	var hlp = new BusinessObjectHelper;
+	var refusedCategories = hlp.findParamInSectionConfig("refusedTenderCategories","FloatPrice");
+	if ((refusedCategories != null && refusedCategories.length > 0) && (hasFloatPriceItems())) {
+		var tenderXML = hlp.getTenderDescr(tenderId);		
+		try {
+			var xml = new XML(tenderXML);
+			var rtCategories = refusedCategories.split("|");
+			for (var i=0; i<rtCategories.length;i++) {
+				if (rtCategories[i] == xml.TenderCategory) {
+					PosShowMessage("MSG_BC_FPTENDERNOTALLOWED");
+					return false;
+				}
+			}
+		} catch(ex) {
+			var errorMsg = "Could not not handle tender validation for float price items, due to: " + ex;
+			API.dbg(errorMsg);
+			API.dbg(tenderXML);
+			PosShowMessage(errorMsg);
+		}
+	}
+	return true;
+				
+	/**hasFloatPriceItems
+	 *
+	 * @brief - Verifies if the current order has any float price item.
+	 * @return - TRUE - if the order has at least one float price item.
+	 * @since - NPS-5384
+	 * @author - Kalil
+	 */
+	function hasFloatPriceItems() {
+		var curView = hlp.getCurrentView();	
+		if (curView != null) {
+			var view = new XML(curView);
+			var items = view.ItemView;
+			for (var i=0;i<items.length();i++) {
+				if ((new Number(items[i].isFloatPrice)>0) && (new Number(items[i].quantity)>0)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+}
+
+
+/**onTender
+ *
+ * @brief - This function handles onTender event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onTender(tenderId,amount,nTransactionType)
+{
+	if (!canAcceptTenderForFloatPrice(tenderId,amount,nTransactionType)) {
+		// This tender is NOT acceptable for this transaction - NPS-5384 
+		return false;
+	}
+
+    var hlp=new BusinessObjectHelper;	
+	var familypackflag = hlp.findParamInSectionWide("FamilyPackDiscountActive","FamilyPack");
+		
+	if(TENDER_BILLABLE_SALE == Number(tenderId) && nTransactionType != ACC_OT_REFUND) {
+		var hlp = new BusinessObjectHelper;
+		
+		var curView = hlp.getCurrentView();
+		if(curView == null) {
+			return(auxShowMessageClearCalc("MSG_BC_NO_ORDER_IN_PROGRESS"));
+		}
+		var view = new XML(curView);
+		if(view.@transactionKind == ACC_OT_MANAGER) {
+			return(auxShowMessageClearCalc("MSG_BC_BILLABLE_EMP_MEAL"));
+		}
+		var items = view.ItemView;
+		if(items.length() == 0) {
+			return(true);
+		}
+		var giftCard = items.((quantity > 0) && (familyGroup == GIFT_COUPON) && (productType == NON_FOOD_PRODUCT) && (category == PAPER));
+		var tenders	= view.ItemTenderView;
+		if(giftCard.length() != 0 && tenders.length() != 0) {
+			return(auxShowMessageClearCalc("MSG_BC_BILLABLE_GC"));
+		}
+		// Billable sale
+		if(!PosGetAuthorization("manager")) {
+			PosHandleCalculatorButton("clear");
+			return(false);
+		}
+	}
+	//05.03.2009 OI we must set the discount again because we have problems for recalled orders
+	if((familypackflag =="1")  && !PosCheckSessionProperty ("familypackRemovedForOtherDiscount", "1"))
+	{
+		//10.03.2009 OI DoBackFromTotal and PosDoSaleJS are enougth for the family pack discount
+	PosDoBackFromTotal(); //back from total
+	  //make the total and store the order
+	if(Country =="DE")
+	{
+		PosDoTotalJS("1",TENDER_SCREEN_NBR_DE, STORE_SCREEN_NBR_DE, "NOPREVIEW|SAVE");
+	}
+	else
+	{
+		PosDoTotalJS("1",TENDER_SCREEN_NBR, STORE_SCREEN_NBR, "NOPREVIEW|SAVE");
+	}
+	PosSetSessionProperty("familypackRemovedForOtherDiscount", "1", false); 
+	}
+	
+	return(true);
+}
+
+/**onVoidSale
+ *
+ * @brief - This function handles onVoidSale event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onVoidSale(keepOrder,replacePayment)
+{
+	if(replacePayment != null) {
+		return(true);
+	}
+	// Should be in Sale mode (operator logged and not alreday performing a transaction
+	if(!PosIsInSaleMode()) {
+		return(false);
+	}
+	if(!PosNotATransactionInProgress(true)) {
+		PosShowMessage("MSG_BC_COMPLETE_FIRST");
+		return(false);
+	}
+	if(!PosCanVoidSaleJS()) {
+		return(false);
+	}
+	/* DES-92
+	if(PosIsOrderServed()) {
+		PosShowMessage("MSG_BC_ALREADY_SERVED");
+		return(false);
+	}
+	*/
+	if(!PosShowConfirmationMessage("MSG_BC_OVERRING_ORDER_ASK","MSG_YES","MSG_NO")) {
+		return(false);
+	}
+	if(!PosGetAuthorization("manager")) {
+		return(false);
+	}
+	return(true);
+}
+
+/**onStoreInMemory
+ *
+ * @brief - This function handles onStoreInMemory event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onStoreInMemory()
+{
+
+	// Should be in Sale mode (operator logged and not alreday performing a transaction
+	if(!PosIsInSaleMode()) {
+		return(false);
+	}
+	
+	if(!PosNotATransactionInProgress(true)) {
+		PosShowMessage("MSG_BC_COMPLETE_FIRST");
+		return(false);
+	}
+
+	var hlp = new BusinessObjectHelper;
+
+	var lastView = hlp.getLastSaleView();
+	if(lastView == null) {
+		PosShowMessage("MSG_BC_NO_ORDER_TO_STORE");
+		return false;
+	}
+		
+	var view = new XML(lastView);
+
+	if((view.@transactionKind != ACC_OT_SALE) && (view.@transactionKind != ACC_OT_DISCOUNT)) {
+		PosShowMessage("MSG_BC_INVALID_ORDER_TO_STORE");
+		return false;
+	}
+	
+	return(true);
+}
+
+/**auxShowMessageClearCalc
+ *
+ * @brief - auxiliary function to show message and clear calc
+ * Return - false
+ */
+function auxShowMessageClearCalc(errMsg) {
+
+	PosShowMessage(errMsg);
+	PosHandleCalculatorButton("clear");
+	return(false);		
+}
+
+/**onDiscount
+ *
+ * @brief - This function handles onDiscount event, it checks if it's possible to apply a discount!
+ * Where: discountType - type of discount:	1-normal\n 
+ *											2-crew meal\n 
+ *											3-manager meal\n
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onDiscount(discountId,discountType) {
+	var hlp=new BusinessObjectHelper;	
+	var familypackflag = hlp.findParamInSectionWide("FamilyPackDiscountActive","FamilyPack");
+	
+	var lastDiscount =false;
+	var noAutorization =false;
+	if(familypackflag =="1")
+	{
+		lastDiscount =PosCheckSessionProperty ("familypackCurrentDiscount", "2"); //true if the last discount executed was familypack
+		noAutorization = PosCheckSessionProperty ("familypackCurrentDiscount", "1"); //just before the family pack discount
+		//the discount will be made so we reset the familypacksession
+		PosSetSessionProperty ("familypackCurrentDiscount", "0", false); 
+	}
+	//API.dbg("mihai ondiscount "+lastDiscount + "noAutorization "+noAutorization);
+	if(lastDiscount) //this is true only in case we have allready the family meal discount   
+	{   //in this case we want to make other discount so we over right the family meal discount
+		   PosSetSessionProperty("familypackForDTSTORE", "1", false); //this is used in order to not run the famlypackdiscount() in the posdotataljs
+		   PosDoBackFromTotal();
+		   if(Country =="DE")
+		   {
+				PosDoTotalJS("1",TENDER_SCREEN_NBR_DE, STORE_SCREEN_NBR_DE, "NOPREVIEW|SAVE");
+		   }
+		   else
+		   {
+				PosDoTotalJS("1",TENDER_SCREEN_NBR, STORE_SCREEN_NBR, "NOPREVIEW|SAVE");
+		   }
+		   PosSetSessionProperty("familypackForDTSTORE", "0", false); //reset the session variable so that for other orders we can have the family pack discount
+	}
+	//10.03.2009 OI set familypackRemovedForOtherDiscount for all discounts expexted the family pack
+	if(noAutorization == false) 
+	{  
+		PosSetSessionProperty("familypackRemovedForOtherDiscount", "1", false); 
+	}
+	else
+	{
+		PosRemoveSessionProperty("familypackRemovedForOtherDiscount");
+	}
+
+	var hlp = new BusinessObjectHelper;
+	
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(auxShowMessageClearCalc("MSG_BC_NO_ORDER_IN_PROGRESS"));
+	}
+	if(PosCheckSessionProperty("discountForPromoOrder","false")) //if is a promo order then we do not need to check anything
+	{
+		var view = new XML(curView);
+		if(view.@transactionKind != ACC_OT_SALE  &&  !lastDiscount) { //if family discount is the last discount we do not apply this rule
+			return(auxShowMessageClearCalc("MSG_BC_2DISCOUNTS"));
+		}
+		var items = view.ItemView;
+		if(items.length() == 0) {
+			return(true);
+		}
+		var giftCard = items.((quantity > 0) && (familyGroup == GIFT_COUPON) && (productType == NON_FOOD_PRODUCT) && (category == PAPER));
+		if(giftCard.length() != 0) {
+			return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_GC"));
+		}
+		var giftOrCoupon = items.((quantity > 0) && (familyGroup == GIFT_COUPON));
+		if(giftOrCoupon.length() != 0) {
+			return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_COUPON"));
+		}
+		if("true"!=hlp.findParamInSectionConfig("AllowNonProductDiscount","Cash"))
+		{
+			var NonProduct = items.((quantity > 0) && (isGrillLine != "true") && (familyGroup == NON_FOOD_PRODUCT));
+			if(NonProduct.length() != 0) {
+				return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_NON_PRODUCT"));
+			}
+		}
+		
+		if(familypackflag =="1")
+		{
+			if(noAutorization == false) //we need autorization is not a familypack discount
+			{
+				if(!PosCheckSessionProperty("getAuthForForDiscountOrder","false")) {
+					// OI 28.01.2010 add for 6.1.17
+					// is authorization necessary ?
+					var discAuthLevel=hlp.findParamInSectionConfig("DiscountAuthorityLevel", "UserInterface");
+					if(""==discAuthLevel) {
+						discAuthLevel="manager"; // default
+					}
+					// crew and manager meal always requires authorization
+					// treat "all" as being the same as "crew"
+					if((11!=Number(discountType))||(("all"!=discAuthLevel)&&("crew"!=discAuthLevel))) {
+						if(!PosGetAuthorization("manager", false)) {
+							/* Not Authorized */
+							PosHandleCalculatorButton("clear");
+							//10.03.2009 OI if we have no authorization, we must do the family pack check again.
+							familyPackDiscount();
+							return(false);
+						}
+					}
+					else 
+					{
+						return(true);
+					}
+				}
+			}
+		}
+		else
+		{
+			if(!PosCheckSessionProperty("getAuthForForDiscountOrder","false"))
+			{
+				// is authorization necessary ?
+				var
+				discAuthLevel=hlp.findParamInSectionConfig("DiscountAuthorityLevel", "UserInterface");
+				if(""==discAuthLevel) 
+				{
+					discAuthLevel="manager"; // default
+				}
+				// crew and manager meal always requires authorization
+				// treat "all" as being the same as "crew"
+				if((11!=Number(discountType))||(("all"!=discAuthLevel)&&("crew"!=discAuthLevel)))
+				{
+					if(!PosGetAuthorization("manager", false))
+					{
+						/* Not Authorized */
+						PosHandleCalculatorButton("clear");
+						return(false);
+					}
+				}
+				else 
+				{
+					// NPS-5766
+					//API.SLog("LOGLEVL_DEBUG", "[onDiscount] no authorization required]");
+					return(true);
+				}
+			}
+		}
+	}
+	return(true);
+}
+
+/**onChangeTaxMode
+ *
+ * @brief - This function handles onChangeTaxMode event, it checks if it's possible to change sale tax mode!
+ * Where: nMode - string - (numeric value) 0-Tax 1-No Tax 2-Exempt
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onChangeTaxMode(nMode) {
+	
+	if(nMode == 0) {
+		return(true);
+	}
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(auxShowMessageClearCalc("There is no order in progress"));
+	}
+	/*
+	var view = new XML(curView);
+	if((view.@transactionKind != ACC_OT_SALE) && (view.@transactionKind != ACC_OT_MANAGER) && (view.@transactionKind != ACC_OT_CREW)) {
+		return(auxShowMessageClearCalc("It isn't allowed to apply NO TAX key to current sale"));
+	}
+	*/
+	if(!PosGetAuthorization("manager")) {
+		PosHandleCalculatorButton("clear");
+		return(false);
+	}
+	return(true);
+}
+
+/**onSetCDrawerOpMode
+ *
+ * @brief - This function handles onSetCDrawerOpMode event, it checks if it's possible to change cash drawer operation mode!
+ * Where: nMode - string - (numeric value) 0-Normal 1-Forced
+ * 		  drawers - string - not used
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onSetCDrawerOpMode(nMode,drawers) {
+
+	if((1 == nMode) && !PosGetAuthorization("manager")) {
+		return(false);
+	}
+	return(true);
+}
+
+/**onDrawerClosing
+ *
+ * @brief - This function handles onDrawerClosing event, the closing of a cash drawer
+ * Where: bAuthorized - boolean - true:autorized false:not authorized
+ * 		  nPOSState - int - POS State
+ * 		  nSaleStatus - int - Sale Status
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onDrawerClosing(bAuthorized,nPOSState,nSaleStatus) {
+
+	if(bAuthorized && (POS_STA_OPLOGGED == nPOSState) && (UNDEFINED_SALE_STATUS == nSaleStatus)) {
+		if(!PosCheckTransactionKind(1) && !PosCheckTransactionKind(2)) {
+			if(!PosRecallMultiOrder()){
+				PosDoAutoRecallJS();
+			}
+		}
+	}
+	return(true);
+}
+
+/**onRecalledByPreview
+ *
+ * @brief - This function handles onRecalledByPreview event, a order that was recalled by preview
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onRecalledByPreview() {
+
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	if(PosDoTotal()) {
+		if(view.@transactionKind == ACC_OT_SKIP_CAR) {
+			PosDoTenderJS(0,-1,'NOPREVIEW');
+			return(true);		
+		}
+		else {
+			return(PosShowScreen(TENDER_SCREEN_NBR));
+		}
+	}
+	else {
+		/* total failed, return to basescreen */
+		var ctx = new SessionContext;
+		PosShowScreen(ctx.get("baseScreenId"));
+	}
+	
+	return(false);
+}
+
+/**onRecalled
+ *
+ * @brief - This function handles onRecalled event, a order that was recalled 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onRecalled() {
+//	PosCommStatusCOD("MSG_BC_ERRORSETCOD");
+   //PosCreateReport ("CASH","GetConfigInfo@BusinessComponentsLocal.nps", "", ""); // This is to get the configuration 
+    	
+	PosSetCOD(1);
+	var hlp=new BusinessObjectHelper;	
+	var familypackflag = hlp.findParamInSectionWide("FamilyPackDiscountActive","FamilyPack");
+	
+	
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	
+	if((view.@tenderAction & (TA_CASHLESS_SIGN | TA_CASHLESS)) != 0)
+	{	
+		//PosDoTotal();
+		PosDoTenderJS(-1,-1,"NOPREVIEW|SAVE");
+		return(false);
+	}
+	
+	if(familypackflag =="1")
+    {
+		PosDoTotal();
+		//API.dbg("onRecalled "+view );
+		//back from total 
+		familyPackDiscount();
+		return(PosShowScreen(TENDER_SCREEN_NBR));
+    }
+	
+	return(true)
+}
+
+
+/**onStore
+ *
+ * @brief - This function handles onStore event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onStore(bTandemEnabled,nTandemMode,nTandemBooth,szCurOrderId, nMinor) {
+
+	PosSetCODRouting();
+	//SDE-1665 - Tandem Speaker-Multi Orders from secondary should not require order Override 
+	if(bTandemEnabled && (TANDEM_INLINE == nTandemMode) && (nTandemBooth > 1) && (nMinor == 0)) {
+		PosQueryStsQueueByTandem((SALE_STATUS_STORED|SALE_STATUS_RECALLED|SALE_STATUS_NON_ACCOUNTING/*|SALE_STATUS_TENDERED|SALE_STATUS_PAID*/),1,szCurOrderId);
+	}
+	return(true);
+}
+
+/**onEndOfSale
+ *
+ * @brief - This function handles onEndOfSale event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onEndOfSale(bTandemEnabled,nTandemMode,nTandemBooth,szCurOrderId, nMinor) {
+
+	PosSetCODRouting();
+	//SDE-1665 - Tandem Face to Face-Multi Orders from secondary should not require order Override 
+	if(PosCheckSessionProperty("POD","DRIVE_THRU") && bTandemEnabled && (TANDEM_FACE == nTandemMode) && (nTandemBooth > 1) && (nMinor == 0)) {
+		// SDE-1666 SALE_STATUS_PAID included
+		PosQueryStsQueueByTandem((SALE_STATUS_START|SALE_STATUS_IN_PROGRESS|SALE_STATUS_ON_TOTAL|SALE_STATUS_TOTALIZED|SALE_STATUS_GRILLING|SALE_STATUS_STORED|SALE_STATUS_RECALLED|SALE_STATUS_NON_ACCOUNTING|SALE_STATUS_TENDERED|SALE_STATUS_PAID),1,szCurOrderId);
+	}
+	return(true);
+}
+
+
+/**onSelIndex
+ *
+ * @brief - This function handles onSelIndex event, a selection in the sale list
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onSelIndex(index) {
+	if (PosCheckSessionProperty('EXT_UI','true')) {
+		return true;
+	}
+	if(PosCheckSessionProperty("POD","CSO") && (!PosCheckSessionProperty("CanChangeIndex","true"))) {
+		return(false);
+	}
+	PosEndSmartReminder();
+	return(true);
+}
+//NPS-4873
+/**onSelectedItem
+ *
+ * @brief - This function handles onSelelectedIndex event, a selection in the sale list is completelly done
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onSelectedItem() {
+
+	if(GLOBAL_ERC == false) //no erc logic
+	{
+		return true;
+	}
+	
+	if(PosCheckSessionProperty("isSmartReminderON","TRUE")) {
+		return(true);
+	}
+
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+
+	if(view.@saleStatus==SALE_STATUS_START || view.@saleStatus==SALE_STATUS_IN_PROGRESS || view.@saleStatus==SALE_STATUS_GRILLING) {
+		if(!PosShowGrillFloatScreen(false)) {
+				PosHideFloatScreen();
+		}
+	}
+
+	return(true);
+}
+
+/**onDayOpened
+ *
+ * @brief - This function handles onDayOpened event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onDayOpened(pOpenMode,pLevel) {
+
+	//22.01.2009 OI set EftPosInitialized to false
+	PosSetSessionProperty("EftPosInitialized", "false", true);
+	if((pOpenMode=="execute") && ((pLevel=="remote") || (pLevel=="forced"))) {
+
+		//18.08.2010 OI add reboot
+		if(PosCheckParameter("OperationMode","rebootAfterOpen","true")) {
+			// Reboot After Open
+			PosShutdown("93", "remote", "false");
+		}
+		
+		if(PosCheckParameter("OperationMode","restartAfterOpen","true")) {
+			// Restart After Open
+			PosShutdown("91", "remote", "false");
+		}
+	}
+	return(true);
+}
+
+/**onEndOfDay
+ *
+ * @brief - This function handles onEndOfDay event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onEndOfDay(closeMode,level)
+{
+	//cashless france
+	API.dbg("closeMode "+ closeMode);
+	if(closeMode =="execute" || closeMode == undefined )
+	{
+		API.dbg("onEndOfDay enter execute stage");
+		if(PosCheckParameter("TCLExtension","everest","true")) 
+		{
+			InitCashless(false);
+		}
+		
+		var hlp=new BusinessObjectHelper;	
+		var endDayReport = hlp.findParamInSectionWide("enableEndOfDayReport","Cashless");
+		if(PosCheckParameter("TCLExtension","everest","true") && endDayReport == "true" )
+		{
+			API.dbg("onEndOfDay - Call JSReconWithClose");
+			JSReconWithClose();
+		
+		}
+		if(Country =="FR")
+		{
+			API.dbg("onEndOfDay - Country = FR Call PosRunOSCommand = save_bop.bat");
+			//BOP Files + product database files save
+			PosRunOSCommand("save_bop.bat");
+			API.dbg("onEndOfDay - Country = FR Call PosRunOSCommand = End of execution");                     
+		}
+	}
+	return(true);
+}
+
+/**onLoadScreen
+ *
+ * @brief - This function handles onLoadScreen event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLoadScreen(scrNbr) {
+
+	var curMode=0;
+	if((900<=Number(scrNbr)) && (1000>Number(scrNbr))) {
+		curMode=1; // Manager Mode
+	}
+	// npAdpTlog_RequestSrv(Service,Type,parameters,..);	
+	npAdpTlog_RequestSrv(NPSRVTLOG_API_SET_STATE,ADPTLOG_INT_MANAGER_MODE,curMode);	
+	return(true);
+}
+
+/**onGrillStart
+ *
+ * @brief - This function handles onGrillStart event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onGrillStart(maxGrill) {
+
+	var hlp = new BusinessObjectHelper;
+	var qtty=hlp.getQuantity();
+	if(qtty >= 0) {
+		if(maxGrill < qtty) {
+			hlp.resetQuantity();
+			PosDoQuantum(maxGrill);
+			PosShowMessage("MSG_BC_GRILLMAXQTTY",qtty,maxGrill);
+		}
+	}
+	return(true);
+}
+
+/**onGrillOperStart
+ *
+ * @brief - This function handles onGrillOperStart event 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onGrillOperStart(maxGrill) {
+
+	return(true);
+}
+
+/**onLoginOperator
+ *
+ * @brief - This function handles the first step in loggin 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLoginOperator(bRemote,id) {
+
+	var hlp=new BusinessObjectHelper;
+	var ctx=new SessionContext;
+
+	if(bRemote && (id != null) && (id != undefined)) {
+		hlp.getUserInfo(id,2);
+		if(!hlp.validateUser(id,null,0,true)) {
+			return(false);
+		}
+		return(true);
+	}
+	
+	// Asks working mode, in case of DT
+	var workingMode=auxAskWorkMode("Login as Secondary Cashier");
+	if((workingMode != null) && (workingMode[0] != null)) {
+		var ctx=new SessionContext;
+		ctx.set("workingMode",workingMode[0],true);
+		if(workingMode[1] != null) {
+			ctx.set("tandemBooth",workingMode[1],true);
+		}
+		else {
+			var tdBooth=hlp.findParamInSectionConfig("tandemBooth","PosType");
+			ctx.set("tandemBooth",tdBooth,true);
+		}
+	}	
+	
+	//fiscal printer test. Not alow to use ot/cashier or cashier on registers that have no fiscal printer
+	var denyCashier = hlp.findParamInSectionWide("DenyCashOperation","OperationMode")=="true";
+	if(denyCashier == true)
+	{
+		if(PosCheckSessionProperty("POD", "DRIVE_THRU") == true &&  PosCheckSessionProperty("workingMode","orderTaker") !=true)
+		{  //is drive thru , has no fiscal printer and try to log in as cahsier or cs/ot =>	not alow
+			PosShowMessage(API.getLocalMsg("NOT_SUPPORTED_WORKINGMODE"));
+			return false;
+		}
+	}
+	
+	// Gets user id
+	var sIdtf=hlp.showCalculator("MSG_PROMPTOP",1);
+	if(sIdtf.length == 0)
+	{
+		return(false);
+	}
+	if(sIdtf != parseInt(sIdtf) || Number(sIdtf) ==0 ) { //be sure there was someting inserted and is different then 0
+		PosShowMessage("MSG_INVPASSWD");
+		return(false);
+	}
+	// Checks operator validity
+	nOperSecurityLevel=hlp.getUserInfo(sIdtf,2);
+	if(!hlp.validateUser(sIdtf,null,0,true)) {
+		// Reset needs at least a floor manager
+		PosShowMessage("MSG_INVPASSWD");
+		return(false);
+	}
+	return(true);
+}
+
+/**onLoginRemOperator
+ *
+ * @brief - This function handles the first step in loggin 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLoginRemOperator() {
+
+	var hlp=new BusinessObjectHelper;
+
+	// Gets user id
+	var sIdtf=hlp.showCalculator("MSG_PROMPTOP",1);
+	if(sIdtf.length == 0 || sIdtf != parseInt(sIdtf)) {
+		return(false);
+	}
+	// Checks operator validity
+	if(!hlp.validateUser(sIdtf,null,0,true)) {
+		PosShowMessage("MSG_INVPASSWD");
+		return(false);
+	}
+	return(true);
+}
+
+/**onInitialFloat
+ *
+ * @brief - This function checks if should ask for an initial float or use 0 
+ * Return - rval - if it's true the caller should ask for a value
+ */
+function onInitialFloat(bRemote) {
+
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("HOT" == pod) || (bRemote && (("CSO" == pod) || ("CK" == pod) || ("CKD" == pod))) || ((("DT" == pod) || ("WT" == pod)) && (ctx.get("workingMode") == "orderTaker"))) {
+		return(false);
+	}
+	return(true);
+}
+
+/**auxValidDtMode
+ *
+ * @brief - This function validates DT Mode 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function auxValidDtMode() {
+	
+	// Validates FacexFace DT tandem mode...
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == 1)) {
+		var test=0;
+		if(PosGetLoggedInPOS()) {
+			var loggedin=ctx.get("loginDTPosition");
+			if(loggedin != null) {
+				if(loggedin.indexOf("1") > 0) {
+					test|=1;
+				}
+				if(loggedin.indexOf("2") > 0) {
+					test|=2;
+				}
+			}
+		}
+		switch(test) {
+			case 1:
+				// Primary already logged-in
+				if(Number(ctx.get("tandemBooth")) != 1) {
+					test=0;
+				}
+				break;
+			case 2:
+				// Secondary already logged-in
+				if(Number(ctx.get("tandemBooth")) != 2) {
+					test=0;
+				}
+				break;
+			case 3:
+				if((Number(ctx.get("tandemBooth")) != 1) && (Number(ctx.get("tandemBooth")) != 2)) {
+					test=0;
+				}
+				break;
+		}
+		if(test != 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+/**onConfirmLogin
+ *
+ * @brief - This function confirms login 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onConfirmLogin(bRemote,name,currency,value) {
+
+	if(bRemote) {
+		return(true);
+	}
+	// Confirms login
+	var hlp=new BusinessObjectHelper;
+	var sConfMsg=hlp.getSysMessage("MSG_BC_LOGINCONF",name,currency,value);
+	if(!PosShowConfirmationMessage(sConfMsg,"MSG_YES","MSG_NO")) {
+		return(false);
+	}
+	if(!auxValidDtMode()) {
+		PosShowMessage("MSG_DT_LOGIN_TANDEM_ERR");
+		return(false);
+	}
+	return(true);
+}
+
+/**onLoginFinalize
+ *
+ * @brief - This function handles the finalization of login process
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLoginFinalize(bRemote,errorMessage) {
+
+	if(PosCheckParameter("TCLExtension","everest","true")) 
+	{
+		if( !PosCheckSessionProperty("workingMode","orderTaker") ) //not run in case of order taker
+		{
+			InitCashless(true, true);  //start cashless when a operation log in (function defined in bussinessComponetLocal)
+		}
+	}
+	
+	if(!bRemote) {
+		if(errorMessage.length != 0) {
+			PosShowMessage(errorMessage);
+			return(false);
+		}
+		return(true);
+	}
+	// Remote cmd
+	if(PosCheckSessionProperty("POD","CSO")) {
+		PosActivateScreenSaver(2);
+	}
+	return(true);
+}
+
+/**onLogoutFinalize
+ *
+ * @brief - This function handles the finalization of logout process
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onLogoutFinalize(bRemote,success) {
+
+	API.dbg("OnLogoutFinalize" + success); 
+
+	if(bRemote && success && PosCheckSessionProperty("POD","CSO")) {
+		PosActivateScreenSaver(1);
+	}
+
+	if(PosCheckParameter("TCLExtension","everest","true")) 
+	{
+		if( !PosCheckSessionProperty("workingMode","orderTaker") ) //not run in case of order taker
+		{
+			InitCashless(false);  //run init cashless in case we have offline tranzaction (just for France) (function defined in bussinessComponetLocal)
+		}
+	}
+	if(Country =="FR")
+	{
+		SetEurecsInfo ("OPERATORID", 0); //we reset the operator id;   
+	}
+	//runGetConfig_Local =true;
+	runGetConfig_Eurecs =true; //enable again to run the cash report to get the current configuration required for e-cash transactions
+	return true;
+}
+
+/**onConfirmLogout
+ *
+ * @brief - This function confirms login 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onConfirmLogout(bRemote,name) {
+
+	// Confirms logout
+	var hlp=new BusinessObjectHelper;
+	if(!bRemote) {
+		var sConfMsg=hlp.getSysMessage("MSG_BC_LOGOUTCONF",name);
+		if(!PosShowConfirmationMessage(sConfMsg,"MSG_YES","MSG_NO")) {
+			return(false);
+		}
+	}
+	// Rolls back tandem booth to original configuration
+	var tdBooth=hlp.findParamInSectionConfig("tandemBooth","PosType");
+	var ctx=new SessionContext;
+	ctx.set("tandemBooth",tdBooth,true);
+	return(true);
+}
+
+function onConfirmProceed(bRemote,name) {
+
+	var hlp=new BusinessObjectHelper;
+	var sConfMsg=hlp.getSysMessage("MSG_CDC_OPEN_ORDERS");
+	if(!PosShowConfirmationMessage(sConfMsg,"MSG_YES","MSG_NO")) {
+		return(false);
+	}
+	var ctx=new SessionContext;
+	return(true);
+}
+
+/**onChangeDtWorkingMode
+ *
+ * @brief - This function validates change in DT mode
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onChangeDtWorkingMode(bRemote,name,currency,value) {
+
+	//not alow cashier or ot/cs for regsiters that has no fiscal printer
+	var hlp=new BusinessObjectHelper;
+	var denyCashier = hlp.findParamInSectionWide("DenyCashOperation","OperationMode")=="true";
+	if(denyCashier == true)
+	{
+		if(PosCheckSessionProperty("POD", "DRIVE_THRU") == true &&  PosCheckSessionProperty("temporary_workingMode","orderTaker") !=true)
+		{  //is drive thru , has no fiscal printer and try to log in as cahsier or cs/ot =>	not alow
+			PosShowMessage(API.getLocalMsg("NOT_SUPPORTED_WORKINGMODE"));
+			return false;
+		}
+		else
+		{
+			var ctx=new SessionContext;
+			var wMode = ctx.get("temporary_workingMode");
+			PosSetSessionProperty("workingMode", wMode,true);
+		}
+	}
+	if(!auxValidDtMode()) {
+		PosShowMessage("MSG_DT_CHANGE_MODE_ERR");
+		return(false);
+	}
+	return(true);
+}
+
+/**onDeniedVoidLine
+ *
+ * @brief - This function handles onDeniedVoidLine event
+ * Return - rval - false if shoud force a void line, true if not
+ */
+function onDeniedVoidLine() {
+	if (PosCheckSessionProperty('EXT_UI','true')) {
+		return (false);
+	}
+	if(!PosCheckSessionProperty("POD","CSO")) {
+		return(true);
+	}
+	return(!PosShowConfirmationMessage("MSG_BC_CANC_ITEM","MSG_YES","MSG_NO"));
+}
+
+/**onTenderAccepted
+ *
+ * @brief - This function handles onTenderAccepted event
+ * Return - rval - true
+ */
+function onTenderAccepted() {
+
+	PosSetSessionProperty("TenderAccepted","true");
+	return(true);
+}
+
+/**onCheckScreenSound
+ *
+ * @brief - This function handles load of sounds when screens are loaded 
+ * Return - rval - true allows the caller to play the default sound
+ */
+function onCheckScreenSound(scrNbr,nVisit,sound) {
+
+	if((null==sound) || (sound.length==0) || PosCheckSessionProperty("NoSound","true")) {
+		// No sound at all
+		return(false);
+	}
+	var index=sound.indexOf("=");
+	if(index < 0) {
+		// generic sound, allow the screen loader play it
+		return(true);
+	}
+	index=sound.indexOf(nVisit,index);
+	if(index >= 0) {
+		// Sound configured for this visit
+		var index1=sound.lastIndexOf(";",index);
+		if(index1 >= 0) {
+			index1++;
+		}
+		else {
+			index1=0;
+		}
+		index=sound.indexOf("=",index1);
+		if(index > index1) {
+			PosPlaySound(sound.substring(index1,index));
+		}
+	}
+	return(false);
+}
+
+// -------------------------------------- Script Hooks/Events --------------------------------
+/**onDoSaleJS
+ *
+ * @brief - This function validates a item sale 
+ * Return - rval - true allows the caller to continue
+ */
+function onDoSaleJS() {
+
+	var ctx=new SessionContext;
+
+	var pod=ctx.get("POD");
+	if(("DT" == pod) || ("WT" == pod)){
+		if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == TANDEM_FACE)) {
+			// Face x Face
+			return(true);
+		}
+
+		// check if it isn't refund, waste  or cashless refund
+		if(!PosCheckTransactionKind("1") && !PosCheckTransactionKind("2") &&
+		   !PosCheckTransactionKind("7")) {
+			if(!PosIsCODSelectedJS()) {
+				PosShowMessage("MSG_BC_SELECTCOD");
+				return(false);
+			}
+		}
+	}
+	
+	return(true);
+}
+
+/**onSaleStartJS
+ *
+ * @brief - This function validates the begining of a sale
+ * Return - rval - true allows the caller to continue
+ */
+function onSaleStartJS() {
+	// check the COD serial communication status
+	PosCommStatusCOD("MSG_BC_ERRORSETCOD1");
+	return(true);
+}
+
+/**onSndRcvStore
+ *
+ * @brief - This function returns the used tandem booth
+ * Return - rval - tandem booth (instead of usual true/false)
+ */
+function onSndRcvStore() {
+
+	// auxGetTandemNbrJS function might not exist in a local configuration!
+	if(typeof(auxGetTandemNbrJS) == 'function') {
+		return(auxGetTandemNbrJS());
+	}
+	// default
+	return(0);
+}
+
+/**onItemListPOS
+ *
+ * @brief - This function returns a string with a single item to be shown onItemListPOS on a POS List
+ * @param - nType - 0->list for cash drawer, 1->list for remote detach, 2->list for logged-in, 3->list for loggin
+ * @param - szNumber - POS number in format POSXXXX
+ * @param - online - 0->offline, 1->online
+ * @param - state - Pos States POS_STA_INVALID,POS_STA_CLOSED,...
+ * @param - dtPosition - 0->none, 1->primary, 2->secondary
+ * @param - szOperator - operator name
+ * @param - szAliasList - list in used service (service name,service alias|...)
+ * @param - detached - 0->non-detached, 1->detached	(SDO-2849)
+ * Return - rval - string with a single item to be shown onItemListPOS on a List, each item MUST begin wit the POS Id with 7 positions (POSXXXX)
+ */
+function onItemListPOS(nType,szNumber,online,state,dtPosition,szOperator,szAliasList,detached) {
+
+	// Invoke event handler before clean up the sale
+	var hideLine="";
+	var lineRet="";
+	var sDtPosition="";
+	var textState="";
+	
+	/* SDO-2849: It checks if the current POS is detached. */
+	/* If not, it checks the current state of the node */
+	if ( 0 == detached )
+	{
+		switch(nType) {
+		case 0:
+			if((state != POS_STA_OPLOGGED) && (state != POS_STA_BLOCKOP)) {
+				hideLine="!";
+			}
+			break;
+		case 1:
+			if((online != 0) || (POS_STA_BLOCKOP == state)) {
+				hideLine="!";
+			}
+			break;
+		case 2:
+			if((online != 0) && (POS_STA_OPLOGGED == state) || (POS_STA_BLOCKOP == state)) {
+				hideLine="!";
+				sDtPosition="DTP:"+dtPosition;
+			}
+			break;
+		case 3:
+			if((0 == online) || (state != POS_STA_OPENED)) {
+				hideLine="!";
+			}
+			break;
+		}
+		switch(state) {
+			case POS_STA_OPLOGGED:
+			case POS_STA_BLOCKOP:
+				textState="";
+				break;
+			case POS_STA_CLOSED:
+				textState="closed";
+				break;
+			case POS_STA_OPENED:
+				textState="opened";
+				break;
+			case POS_STA_BLOCKED:
+				textState="blocked";
+				break;
+			default:
+				textState="unknown";
+		}
+		var bOnline=(0 == online)?"offline":"online";
+		if((POS_STA_OPLOGGED == state) || (POS_STA_BLOCKOP == state)) {
+			lineRet=hideLine+szNumber+"["+bOnline+":"+szOperator+"]"+sDtPosition;
+		}
+		else {
+			lineRet=hideLine+szNumber+" ["+bOnline+" - "+textState+"]";
+		}
+		if(3 == nType) {
+			var aux=lineRet;
+			lineRet="";
+			szNumber=szNumber.slice(3);
+			var ind=szAliasList.indexOf(szNumber);
+			if(ind >= 0) {
+				var ind2=szAliasList.indexOf(",",ind);
+				if(ind2 >= 0) {
+					var aux2=szAliasList.substr(ind2+1,3);
+					if("CSO" == aux2.toUpperCase()) {
+						lineRet=aux;
+					}
+				}
+			}
+		}
+	}
+	/* SDO-2849: If so, just inform the user that current POS is detached */
+	else
+	{
+		lineRet="!"+szNumber+" [detached]";
+	}
+	/* SDO-2849: END */
+	return(lineRet);
+}
+
+/**onConvertFOE2View
+ *
+ * @brief - This function converts the FOE XML to a NP6.1 View
+ * @param - sIn - string ->the FOE XML string representation
+ * Return - rval - string representing the View XML
+ */
+function onConvertFOE2View(sIn) {
+	var xmlIn = null;
+	var xmlView = null;
+
+	try {
+		if(sIn==null) {
+		    sIn='<ProdInfo/>';
+		}
+
+		xmlIn = new XML(sIn);
+		xmlView = new XML('<View/>');
+
+		//TODO : check Header
+		//xmlIn.Header.@command;
+		//xmlIn.Header.@version;
+
+		//TODO : check mandatory fields
+
+		//Order Element
+
+		//NPS-4686 - COC Store 3017 Hung order on DT expo, can't be bumped off.
+		var okIndexCount=0;
+		var orderKeyFirstPart = xmlIn.Order.@podName.toString();
+		if(xmlIn.Order.@tableId && xmlIn.Order.@tableId.toString() != '') {
+			orderKeyFirstPart='FOE';
+			for(okIndexCount=(4-xmlIn.Order.@tableId.toString().length); okIndexCount>0; okIndexCount--) {
+				orderKeyFirstPart += '0';
+			}
+			orderKeyFirstPart += xmlIn.Order.@tableId.toString();
+		}
+
+		xmlView.@orderKey 			= orderKeyFirstPart + ':' + xmlIn.Order.@localOrderKey;
+		xmlView.@operatorId			= xmlIn.Order.@operatorId
+		xmlView.@operatorName       = xmlIn.Order.@operatorName;
+		xmlView.@pod                = xmlIn.Order.@pod;
+		xmlView.@remPod             = xmlIn.Order.@remPod;
+		xmlView.@major              = xmlIn.Order.@major;
+		xmlView.@minor              = xmlIn.Order.@minor;
+		xmlView.@saleStatus         = xmlIn.Order.@status;
+		xmlView.@trackSaleStatus    = xmlIn.Order.@trackStatus;
+		xmlView.@transactionKind    = xmlIn.Order.@transactionKind;
+		xmlView.@trxSubKind         = xmlIn.Order.@trxSubKind;
+		xmlView.@saleDate           = xmlIn.Order.@saleDate;
+		xmlView.@saleTime           = xmlIn.Order.@saleTime;
+		xmlView.@businessDay        = xmlIn.Order.@businessDate;
+		//View/ItemView/dayPart
+		xmlView.@forceKVSDisplay    = xmlIn.Order.@forceKVSDisplay=='true'||xmlIn.Order.@forceKVSDisplay=='TRUE'?'1':'0';
+		xmlView.@disabChoices       = xmlIn.Order.@disabChoices;
+		xmlView.@type               = xmlIn.Order.@type;
+		xmlView.@taxMode            = xmlIn.Order.@taxMode;
+		//TODO : Verify which total is the one to be used
+		xmlView.@totalAmount        = xmlIn.Order.@totalAmount;
+		xmlView.@totalTax           = xmlIn.Order.@totalTax;
+
+
+        var itemIn=null;
+		//Item Elements
+		for each (itemIn in xmlIn.Order.Item) {
+			recurseIntoProducts(xmlView, itemIn.product[0], 0, itemIn.@index.toString(),
+					itemIn.@currentSelected.toString(), itemIn.@voided.toString(),
+					itemIn.@qtyPromo.toString(),
+					(itemIn.@changedAfterTotal.toString()=='true'||itemIn.@changedAfterTotal.toString()=='TRUE'));
+		}
+
+
+		var tenderIn=null;
+		//Tender Elements
+		for each (tenderIn in xmlIn.Order.Tender) {
+			var cashlessView = null;
+			var tender = new XML('<ItemTenderView/>');
+			tender.code = tenderIn.@code.toString();
+			tender.qty = tenderIn.@qty.toString();
+			tender.value = tenderIn.@value.toString();
+			if(tenderIn.@srcPOSId.toString() != '') {
+				tender.srcPOSId = tenderIn.@srcPOSId.toString();
+			}
+			tender.discMode = tenderIn.@discMode.toString();
+
+
+			var cashlessIn=null;
+			for each (cashlessIn in tenderIn.cashless) {
+				tender.cat='TENDER_ELECTRONIC_PAYMENT';
+				tender.cardProv = tenderIn.cashless.@cardProv.toString();
+
+				//TODO : recover aditional cashless information
+		        var local_MerchantID = '';
+		        var StoreNumber = '';
+		    	var local_GiftCard_Footer = '';
+
+				cashlessView = new XML('<Cashless>' + formatCashlessString(cashlessIn.@cardProv.toString(), cashlessIn.@cardNum.toString(),
+									cashlessIn.@expire.toString(), cashlessIn.@auth.toString(),	cashlessIn.@printFlag.toString(),
+									cashlessIn.@seqNo.toString(), local_MerchantID, cashlessIn.@gcBalance.toString(), cashlessIn.@account.toString(),
+									tenderIn.@value.toString(), StoreNumber, local_GiftCard_Footer)
+									+ '</Cashless>');
+
+				//only one cashless per tender is allowed
+				break;
+			}
+
+			xmlView.appendChild(tender);
+			if(cashlessView!=null) {
+				xmlView.appendChild(cashlessView);
+			}
+
+		}
+/*
+		var timesIn=null;
+		//Times Elements
+		for each (timesIn in xmlIn.Order.Times) {
+			var item = new XML('<ViewTimes/>');
+			item.@totalTime = timesIn.@totalTime;
+			item.@storeTime = timesIn.@storeTime;
+			item.@orderTime = timesIn.@orderTime;
+			xmlView.appendChild(item);
+
+			break;
+		}
+*/
+
+		return (xmlView.toXMLString());
+	} catch( ex ) {
+		return (null);
+	}
+
+
+	//***** HELPER FUNCTIONS ******//
+	function formatCashlessString(providername, cardnum, expire, auth,
+									printFlag, seqno, MerchantID, GCBalance, Account,
+									Value, StoreNumber, local_GiftCard_Footer) {
+
+		//TODO : check cashless string format
+		//function ParseTrackInfo(retcode,cardType)
+		//function cashlessPayment(tenderId,tenderValue,refund)
+
+		return 'CASHLESS:' +
+				providername + '@' +
+				cardnum + '@' +
+				expire + '@' +
+				auth + '@0@' +
+				printFlag + '@' +
+				seqno + '@' +
+				MerchantID + '@' +
+				GCBalance + '@' +
+				Account + '@' +
+				Value + '@' +
+				StoreNumber + '@' +
+				local_GiftCard_Footer + '@#';
+
+	}
+
+	function recurseIntoProducts(xmlView, product_, level, index, currentSelected, voided, qtyPromo, changedAfterTotal) {
+
+		var product = XML(product_);
+		var itemView = new XML('<ItemView/>');
+
+		itemView.itemCode = Number(index)-1;
+		itemView.level = String(level);
+		if(currentSelected!='') {
+			itemView.currentSelected = currentSelected;
+		}
+		if(qtyPromo!='') {
+			itemView.quantityPromo = qtyPromo;
+		}
+
+		var qty = product.@qty.toString();
+		var grilledQty = product.@qty.toString();
+
+		if(voided=='true' || voided=='TRUE') {
+			qty = '0';
+			grilledQty = '0';
+		}
+
+		itemView.quantity = qty;
+		itemView.productCode = product.@code.toString();
+
+		//TODO : Verify if the price will be used
+		if(product.@unitPrice.toString()!= '') {
+			itemView.unitPrice = product.@unitPrice.toString();
+		}
+
+		if(product.name()=='grill') {
+			itemView.grilledQuantity= grilledQty;
+			itemView.isGrillLine = 'true';
+			if(product.@modifier.toString()!='') {
+				itemView.specialModifiers = product.@modifier.toString();
+			}
+		}
+
+		if(changedAfterTotal || (product.@changedAfterTotal && product.@changedAfterTotal.toString()!='')) {
+			itemView.quantityChanged = (changedAfterTotal||product.@changedAfterTotal.toString()=='true'||product.@changedAfterTotal.toString()=='TRUE')?'true':'false';
+		}
+
+		xmlView.appendChild(itemView);
+
+		var prdChildren = product.children();
+		var iPrdCnt=0;
+		for(iPrdCnt=0; iPrdCnt<prdChildren.length(); iPrdCnt++) {
+			recurseIntoProducts(xmlView, prdChildren[iPrdCnt], level+1, index, currentSelected, '', qtyPromo, false);
+		}
+		return;
+	}
+
+}
+
+/**onConvertView2FOE
+ *
+ * @brief - This function converts a NP6.1 View to the FOE response XML
+ * @param - sView - string ->the View XML string representation
+ * Return - rval - string representing the FOE XML response
+ */
+function onConvertView2FOE(sView) {
+	try {
+		if(sView==null) {
+		    sView='<View/>';
+		}
+
+		var xmlView = new XML(sView);
+		var viewChildren = xmlView.children();
+		var xmlOut = new XML('<ProdInfoResponse/>');
+
+		//Header Element
+		xmlOut.Header.@command = '0';
+		xmlOut.Header.@version = '2';
+
+		//Order Element
+		var orderKey = xmlView.@orderKey;
+		//TODO : check the split
+		var storedOrderKey = orderKey.split(":");
+		xmlOut.Order.@storedOrderKey = storedOrderKey[1];
+		xmlOut.Order.@major = xmlView.@major;
+		xmlOut.Order.@minor = xmlView.@minor;
+		//TODO : Verify which is the total amount and tax to be sent to the client
+		xmlOut.Order.@totalAmount = xmlView.@totalAmount;
+		xmlOut.Order.@totalTax = xmlView.@totalTax;
+
+		var lastItem='x';
+		var lastLevel=0;
+		var level=0;
+		var item = null;
+		var product = null;
+		var newProduct = null;
+		var changedAfterTotal=false;
+
+		var itemView=null;
+		//Items
+		for each (itemView in xmlView.ItemView) {
+			if(lastItem!=itemView.itemCode) {
+				if(item!=null) {
+					if(changedAfterTotal) {
+						item.@changedAfterTotal='true';
+					}
+					xmlOut.Order.appendChild(item);
+				}
+
+				//Item Element
+				item = new XML('<Item/>');
+				item.@index = Number(itemView.itemCode)+1;
+				item.@voided = ((itemView.quantity==0) && (itemView.grilledQuantity==0));
+				item.@qtyPromo = itemView.quantityPromo;
+				item.@currentSelected = itemView.currentSelected;
+
+		        changedAfterTotal=false;
+				lastItem=itemView.itemCode;
+				lastLevel=0;
+
+			}
+
+ 			//Remove open choices from FOE Response XML
+			var productType = Number(itemView.productType);
+			if(productType == 4) { //productType == 4 -> indicates an open choice
+				continue;
+			}
+
+			level=Number(itemView.level);
+			var defQty = Number(itemView.componentDefaultQtd);
+			var qty = Number(itemView.quantity);
+
+			if(itemView.isGrillLine=='true') {
+				//Grill
+				newProduct = new XML('<grill/>');
+				//Modifiers
+				newProduct.@modifier = itemView.specialModifiers;
+				//newProduct.@defQty = defQty;
+
+				if(itemView.specialModifiers!="0") {
+					newProduct.@qty = defQty;
+				} else if(defQty>0) {
+					newProduct.@qty = defQty+qty;
+					//newProduct.@alter = qty;
+				} else {
+					newProduct.@qty = qty;
+				}
+
+			} else {
+				newProduct = new XML('<product/>');
+				newProduct.@qty = qty;
+			}
+
+			newProduct.@code = itemView.productCode;
+			//TODO : Verify which unitPrice will be used unitPrice or netUnitPrice
+			newProduct.@unitPrice = itemView.unitPrice;
+
+			//newProduct.@lastLevel = lastLevel;
+			//newProduct.@level = level;
+			//TODO : remove
+			//newProduct.@name = itemView.dtName;
+
+			//changedAfterTotal
+			if(!changedAfterTotal) {
+				changedAfterTotal = (itemView.quantityChanged=='true'||itemView.quantityChanged=='TRUE');
+			}
+
+			//check levels
+			if(level>lastLevel) {
+				product.appendChild(newProduct);
+				product = newProduct;
+			} else if((level<=lastLevel) &&  (level!=0)) {
+				for(j=0; j<((lastLevel-level)+1); j++) {
+					product = product.parent();
+				}
+				product.appendChild(newProduct);
+				product = newProduct;
+			} else {
+				product = newProduct;
+				item.appendChild(product);
+			}
+			lastLevel=level;
+		}
+		if(item!=null) {
+			if(changedAfterTotal) {
+				item.@changedAfterTotal='true';
+			}
+			xmlOut.Order.appendChild(item);
+		}
+
+
+		var cashless = null;
+		var cashlessCounter=0;
+		var itemTenderView=null;
+		//Tender + Cashless
+		for each (itemTenderView in xmlView.ItemTenderView) {
+			item = new XML('<Tender/>');
+
+			item.@code = itemTenderView.code;
+			item.@qty = itemTenderView.qty;
+			item.@value = itemTenderView.value;
+			item.@srcPOSId = itemTenderView.srcPOSId;
+			item.@discMode = itemTenderView.discMode;
+
+			//Cashless
+			if(itemTenderView.cat=="TENDER_ELECTRONIC_PAYMENT") {
+				cashless = new XML('<cashless/>');
+				stripCashlessString(cashless, xmlView.Cashless[cashlessCounter]);
+				item.appendChild(cashless);
+				caslessCounter++;
+			}
+
+			xmlOut.Order.appendChild(item);
+		}
+/*
+		var itemViewTimes=null;
+		//Times
+		for each (itemViewTimes in xmlView.ViewTimes) {
+			item = new XML('<Times/>');
+			item.@totalTime = itemViewTimes.@totalTime;
+			item.@storeTime = itemViewTimes.@storeTime;
+			item.@orderTime = itemViewTimes.@orderTime;
+			xmlOut.Order.appendChild(item);
+
+			//Only one by XML
+			break;
+		}
+*/
+		return(xmlOut.toXMLString());
+	} catch( ex ) {
+		return (null);
+	}
+
+	//***** HELPER FUNCTIONS ******//
+	function stripCashlessString(cashless, cashlessStr) {
+		//TODO : check cashless string format
+		//function ParseTrackInfo(retcode,cardType)
+		//function cashlessPayment(tenderId,tenderValue,refund)
+
+		//TODO : check the split
+		var splitStr = cashlessStr.split("@");
+
+		if(splitStr.length<9) {
+			return;
+		}
+
+		cashless.@cardProv = splitStr[1];
+		cashless.@cardNum = splitStr[2];
+		cashless.@expire = splitStr[3];
+		cashless.@auth = splitStr[4];
+		cashless.@printFlag = splitStr[5];
+		cashless.@seqNo = splitStr[6];
+		cashless.@gcBalance = splitStr[8];
+		cashless.@account = splitStr[9];
+
+		return;
+	}
+
+}
+
+/**onRequestCard
+ *
+ * @brief - This function initializes the card reader 
+ * Return - true if valid
+ */
+function onRequestCard(msg) {
+	if(0 == msg.length) {
+		return(false);
+	}
+	PosShowMessage(msg,"_NOMODAL:STBTN:MSG_CANCEL");
+	return(true);
+}
+
+/**onValidateManagerCard
+ *
+ * @brief - This function validates a string read by card reader 
+ * @param - minLevel - minimun level for validation
+ * @param - cardData - data read from card
+ * Return - true if valid
+ */
+function onValidateManagerCard(minLevel,cardData) {
+	PosShowMessage("MSG_PROMPTCARD","_NOMODAL:END");
+
+	API.dbg("onValidateManagerCard minLevel: " + minLevel + " cardData: " + cardData);
+	
+	var hlp=new BusinessObjectHelper;	
+	var cardType = hlp.findParamInSectionWide("CardType","Security");
+	
+    if(cardType == "1") {
+		API.dbg("onValidateManagerCard minLevel: " + minLevel + " cardData: " + cardData);
+		var mgrCard = hlp.findParamInSectionWide("managerCard","Security");
+		var spvCard = hlp.findParamInSectionWide("supervisorCard","Security");
+		if((mgrCard+"") == "")
+		{
+			mgrCard = "0088899900002222012998800000000000000";
+		}
+		if((spvCard+"") =="")
+		{
+			spvCard = "0088899900001111012999000000000000000";
+		}
+    		if ((minLevel == 86 && (cardData == mgrCard || cardData == spvCard )) || (minLevel == 88 && cardData == spvCard)) {
+			return(true);
+		}
+	} 
+	else if(cardType == "2") //prtugal card type
+	{
+		API.dbg("onValidateManagerCard type 2 minLevel: " + minLevel + " cardData: " + cardData);
+		if(cardData[18] !="9" && cardData[18] !="F") //test if the card is good
+		{
+			PosShowMessage("MSG_INVCARD");
+			return false;
+		}
+		
+		//get the card id
+		var cardId = cardData[8] +""+ cardData[9] +""+ cardData[10] +""+ cardData[11];
+		//get the store id
+		var storeId= cardData[4] +""+ cardData[5] +""+ cardData[6] +""+ cardData[7];
+
+		 // Flaviu 20110504 required for reduce receipt
+		var ctx = new SessionContext;
+        ctx.set("reduction_manger_id", cardId, false);
+		
+		
+		//get the authorisation level for the given card id
+		var hlp = new BusinessObjectHelper;
+		var securityLevel = hlp.getUserInfo(toInt(cardId)+"","2");
+		if(Number(minLevel) == 86) //required autorization level 
+		{
+			if(Number(securityLevel) == 88)
+			{
+				return true;
+			}
+			if(Number(securityLevel) == 86)
+			{
+				
+				//we need to compare the store id from the configuration with the one defined pm card
+				var matched = toInt(hlp.findParamInSectionWide("StoreID", "StoreDetails")) == toInt(storeId); 
+
+				if(matched ==true)
+				{
+					return true;
+				}
+			}
+		}
+		if(Number(minLevel) == 88 && Number(securityLevel) == 88) //no need to verify the store
+		{
+			return true;
+		}
+	}
+	else
+	{
+		if(cardData.length < 8) {
+			// No data available
+			if(cardData.length != 0)
+				PosShowMessage("MSG_INVCARD");
+			return(false);
+		}
+		var valid=cardData.substr(4,1);
+		var id=cardData.substr(5,3);
+		
+		 // Flaviu 20110504 required for reduce receipt
+		var ctx = new SessionContext;
+        ctx.set("reduction_manger_id", id, false);
+		
+		// Valid for PANASONIC
+		if("0" == valid) {
+			var hlp=new BusinessObjectHelper;
+			if(hlp.validateUser(id,null,minLevel,"manager")) {
+				return(true);
+			}
+		}
+	}
+	PosShowMessage("MSG_INVCARD");
+	return(false);
+}
+
+/**onEndRequestCard
+ *
+ * @brief - This function finalizes the  card reader 
+ * @param - mode - operation mode
+ * Return - true if valid
+ */
+function onEndRequestCard(mode) {
+	if(0 == mode)
+	{
+		// mode equal 0 - Card validated is Ok
+		return(true);
+	}
+	// mode equal 1 - Card not valid - FALSE as return stops execution, TRUE would open the keypad....
+	return(false);
+}
+
+//SDE-2351
+/**onBeforeChangeSizeSelection
+ *
+ * @brief - This function handles onBeforeChangeSizeSelection event
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+ /*
+function onBeforeChangeSizeSelection()
+{
+	if(PosCheckSessionProperty("POD","CSO")) {
+		return(true);
+	}
+	
+	var hlp = new BusinessObjectHelper;
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(true);
+	}
+	var view = new XML(curView);
+	if(null == view) {
+		return(true);
+	}
+	var items=view.ItemView.(level == 0 && quantity > 0);
+	if(null == items) {
+		return(true);
+	}
+	
+	var i;
+	var selItem=null;
+	var balance=0;
+	for(i=0; i < items.length(); i++) {
+		var item=items[i];
+		if(item.currentSelected == "true") {
+			selItem=items[i];
+			if(item.familyGroup != REGULAR_ENTREE && item.familyGroup != BREAKFAST_ENTREE) {
+                                return(false);
+			}
+		}
+	}
+	return(null!=selItem);
+}
+*/
+
+//SDE-2536
+/**onChoiceMade
+ *
+ * @brief - This is called once choices are made
+ * @param - code - product code
+ * @param - qty - quantity of choices made
+ * Return - always returns true
+ */
+function onChoiceMade(qty, forceAll) {
+     if(forceAll) {
+         if (PosConvertProductForceAll()) {
+           PosAutoChoice();
+         }
+
+     } else {
+         if (PosConvertProduct()) {
+           PosAutoChoice();
+         }
+     }
+
+     return(true);
+}
+
+/* @brief Display the reduction receipt if it is necessary.
+*  @param - code - product code
+* @param - incQtty - quantity of choices made
+* @param - caller - the name of caller function
+*/
+function tryDisplayReductionReceipt(prodCode,incQtty,calller)
+{
+    // Flaviu 20110504
+    var result = false;
+    var ctx = new SessionContext;
+    //API.DbgMessageBox(calller + " prodCode=" + prodCode + " incQtty=" + incQtty + " reduction_call_report=" + ctx.get( "reduction_call_report"));
+    if ( ctx.get( "reduction_call_report") == "true")
+    {
+        // set reduction data
+        ctx.set( "reduction_product_code", prodCode.split("|")[0], false);
+        ctx.set( "reduction_product_quantity", incQtty, false);
+
+        // print reduction receipt
+        PosCreateReport( "VIEW", ctx.get( "reduction_function_name"), "NOPREVIEW|SAVE","");
+        result = true;
+    }
+
+    return result;
+}
+
+/**onClearChoice
+ *
+ * @brief -  
+ * @param - prodCode - product code
+ * @param - incQtty - quantity of choices made
+ * Return - true if valid
+ */
+function onClearChoice(prodCode,incQtty) 
+{
+    // Flaviu 20110504
+    tryDisplayReductionReceipt(prodCode,incQtty,"onClearChoice");
+    return true;
+}
+
+/**onItemVoided
+ *
+ * @brief -  
+ * @param - code - product code
+ * @param - qty - quantity of choices made
+ * Return - true if valid
+ */
+function onItemVoided(prodCode,incQtty) 
+{
+    // Flaviu 20110504
+    tryDisplayReductionReceipt(prodCode,incQtty,"onItemVoided");
+    return true;
+}
+
+
+/**onItemSell
+ *
+ * @brief -  
+ * @param - 
+ * @param - 
+ * Return - true if valid
+ */
+function onItemSell(prodCode,incQtty) {
+
+	// Flaviu 20110504
+    // set reduction data
+    var ctx = new SessionContext;
+    ctx.set( "reduction_product_code", prodCode.split("|")[0], false);
+    ctx.set( "reduction_product_quantity", incQtty, false);
+    //API.DbgMessageBox( "onItemSell " + prodCode + ": code=" + ctx.get( "reduction_product_code") + " qty=" + incQtty);
+
+
+	if(PosCheckSessionProperty("POD","CSO"))
+	{
+	   var hlp = new BusinessObjectHelper;
+	   var isEnabled = hlp.findParamInSectionWide("SendSaleTypeOnTheFlyToKVS","Kiosk");
+	   API.dbg("onItemSell isEnabled: " + isEnabled + "");
+
+	   var saleType=-1;
+		if (PosCheckSessionProperty('TPUI_SALE_TYPE','0')) { 
+			saleType=0; // EAT-IN
+		} else if (PosCheckSessionProperty('TPUI_SALE_TYPE','1')) { 
+			saleType=1; // TAKE-OUT
+		} else if (PosCheckSessionProperty('TPUI_SALE_TYPE','2')) { 
+			saleType=2; // OTHER
+		}
+
+		API.dbg("onItemSell saleType: " + saleType + "");
+				
+	   if ("true" == (isEnabled+"")) {
+		   if (PosCheckSessionProperty('EXT_UI','true')) {
+				
+				if (saleType>-1) {
+					// Forces the chosen sale type to be sent to the KVS.
+					PosSetSaleType(saleType,'true');
+					PosRemoveSessionProperty('TPUI_SALE_TYPE');
+				}
+			}
+			//return true;
+		}
+		else
+		{  // ACSP8119068 After upgrading the lab to 6.1.16 RC4 hf4 the kioks gui does not start any more
+			if(saleType >-1)
+			{
+				PosSetSaleType(saleType,'false');
+			}
+		}
+		return true;
+	}
+	else
+	{	
+		//03.03.2011 Mihai Secareanu - MCR alert
+		//check if the file exists
+	   if(File.exists("../POSDATA/MCRBlocked.txt") ==true)
+	   {
+			var ctx		= new SessionContext;
+			var contentMCR	= ctx.get("McrBlockedProd"); //get the list of blocked products
+			var arrBlockProduct = contentMCR.split("\n");
+			
+			var arrSoldProdCode = prodCode.split("|"); //in case of value meals multiple products are sold 
+			for(var i=0 ;i < arrBlockProduct.length; i++)  //iterate the list of blocked products
+			{
+				for(var j=0; j< arrSoldProdCode.length; j++) 
+				{
+					if(Number(arrSoldProdCode[j]) == Number(arrBlockProduct[i]))  //the product cannot be sold
+					{
+						//show the message
+						PosShowMessage(API.getLocalMsg("MSG_MCR_BLOCK_PRODUCT"));
+						return false;
+					}
+				}
+			}
+	   }
+	
+	
+		PosSetSessionProperty("ActualSaleQuantity", incQtty>=0?incQtty:0);
+		return(true);
+	}
+}
+
+/**onChangeReport
+ *
+ * @brief - This function modify the report before save
+ * @param - stringFile - string with the report
+ * Return - true if valid
+ */
+function onChangeReport(stringFile) {
+	var newStringFile="";
+	var hlp=new BusinessObjectHelper;
+	var sDuplMsg=API.getLocalMsg("MSG_WFL_DUPLICATE_REPRINT_MESSAGE");
+	if( Number(stringFile.indexOf(API.getLocalMsg("MSG_RECEIPT_RECEIPT"))) >=0 ) //test if receipt exisnt in the report
+	{
+		var arrReport= stringFile.split(API.getLocalMsg("MSG_RECEIPT_RECEIPT"));
+		//API.dbg("save report: "+arrReport[0]+arrReport[1]);
+		//we need to calculate the length of the line.
+		var initialLength1 = arrReport[0].length;
+		var initialLength2 = arrReport[1].length; 
+		arrReport[0]= rtrim(arrReport[0]);
+		arrReport[1]= ltrim(arrReport[1]);
+		var lineLength = initialLength1 - arrReport[0].length + initialLength2 - arrReport[1].length + API.getLocalMsg("MSG_RECEIPT_RECEIPT").length;
+		//API.dbg("save report after trim: "+arrReport[0]+arrReport[1]);
+		var length = sDuplMsg.length;
+		//API.dbg("save report: "+length+ " "+ lineLength);
+		
+		//calculate where we need to put the reprint message
+		var offset = parseInt((lineLength-length) /2);
+		var str = "";
+		for(var i=0; i<offset;i++)
+		{
+			str +=" ";
+		}
+		var stringReprint = str+sDuplMsg + str;
+		for(var i =0; i<(arrReport.length-1);i++)
+		{
+			if(Number(i) !=0)
+			{
+				arrReport[i]= ltrim(arrReport[i]);
+				arrReport[i]= rtrim(arrReport[i]);
+			}
+			newStringFile += arrReport[i] + stringReprint;
+		}
+		arrReport[arrReport.length-1]= ltrim(arrReport[arrReport.length-1]);
+		newStringFile += arrReport[arrReport.length-1];
+		PosSetSessionProperty("NEWREPORT",newStringFile);
+	}	
+	else
+	{
+		PosSetSessionProperty("NEWREPORT",stringFile);
+	}
+	
+
+	return(true);
+}
+
+function onProductDBIteration(xmlProd, arrProdCode)
+{
+   // PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+	var hlp=new BusinessObjectHelper;	
+	if(GLOBAL_DBIterate ==false)
+	{
+		GLOBAL_familypackflag = hlp.findParamInSectionWide("FamilyPackDiscountActive","FamilyPack");
+		GLOBAL_DBIterate = true;
+	}
+		
+	if(GLOBAL_familypackflag =="1")
+	{
+		var hlp = new BusinessObjectHelper;
+		currentView = hlp.getCurrentView();
+	    xmlSales= new XML(currentView);
+	    var prodInfo = new XML(xmlProd);
+		var found =false;
+		if(Number(prodInfo.ProductCode) != Number(arrProdCode[0]))
+		{
+		  found = true;
+		}
+		if(found == false)
+		{
+			var quantity = 0;
+			for each (item in xmlSales.ItemView) //get the qunatity for the current product
+			{
+				if(Number(item.productCode) == Number(prodInfo.ProductCode))
+				{
+					quantity = item.quantity;
+					break;
+				}
+			}
+			//API.dbg("quntity "+prodInfo.ProductCode +" "+ quantity + " "+ prodInfo.@valueMealType);
+			
+			//API.dbg("mihai "+ xmlSales.ItemView.productCode);
+			//API.dbg("mihai "+ prodInfo.ProductCode);
+			/*
+				KM	HappyMeal menu
+				SM	Salad menu
+				MM	Medium menu
+				LM	Large menu
+			*/
+			//API.dbg(xmlSales.ItemView.(productCode == prodInfo.ProductCode).quantity);
+			if( prodInfo.CustomParameters.Parameter.(@name=="valueMealType").@value == "KM")
+			{
+				familyPackKM = Number(familyPackKM) + Number(quantity);
+			}
+			else if( prodInfo.CustomParameters.Parameter.(@name=="valueMealType").@value == "SM")
+			{
+				familyPackSM = Number(familyPackSM) + Number(quantity);
+			}
+			else if( prodInfo.CustomParameters.Parameter.(@name=="valueMealType").@value == "MM" || prodInfo.CustomParameters.Parameter.(@name=="valueMealType").@value == "LM" )
+			{
+				familyPackVM = Number(familyPackVM) + Number(quantity);
+			}
+		}
+	}
+	
+	if(Country =="FR")
+	{
+	   var prodInfo = new XML(xmlProd);
+	   if(Number(prodInfo.ProductCode) == Number(arrProdCode[0])) //we found the product we must return his family name
+	   {
+			productPMIXFamilyName = prodInfo.CustomParameters.Parameter.(@name=="LocalFamilyGroup").@value;
+	   }
+	}
+	
+	//portugal marketing contest
+	
+	currentView = hlp.getLastSaleView();
+	xmlSales= new XML(currentView);
+	var prodInfo = new XML(xmlProd);
+	var found =false;
+	if(Number(prodInfo.ProductCode) != Number(arrProdCode[0]))
+	{
+	  found = true;
+	}
+	if(found == false) //we found the product in product-db
+	{
+		var nrCodes = Number(prodInfo.CustomParameters.Parameter.(@name=="UaildeContest").@value+""); //get the number of codes asociated
+// start change js for ACSP8002684 Newpos 6.1 Script Change Request for Drive Marketing Campaign Code
+			if(Number(nrCodes) > 0)
+			{
+				for each (var oldProductCode in PTCodesList) {
+					if (oldProductCode == Number(arrProdCode[0])){
+						// in this case we have multiple products in the view with the same product code - already counted
+						found = true;
+						break;	// already found
+					}
+				}
+				if (found == false) {
+					// add to list so we do not count this product again
+					PTCodesList[PTCodesList.length] = Number(arrProdCode[0]);
+					qtyprod = 0;
+					for each (var qtymulti in xmlSales.ItemView.(Number(productCode) == Number(prodInfo.ProductCode))) {
+						qtyprod += Number(qtymulti.quantity);
+					}
+					uaildeCodesNumber += qtyprod * nrCodes;
+					if (PosCheckSessionProperty("POD","DRIVE_THRU")) {
+						driveCodesNumber += qtyprod;
+					}
+				}
+			}
+// end change js for ACSP8002684 Newpos 6.1 Script Change Request for Drive Marketing Campaign Code	
+	}	
+	
+	
+
+	return true;
+}
+
+
+function onDayClosed(closeMode,level)
+{
+	runGetConfig_Eurecs =true; //enable again to get the cash report and information required for e-cash transactions
+	//runGetConfig_Local =true;
+	//print reports
+	//print register reports
+	var storedbPath=  "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportCashSingle\").@value";
+	var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportCashSingle\").@value";
+	var printReport = getConfigValue(storedbPath , posdbPath);
+	if(printReport == "true")
+	{
+		API.dbg("Endofdayreports: CloseReportCashSingle");
+		var result = PosCreateReport("ALL","reportDailyCloseByDate@reports.nps","NOPREVIEW");	
+		if( result != true)
+		{
+			PosShowMessage(API.getLocalMsg("MSG_ENDOFDAYREPORT_CASH_FAILED"));
+		}
+	}
+	
+	var storedbPath=  "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportPmxSingle\").@value";
+	var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportPmxSingle\").@value";
+	var printReport = getConfigValue(storedbPath , posdbPath);
+	if(printReport == "true")
+	{
+		API.dbg("Endofdayreports: CloseReportCashSingle");
+		var result = PosCreateReport("ALL","reportPMixByDate@reports.nps","NOPREVIEW");
+		if( result != true)
+		{
+			PosShowMessage(API.getLocalMsg("MSG_ENDOFDAYREPORT_PMIX_FAILED"));
+		}		
+	}
+	
+	var storedbPath=  "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportHsaSingle\").@value";
+	var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"EndOfDayReport\").Parameter.(@name==\"CloseReportHsaSingle\").@value";
+	var printReport = getConfigValue(storedbPath , posdbPath);
+	if(printReport == "true")
+	{
+		API.dbg("Endofdayreports: CloseReportHsaSingle");
+		var result = PosCreateReport("ALL","reportSaleHourByDate@reports.nps","NOPREVIEW");
+		if( result != true)
+		{
+			PosShowMessage(API.getLocalMsg("MSG_ENDOFDAYREPORT_HSA_FAILED"));
+		}
+	}
+	
+	if(signReceiptEnable == true)
+	{
+		PosRemoveSessionProperty("receipt_signature_refund",true);
+		PosRemoveSessionProperty("receipt_signature",true);
+	}
+}
+
+/**onHILO
+ *
+ * @brief - When the HILO is reached on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onHILO(qtty,highQuantitySaleLimit) 
+{
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		return(true);
+	}
+	else
+	{
+		var hlp = new BusinessObjectHelper;
+		
+		var msgtxt = hlp.getSysMessage("MSG_PROMPTHILO",qtty, highQuantitySaleLimit);
+		return PosGetAuthorization("manager", msgtxt);
+	}
+}
+
+/**onHALO
+ *
+ * @brief - When the HALO is reached on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onHALO(totalAmount,highAmountSaleLimit) 
+{
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		return(true);
+	}
+	else
+	{
+		var hlp = new BusinessObjectHelper;
+		var msgtxt = hlp.getSysMessage("MSG_PROMPTHALO",totalAmount, highAmountSaleLimit);
+		return PosGetAuthorization("manager",msgtxt);
+	}
+}
+
+/**onTenderExceeded
+ *
+ * @brief - When the tender is exceeded on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onTenderExceeded(tenderId,tenderName,defaultHALOLimit) {
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		return(true);
+	}
+	else
+	{
+		return PosGetAuthorization("manager");
+	}
+}
+
+ /* onReductionHILOBeforeTotal - CSO ignore reduction limits
+* bypass TRED - ACSP7053277 Kiosk NL - NPS script change clarification for testing UI v1.1.0.29
+*/
+function onReductionHILOBeforeTotal(nQtty,TRedBeforeTotal)
+{
+	if(PosCheckSessionProperty("FamilyPack_Voucher","true") ==true)  //no authentication needed for this transformation
+	{
+		return true;
+	}
+	
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		if (PosCheckSessionProperty('EXT_UI','true')) {
+			return true;
+		}
+		if (TRedBeforeTotal> 0 && nQtty >= TRedBeforeTotal) 
+        {
+			//MS 27.04.2011 add receipt for reduction operation
+			return askDisplayReceiptOnReduction( false, "MSG_PROMPTREDUCTBT", nQtty, TRedBeforeTotal);
+		}
+		return true;
+	}
+	else
+	{
+		//MS 27.04.2011 add receipt for reduction operation
+        return askDisplayReceiptOnReduction(false, "MSG_PROMPTREDUCTBT", nQtty, TRedBeforeTotal);
+
+	}
+}
+
+
+function onReductionHILOAfterTotal(nItemsAfterTotal,TRedAfterTotalQuantity)
+{
+	if(PosCheckSessionProperty("FamilyPack_Voucher","true") ==true)  //no authentication needed for this transformation
+	{
+		return true;
+	}
+	
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		if (PosCheckSessionProperty('EXT_UI','true')) {
+			return true;
+		}
+		if (TRedAfterTotalQuantity > 0 && nItemsAfterTotal >= TRedAfterTotalQuantity ) 
+        {
+			//MS 27.04.2011 add receipt for reduction operation
+			return askDisplayReceiptOnReduction( true, "MSG_PROMPTREDUCTAT", nItemsAfterTotal, TRedAfterTotalQuantity);
+		}
+		return true;
+	}
+	else
+	{
+		//MS 27.04.2011 add receipt for reduction operation
+        return askDisplayReceiptOnReduction( true, "MSG_PROMPTREDUCTAT", nItemsAfterTotal, TRedAfterTotalQuantity);
+	}
+}
+
+function onReductionHALOAfterTotal(nSaleType,TRedAfterTotalAmount)
+{
+	if(PosCheckSessionProperty("FamilyPack_Voucher","true") ==true)  //no authentication needed for this transformation
+	{
+		return true;
+	}
+	
+	if(PosCheckSessionProperty("POD","CSO")) //no authorisation for kiosk
+	{
+		if (PosCheckSessionProperty('EXT_UI','true')) {
+			return true;
+		}
+		if (TRedAfterTotalAmount > 0 && nSaleType >= TRedAfterTotalAmount ) 
+        {
+			//MS 27.04.2011 add receipt for reduction operation
+            return askDisplayReceiptOnReduction( true, "MSG_PROMPTREDUCTAT", nSaleType, TRedAfterTotalAmount);
+		}
+		return true;
+	}
+	else
+	{
+		//MS 27.04.2011 add receipt for reduction operation
+        return askDisplayReceiptOnReduction( true, "MSG_PROMPTREDUCTVAT", nSaleType, TRedAfterTotalAmount);
+
+	}
+}
+
+/* @brief Asks for manager authorization and later a reduction receipt could be printed.
+// @param isAfter - boolean specifying if the reduction is after tender
+// @param message - authorization message
+// @param count - reduction count
+// @param limit - limit reached
+*/
+function askDisplayReceiptOnReduction( isAfter, message, count, limit)
+{
+    // Flaviu 20110504
+	var hlp = new BusinessObjectHelper;
+	var authMessage = hlp.getSysMessage( message, count, limit);
+    result = PosGetAuthorization( "manager", authMessage);
+    var ctx = new SessionContext;
+    //API.DbgMessageBox( "askDisplayReceiptOnReduction r=" + result + " ok=" + printReductionReceipt + " after=" + isAfter + " clr_void_choice=" + ctx.get( "reduction_clear_void_choice"));
+
+	if ( result == true && printReductionReceipt == true)
+	{
+        var functionName = "receipt" + ( ( isAfter == true) ? "RAT" : "RBT") + "@reports.nps";
+        if ( ctx.get( "reduction_clear_void_choice") != "true")
+        {
+            //API.DbgMessageBox( "Print reduction receipt " + functionName);
+            PosCreateReport( "VIEW", functionName, "NOPREVIEW|SAVE","");
+        }
+        else
+        {
+            //API.DbgMessageBox( "Reduction receipt " + functionName + " function will be called on onClearChoice/onItemVoided events");
+            // set reduction data
+            ctx.set( "reduction_call_report", true, false);
+            ctx.set( "reduction_function_name", functionName, false);
+        }
+	}
+
+	return result;
+}
+
+
+/**
+ * \brief Entry point called by kernel in order to create a EVMR view
+ * \param [in] view - View to consolidate in string format
+ * \since SDO-3214
+ */
+function onAdjustViewForEvmrOverride(view) {
+    var evmrView = new EVMRView (view);
+    evmrView.adjustViewItemsOverride ();
+    return evmrView.getStringView ();
+}
+
+//OI 26.01.2010 add for 6.1.17
+//(NPS-5778) Value meal drink (upcharge / discount) information needs to be sent to the COD -3650800
+function onAdjustViewForEvmCOD (view) {
+	var evmCODView = new EVMCODView (view);
+	//evmCODView.removeUnsolvedChoiceItems ();
+	evmCODView.adjustVMPrices ();
+	return evmCODView.getStringView ();
+}
+
+/** onCanDiscount
+ * @brief Event used to verify whether or not the discount can be applyed. This is a localization rule to evaluate the discount.
+ * This event is called from PosDoDiscount_CSL() BC in CSL_Tender.nps. If this event returns false, the current discount is canceled.
+ * @param discountId - string - (numeric value) discount id as configured in store-db
+ * @param type - string - type of discount: 1-normal (default)\n 
+ *													 2-crew meal\n 
+ *													 3-manager meal
+ * @param amount - amount value to apply the discount
+ * @since SDO-2175
+ */
+function onCanDiscount (discountId, type, amount) {
+	return true;
+}
+
+
+/** onDeniedSizeSelection 
+ * @brief Event used to handles a change size selection error.
+ * This event is called from PosChangeSizeSelection() BC in CSL_Sales.nps. 
+ * @param ErrorCode - int - error reason
+ */
+function onDeniedSizeSelection (ErrorCode) {
+	if(ErrorCode == PROD_SALABLE_UPGRADE) {
+		PosShowMessage("MSG_BC_SIZEINVD");
+	}
+	else {
+		PosShowMessage("MSG_BC_PRODINV");
+	}
+	return true;
+}
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d3739343700db76446b6fee761872609186ce1857abaeed714c65df7a347987231e02e9721c56eb4bc212680229e789d1a374b6f2c059390010
+ * =================================================================================================================================
+*/

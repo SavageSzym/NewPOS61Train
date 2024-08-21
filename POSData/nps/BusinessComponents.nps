@@ -1,0 +1,91 @@
+/** 
+ * @file BusinessComponents.nps
+ * @brief This NPS file implements BusinessComponents Initialiation. This is the main entry of CSL
+ *
+ * @addtogroup 	CSL The NewPOS Core Script Lybrary (CSL)
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * $Source: /NewPOS/SRC/np61cvs/cvs/___NewPOS6/src/npCore/npBusComp/scripts/BusinessComponents.nps,v $
+ * $Revision: 776 $
+ * $Date: 2009-08-06 10:46:38 -0300 (qui, 06 ago 2009) $ (of revision)
+ * $Author: rcaram $ (of revision)
+ * @{
+ */
+ 
+/* Variable used for version control */
+BUSINESS_COMPONENTS_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+var csl_version;
+var csl_lastchange;
+var csl_buildtime;
+executeScript("CSL_Compatibility.nps",true);
+executeScript("CSL_Init.nps",true);
+executeScript("CSL_UnitTests.nps",true);
+//Let's try to include the CSL_VERSION file
+try {
+	executeScript("CSL_VERSION.ver",true);
+} catch(filenotfound) {
+	csl_version = "development version";
+	//When it was last committed in the repository
+	csl_lastchange = "unknown";
+	//When it was included in build
+	csl_buildtime = new Date();
+} finally {
+	logVersion();
+}
+
+function logVersion() {
+	API.dbg("***************C S L   V E R S I O N***************");
+	API.dbg("version:   " + csl_version); 
+	API.dbg("lastchange:" + csl_lastchange); 	
+	API.dbg("buildTime: " + csl_buildtime);
+	API.dbg("FILE                           VERSION");
+	API.dbg("BusinessComponents.nps         " + BUSINESS_COMPONENTS_VERSION);
+	API.dbg("CSL_Adaptors.nps               " + CSL_ADAPTORS_VERSION);
+	API.dbg("CSL_ApplyUpdate.nps            " + CSL_APPLYUPDATE_VERSION);
+	API.dbg("CSL_CashOperation.nps          " + CSL_CASHOPERATION_VERSION);
+	API.dbg("CSL_Choices.nps                " + CSL_CHOICES_VERSION);
+	API.dbg("CSL_Compatibility.nps          " + CSL_COMPATIBILITY_VERSION);
+	API.dbg("CSL_CoreUtilities.nps          " + CSL_COREUTILITIES_VERSION);
+	API.dbg("CSL_Grill.nps                  " + CSL_GRILL_VERSION);
+	API.dbg("CSL_Init.nps                   " + CSL_INIT_VERSION);
+	API.dbg("CSL_Missing.nps                " + CSL_MISSING_VERSION);
+	API.dbg("CSL_Register.nps               " + CSL_REGISTER_VERSION);
+	API.dbg("CSL_Reports.nps                " + CSL_REPORTS_VERSION);
+	API.dbg("CSL_Sales.nps                  " + CSL_SALES_VERSION);
+	API.dbg("CSL_Screen.nps                 " + CSL_SCREEN_VERSION);
+	API.dbg("CSL_Security.nps               " + CSL_SECURITY_VERSION);
+	API.dbg("CSL_Tender.nps                 " + CSL_TENDER_VERSION);
+	API.dbg("CSL_Tools.nps                  " + CSL_TOOLS_VERSION);
+	API.dbg("CSL_TotalStoreRecall.nps       " + CSL_TOTALSTORERECALL_VERSION);
+	API.dbg("***************************************************");
+}
+
+/**
+ * @brief - Adjusts the Float Grill after a Side Choice or Drink is grilled
+ */
+function lAdjustFloatScreen() {
+	var ctx=new SessionContext;
+	var id=ctx.get("FLOATGRILL_ID");
+	var oper=ctx.get("FLOATGRILL_OPER");
+	
+	PosSetFloatGrillOper(oper,"");
+	PosSetSessionProperty("OPERFLOATGRILL",id,"true");
+	PosRefreshFloatButtons();
+}
+
+/**
+ * @} END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d3739343700e17560de895890ad87c180532abe82f18aa2a1598f949a06e5e74ac1143fb72c48ffeaa8fc3bd9dcf6c927f1b2027779352c0010
+ * =============================================================================================================================
+*/

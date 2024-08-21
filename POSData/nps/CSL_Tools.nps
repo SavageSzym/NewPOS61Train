@@ -1,0 +1,280 @@
+ /** 
+ * @file CSL_Tools.nps
+ * @brief This NPS file implements BusinessComponents Tools.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Tools
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Tools.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_TOOLS_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_TOOLS='CSL_Tools.nps';
+var rootStoreDB	= null;
+
+//This is called during script load.
+initTools();
+
+/**
+ * Initialize all global data to be used by all nps
+ *
+ */   
+function initTools() {
+	loadStoreDB();
+}
+
+/** executeBC
+ * This function calls a real Business Object given its' name and parameters.
+ * Used by internal routines to execute BOs.
+ * @param command the BO name to execute eg. "PosDoQuantum"
+ * @param params (String []) the parameters to pass to BO.
+ * @return the value returned by the BO.
+ * @throws RecoverableException if the BO throws exception
+ * @author Pedro
+ */
+function executeBC(command, params) {
+	var cmd = "executeBC";
+	CSL_dbglog(7, SRC_BC_TOOLS, cmd, "Run " + command);
+	CSL_dbglog(7, SRC_BC_TOOLS, cmd, "with " + params);
+//	var ret = Core[command].apply(Core, params);
+//	var ret = Core.PosExecuteBC(command, params);
+	try{
+		var ret = PosExecuteBC(command, params);
+	}catch(e){
+		CSL_dbglog(7, SRC_BC_TOOLS, cmd, e.message + " \n" + e.stack);
+		e.message="stacktrace";
+		throw e;
+	}
+	CSL_dbglog(7, SRC_BC_TOOLS, cmd, "result " + ret);
+	return ret;
+}
+
+/**
+ * loadStoreDB
+ *
+ */
+ function loadStoreDB() {
+	var cmd = "loadStoreDB";
+	CSL_dbglog(7, SRC_BC_TOOLS, cmd, "Start ");
+	var sRawStoreDB = API.getStoredb().toString();
+	var sStoreDB	= sRawStoreDB;
+	// check for E4X documented bug 
+	if (sRawStoreDB.indexOf("<?xml") != -1) {
+		var cutting = sRawStoreDB.indexOf("?>");
+		if (cutting != -1) {
+			sStoreDB = sRawStoreDB.substring(cutting + 2, sRawStoreDB.length);
+		}
+	}
+	rootStoreDB	= new XML(sStoreDB);
+}		
+
+ /**
+ * @brief Helper function to read file, using File Access for NPS scripts
+ *
+ * @param fileName - String - File name for the buffer content.
+ * @param bufferContent - String - Content of the file.
+ */
+function readFile(fileName) {
+	CSL_dbglog(7, SRC_BC_TOOLS, "readFile","Start. Parameter fileName: "+fileName);
+	var file = new File(fileName);
+	file.open("rb");
+	ret = file.read();
+	file.close();
+	CSL_dbglog(7, SRC_BC_TOOLS, "readFile", "End ");
+	return ret;
+}
+
+/**
+ * @brief Helper function to write in file, using File Access for NPS scripts
+ *
+ * @param fileName - String - File name for the buffer content.
+ * @param bufferContent - String - Content of the file.
+ */
+function writeFile(fileName,bufferContent) {
+	CSL_dbglog(7, SRC_BC_TOOLS, "writeFile with fileName: "+fileName, "Start ");
+	var file = new File(fileName);
+	file.open("wb+");
+	if(!file.write(bufferContent)) {
+			CSL_dbglog(7, SRC_BC_TOOLS, "writeFile", "Error writing in file: "+fileName);
+	}
+	CSL_dbglog(7, SRC_BC_TOOLS, "writeFile", "End");
+	file.close();
+	
+}
+
+
+/** 
+ * @brief - Helper functions to manipulate the Workflow Session Context.
+ * The Workflow Session Context has the following format:
+ *
+ * <Workflow name="WF_NAME" starttime="YYYYMMDDhhmmss">
+ * 	<Command name="BCName" success"message of success"/>
+ * 	<Command name="BCName" fail="message of fail"/>
+ * </Workflow>
+ *
+ * @since SDO-1670
+ */
+ 
+/** getResult
+ *
+ * @brief This function searches for the first Command element with the BC name given by the parameter 
+ * and returns its success/fail message.
+ * @param name - The BC name to return the fail/success message
+ * @return the fail/success message of the BC. Empty message, if none.
+ * @author Raphael
+ * @since SDO-1670
+ */
+function getResult(name) {
+	var ctx = new SessionContext;
+	var wfXML = new XML(ctx.get("WF_Result"));
+	var command = null;
+	var ret = null;
+	for each (command in wfXML.Command) {
+		if(command.@name == name) {
+			if(command.@success.length() > 0) {
+				ret = command.@success;
+			}
+			if(command.@fail.length() > 0) {
+				ret = command.@fail;
+			}
+		}
+	}
+	return ret;
+}
+
+/** getLastFail
+ *
+ * @brief This function returns the last fail message from the Workflow Session Context
+ * @param name (optional) - The BC name to search for the fail message
+ * @return The last fail message. Empty if none.
+ * @author Raphael
+ * @since SDO-1670
+ */
+function getLastFail(name) {
+	var ctx = new SessionContext;
+	var wfXML = new XML(ctx.get("WF_Result"));
+
+	var failMessage = null;
+	if (name == null) {
+		for each (command in wfXML.Command) {
+			if(command.@fail.toString().length > 0) {
+				failMessage = command.@fail;
+			}
+		}
+		return failMessage;
+	}
+	else {
+		for each (command in wfXML.Command) {
+			if(command.@name == name) {
+				if(command.@fail.toString().length > 0) {
+					failMessage = command.@fail;
+				}
+			}
+		}
+		return failMessage;
+	}
+}
+
+/** getLastSuccess
+ *
+ * @brief This function returns the last success message from the Workflow Session Context
+ * @param name (optional) - The BC name to search for the success message
+ * @return The last success message. Empty if none.
+ * @author Raphael
+ * @since SDO-1670
+ */
+function getLastSuccess(name) {
+	var ctx = new SessionContext;
+	var wfXML = new XML(ctx.get("WF_Result"));
+
+	var successMessage = null;
+	if (name == null) {
+		for each (command in wfXML.Command) {
+			if(command.@success.toString().length > 0) {
+				successMessage = command.@success;
+			}
+		}
+		return successMessage;
+	}
+	else {
+		for each (command in wfXML.Command) {
+			if(command.@name == name) {
+				if(command.@success.toString().length > 0) {
+					successMessage = command.@success;
+				}
+			}
+		}
+		return successMessage;
+	}
+}
+
+/** getStartTime
+ *
+ * @brief This function returns the start time of the Workflow Session Context
+ * @return The time in format HHHMMSS
+ * @author Raphael
+ * @since SDO-1670
+ */
+function getStartTime() {
+	var ctx = new SessionContext;
+	var wfXML = new XML(ctx.get("WF_Result"));
+	
+	return wfXML.@starttime;
+}
+
+/** PosCheckBCResult
+ *
+ * @brief This function checks if the value given by the parameter matches the value from Session Context
+ * @param bcName - The BC name to search for the fail/success message
+ * @param value - The value to be compared to the fail/success message
+ * @return true for same value. False for different
+ * @author Raphael
+ * @since SDO-1670
+ */
+function PosCheckBCResult(bcName, value) {
+	var ctx = new SessionContext;
+	var wfXML = new XML(ctx.get("WF_Result"));
+	
+	var command = null;
+	var chkValue = null;
+	for each(command in wfXML.Command) {
+		if(command.@name == bcName) {
+			if(command.@success.toString().length > 0) {
+				chkValue = command.@success;
+			}
+			else if(command.@fail.toString().length > 0) {
+				chkValue = command.@fail;
+			}
+		}
+	}
+	if(value == chkValue) {
+		return true
+	}
+	return false;
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d373934370006bbbe151649206235db1f6c6f60db4182d35c7d7459d75545cd04835d56104afc6db01f8b5767b384545b0b58c515b8f3000010
+ * =============================================================================================================================
+*/

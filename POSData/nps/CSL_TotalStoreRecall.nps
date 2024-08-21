@@ -1,0 +1,771 @@
+ /** 
+ * @file CSL_TotalStoreRecall.nps
+ * @brief This NPS file implements BusinessComponents Total,Store and Recall.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	TotalStoreRecall
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_TotalStoreRecall.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_TOTALSTORERECALL_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_TOTAL='CSL_TotalStoreRecall.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRecallMultiOrder</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRecallMultiOrder is responsible for recall orders with same major number.
+ * In java script it should be called:<b>PosRecallMultiOrder(verify)</b>
+ * @param verify - String - optional parameter. Values: "true" to only return if has some order with
+ *														the same major to recall, "false" to recall the order,
+ *														default is false\n 
+ * @success Current and last sale have the same major number.
+ * @success Verify Ok, but not recall the order.
+ * @success Sale Recalled.
+ * @failure <i>Not in Sale Mode</i> - POS is not in sale mode.
+ * @failure <i>Not to force Tender Multi Orders</i> - Configured not to force tender of multi orders.
+ * @failure <i>onRecalledByPreview() failed</i> - hook returned false.
+ * @hook <i>onRecalledByPreview()</i> - Called at end of BC.
+ */
+function PosRecallMultiOrder(verify) {
+	var cmd = "PosRecallMultiOrder";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [verify]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosResetQueueStates</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosResetQueueStates is responsible for reset queue states.
+ * In java script it should be called:<b>PosResetQueueStates(showMessage)</b>
+ * @param showMessage - String - Optional. If this parameter is missing, the BC searches for the "showChangeVolumeMessage" parameter
+ * in the "UserInterface" section, if the "showChangeVolumeMessage" parameter is set to "false", it will not show the dialog messages;
+ * else, the dialog messages will be shown, if the "showMessage" parameter is set to "true", the dialog messages will be shown; else, it will not show the dialog messages. 
+ * the property "showChangeVolumeMessage" if it is set to "false" do not show dialog messages, else dialog messages are shown,
+ * if the "showMessage" parameter is set to "true" dialog messages are shown, else do not show dialog messages.
+ * @success Queue states were reset.
+ * @failure <i>Reset Failure</i> - A failure occurred while trying to reset queue states.
+ * @sessioncontext <i>"cPosResetQueueStates_Result"</i> - set with result code.
+ * @sessioncontext <i>"cPosResetQueueStates_Failure"</i> - set with the error code.
+ */
+function PosResetQueueStates(showMessage) {
+	var cmd = "PosResetQueueStates";
+	var ctx=new SessionContext;
+	var status = false;
+	var hlp = new BusinessObjectHelper;
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	if(showMessage == null) {
+		bShowMsg = hlp.findParamInSectionConfig("showChangeVolumeMessage","UserInterface");
+		if(bShowMsg == "0" || bShowMsg == "false"){
+			bShowMsg = "false";
+		} else {
+		        bShowMsg = "true";
+	        }
+	} else {
+		bShowMsg = (showMessage == "true"? "true": "false");
+	}
+	status = cPosResetQueueStates();
+	if(status!=true){
+		if(bShowMsg=="true"){
+			var errorCode = ctx.get("cPosResetQueueStates_Failure");
+			switch(Number(errorCode)){
+				case 0:
+					PosShowMessage("MSG_BC_RESET_QUEUE_STATE_ERROR");
+					break;
+			}
+		}
+		return (false);
+	}else{
+		if(bShowMsg=="true"){
+			var statusReceived = ctx.get("cPosResetQueueStates_Result");
+			switch(Number(statusReceived)){
+				case 0:
+					PosShowMessage("MSG_BC_RESET_QUEUE_STATE_OK");
+					break;
+			}
+		}
+	}
+	return (true);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosResetQueueStates</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The cPosResetQueueStates is responsible for reset queue states.
+ * In java script it should be called:<b>cPosResetQueueStates()</b>
+ * @success Queue states were reset.
+ * @failure <i>Reset Failure</i> - A failure occurred while trying to reset queue states.
+ * @sessioncontext <i>"cPosResetQueueStates_Result"</i> - set with result code.
+ * @sessioncontext <i>"cPosResetQueueStates_Failure"</i> - set with the error code.
+ * @remarks
+ * Error Code:
+ *				0 - Reset queue states error
+ */
+function cPosResetQueueStates() {
+	var cmd = "cPosResetQueueStates";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChooseVolume</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosChooseVolume is responsible for set another Production Volume.
+ * In java script it should be called:<b>PosChooseVolume(volume, showMessage)</b>
+ * @param volume - String - Optional. Indicates the production volume to be checked; if it is missing, a dialog message
+ * will be shown to select the production volume. 
+ * @param showMessage - String - Optional. If this parameter is missing, the BC searches for the "showChangeVolumeMessage" parameter
+ * in the "UserInterface" section, if the "showChangeVolumeMessage" parameter is set to "false", it will not show the dialog messages;
+ * else, the dialog messages will be shown, if the "showMessage" parameter is set to "true", the dialog messages will be shown; else, it will not show the dialog messages. 
+ * the property "showChangeVolumeMessage" if it is set to "false" do not show dialog messages, else dialog messages are shown,
+ * if the "showMessage" parameter is set to "true" dialog messages are shown, else do not show dialog messages.
+ * @success New Volume request successfully sent to production.
+ * @failure <i>Get Volume Fail</i> - failed to get current volume.
+ * @failure <i>Volume Already in Use</i> - Selected Volume is already in use.
+ * @failure <i>Not in List</i> - Selected Volume is not in volume list.
+ * @failure <i>Comunication Error</i> - Waystation comunication error.
+ * @failure <i>User Cancelled</i> - user canceled the selection screen.
+ * @sessioncontext <i>"cPosChooseVolume_Result"</i> - set with the status.
+ * @sessioncontext <i>"cPosChooseVolume_Failure"</i> - set with the error code.
+ * @sessioncontext <i>"cPosSelectVolume_Result"</i> - set with the selected volume string.
+ * @sessioncontext <i>"cPosSelectVolume_Failure"</i> - set with the error code.
+ */
+function PosChooseVolume(volume, showMessage) {
+	var cmd = "PosChooseVolume";
+	var status = false;
+	var selectedVolume;
+	var ctx=new SessionContext;
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	var hlp = new BusinessObjectHelper;
+	var bShowMsg = "true";
+	if(showMessage == null) {
+		bShowMsg = hlp.findParamInSectionConfig("showChangeVolumeMessage","UserInterface");
+		if(bShowMsg == "0" || bShowMsg == "false"){
+			bShowMsg = "false";
+		} else {
+			bShowMsg = "true";
+		}
+	} else {
+		bShowMsg = (showMessage == "true"? "true": "false");
+	}
+	if(volume==null || volume==""){
+		status = cPosSelectVolume("MSG_BC_VOLUME_LIST_TITLE");
+		if (status != true){
+			if(bShowMsg=="true"){
+				var errorCode = getLastFail("cPosSelectVolume");
+				switch(Number(errorCode)) {
+					case 1:
+						PosShowMessage("MSG_BC_VOLUME_CONFIGURATION_ERROR");
+						break;
+					case 2:
+						PosShowMessage("MSG_BC_UNABLE_RETRIVE_VOLUME");
+						break;
+				}
+			}
+		} else {
+			selectedVolume = getLastSuccess("cPosSelectVolume");
+		}
+	} else {
+		selectedVolume = volume;
+	}
+	if(selectedVolume==null){
+		return (true);
+	}
+	status = cPosChooseVolume(selectedVolume); 
+	if (status != true){
+		if(bShowMsg == "true"){
+			var errorCode = getLastFail("cPosChooseVolume");
+			switch(Number(errorCode)) {
+				case 0:
+					PosShowMessage("MSG_BC_UNABLE_RETRIVE_VOLUME");
+					break;
+				case 1:
+					PosShowMessage("MSG_BC_VOLUME_ALREADY_SELECTED");
+					break;
+				case 2:
+					PosShowMessage("MSG_BC_UNKNOWN_VOLUME");
+					break;
+				case 3:
+					PosShowMessage("MSG_BC_ERROR_CHANGING_VOLUME");
+					break;
+			}
+		}
+		return false;
+	} else {
+		var statusReceived = ctx.get("cPosChooseVolume_Result");
+		if(bShowMsg == "true"){
+			if(statusReceived != undefined){
+				PosShowMessage("MSG_BC_VOLUME_CHANGED_WITH_CONFIRMATION",statusReceived);
+			} else {
+				PosShowMessage("MSG_BC_VOLUME_CHANGED");
+			}
+		}
+	}
+	return true;
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosSelectVolume</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The cPosSelectVolume is responsible for show a list of available volumes to change.
+ * In java script it should be called:<b>cPosSelectVolume(message)</b>
+ * @param message - String - Key or string to be shown in the volume list header.\n
+ *							 If is a valid Key it gets the message from the property file,\n
+ *							 if not found in property file it display the given message.
+ * @success New Volume successfully selected.
+ * @failure <i>Argument Missing</i> - message parameter is missing.
+ * @failure <i>Get Current Volume Failed</i> - failed to get the current volume from production.
+ * @failure <i>User Cancelled</i> - user canceled the selection screen.
+ * @sessioncontext <i>"cPosSelectVolume_Result"</i> - set with the selected volume string.
+ * @sessioncontext <i>"cPosSelectVolume_Failure"</i> - set with the error code.
+ * @remarks
+ *
+ * Error Code:
+ *				0 - Argument Missing
+ *				1 - Just one configurated volume
+ *				2 - Failed to retrieve production volume
+ *				3 - User Cancelled Selection screen
+ */
+function cPosSelectVolume(message) {
+	var cmd = "cPosSelectVolume";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [message]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosChooseVolume</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The cPosChooseVolume is responsible for set another Production Volume.
+ * In java script it should be called:<b>cPosChooseVolume(volume)</b>
+ * @param volume - String - Production Volume to check.
+ * @success New Volume request successfully sent to production.
+ * @failure <i>Argument Missing</i> - volume parameter is missing.
+ * @failure <i>Get Volume Fail</i> - failed to get current volume.
+ * @failure <i>Volume Already in Use</i> - Selected Volume is already in use.
+ * @failure <i>Not in List</i> - Selected Volume is not in volume list.
+ * @failure <i>Comunication Error</i> - Waystation comunication error.
+ * @sessioncontext <i>"cPosChooseVolume_Result"</i> - set with the status.
+ * @sessioncontext <i>"cPosChooseVolume_Failure"</i> - set with the error code.
+ * @remarks
+ *
+ * Error Code:
+ *				0 - Failed to retrieve production volume
+ *				1 - Selected Volume is already in use
+ *				2 - Selected Volume is not in volume list
+ *				3 - Error communicating with the production
+ */
+function cPosChooseVolume(volume) {
+	var cmd = "cPosChooseVolume";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [volume]);
+}
+
+/** 
+ * @brief - This function implements the BC,Business Component: <b>PosCheckOrderSource</b>
+ *
+ * Persistence:<b>Not Persisted</b>
+ * This BC checks if the order originator (owner) is this POS/HOT.
+ *
+ * @param order_key - string - the order key to be issued to production.
+ * @success Order owner is the current POS.
+ * @failure	<i>Invalid number of parameters</i> - Execution continues even with invalid number of parameters.
+ * @failure	<i>Current POS is not the owner</i> - This POS is not the originator of the order.
+ */
+function PosCheckOrderSource(order_key) {
+	var cmd = "PosCheckOrderSource";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [order_key]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoBackFromTotal</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoBackFromTotal is responsible for clean the totalization to the current transaction  (sale/waste/refund...)!\n
+ * Note that some totalization data is kept as before and after total,\n
+ * though this BC resets the transaction state to before total the new acquired data will be totalized as after total.\n
+ * In java script it should be called:<b>PosDoBackFromTotal()</b>
+ * @success current transaction totalization was cleaned.
+ * @failure <i>onBackFromTotal() failed</i> - hook returned false.
+ * @hook <i>onBackFromTotal()</i> - invoked after setting "view" and KEY_BACK_FROM_TOTAL.
+ * @sessioncontext <i>"view"</i> - set to "" in the begining of BC.
+ * @sessioncontext <i>"backFromTotal"</i> - set to "1" in the begining of BC.
+ */
+function PosDoBackFromTotal() {
+	var cmd = "PosDoBackFromTotal";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** 
+ * @brief - This function implements the BC,Business Component: <b>PosDoRefreshSaleInformation</b>.
+ *
+ * This BC sets the parameters major number, minor number and kvs side of the current sale and refreshes the screen sale. 
+ * It also mount the sale list to be sent to the UI and Production.
+ *
+ * @param major - string - Major number to be associated with the current sale.
+ * @param minor - string - Minor number to be associated with the current sale.
+ * @param KVSSide - string - KVS side to be associated with the current sale.
+ * @success Sale information refreshed successfully.
+ * @failure	<i>Invalid number of parameters</i> - Fail when verifying the number of parameters. All 3 parameters are necessary.
+ */
+function PosDoRefreshSaleInformation(major, minor, KVSSide) {
+	var cmd = "PosDoRefreshSaleInformation";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [major, minor, KVSSide]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoStore</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC is used to send the current sale data to the production QUEUE (stores the sale).
+ * if comunication with production fails the operator is prompted whether to continue or not.
+ *
+ * @param ShowOrderNumber - boolean - optional - used to display or not the order number when Store failed. (In HOT, do not display) Default: TRUE.
+ * @success Current sale stored successfully.
+ * @failure	<i>Unable to Serialize store</i> Error processing event log.
+ * @failure	<i>Forced recall</i> - Forced recall from production QUEUE not allowed.
+ * @hook <i>onSndRcvStore()</i> - called to get the used tandem booth.
+ * @hook <i>onStore(TandemEnabled,TandemMode,nTandemBooth,szCurOrderId)</i> - called before actual production store BC starts.
+ * @remarks
+ *
+ * Property Messages:\n
+ *   MSG_BC_STORECSO/MSG_BC_STOREID: Small window with store message.\n
+ *   MSG_BC_TXRXERR: Prompts operator whether to continue, in case of error.\n
+ *
+ * This BC calls PosSetCODRouting and PosQueryStsQueueByTandem.
+ */
+function PosDoStore(ShowOrderNumber) {
+	var cmd = "PosDoStore";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [ShowOrderNumber]);
+}
+
+/** 
+ * @brief - This function implements the BC,Business Component: <b>PosDoStoreInMemory</b>.
+ *
+ * Persistence:<b>Persisted</b>
+ * This BC is used to store the last sale data into the memory.
+ *
+ * @success Sale stored in memory successfully.
+ * @failure	<i>Error storing the order</i> - An error occured while serializing the sale (processing a transaction log).
+ * @hook <i>onStoreInMemory()</i> - called before actual memory store BC starts.
+ * @remarks
+ *
+ * Property Messages:\n
+ *	 MSG_ALREADYINMEMORY: when the sale is already in memory.\n
+ *	 MSG_ALREADYSERVED: when the sale is already removed.\n
+ *	 MSG_ORDERSTOREINMEMORY: when the order is stored in memory.\n
+ *
+ * This BC calls PosIsInSaleMode, PosNotATransactionInProgress and PosShowMessage.
+ */
+function PosDoStoreInMemory() {
+	var cmd = "PosDoStoreInMemory";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoTotalMulti</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoTotalMulti is responsible for totalize the current transaction (sale/waste/refund...), checking choices not made!\n
+ * This BC receives a set of pairs of parameter, each pair with a choice's product code and a screen number,\n
+ * if there is a pending choice in the current sale, this BC sweeps the set of received parameters\n
+ * looking for the sale open choice. If it is in the set the BC loads the screen defined as its pair.\n
+ * E.g.: PosDoTotalMulti('100001|1503','100003|1501','100002|1502')\n
+ * If the sale contains an open choice with code 100003 the systems loads screen 1501.\n
+ * Up to 20 pairs are supported.\n
+ * In java script it should be called:<b>PosDoTotalMulti(firstPair,...)</b>
+ * @param firstPair - String - Optional first pair 'product|screen number'.
+ * @param ... - String - Optional set of pairs 'product|screen number'.
+ * @success Sale totalized and choices checked, if any choice was not made, and the product is in argument list loads the correspondent screen.
+ * @failure <i>onTotal() failed</i> - hook returned false.
+ * @failure <i>onCheckTotalAmount() failed</i> - hook returned false.
+ * @failure <i>onValidSaleForTotal() failed</i> - hook returned false.
+ * @failure <i>onChoiceMade() failed</i> - hook returned false.
+ * @failure <i>onBeforeTotalStore() failed</i> - hook returned false.
+ * @failure <i>Forced Recalled</i> - failed because order was forced recalled.
+ * @hook <i>onTotal()</i> - called at BC start.
+ * @hook <i>onCheckTotalAmount()</i> - Called to validade sale total amount.
+ * @hook <i>onValidSaleForTotal()</i> - Called to validate sale choices before totalizing.
+ * @hook <i>onBeforeTotalStore()</i> - Called before store the sale, to check if it must be stored.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_SL_MISS_CHOICE: Shown before the missing product name.\n
+ *	MSG_BC_SALEINCOMP: Shown in the message sent to the user when there is a missing choice.\n
+ */
+function PosDoTotalMulti() {
+	cmd = "PosDoTotalMulti";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, Array.prototype.slice.call(arguments));
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosHandleRecallScreen</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for handling buttons in the Recall by Preview Screen.
+ *
+ * @param ation - string - Action to take:\n
+ *						"Previous": show previous orders;\n
+ *						"Next": show next orders;\n
+ *						"Refresh": refresh orders;\n
+ *						"View": toggles between a view with/without order description;\n
+ *						"SELECTED": recall the currently selected order;\n
+ *						any other value: considered the order identification to recall a sale.
+ * @success Screen recalled successfully, according to the parameter.
+ * @failure	<i>Invalid number of parameters</i> - This BC requires one parameter (action) to proceed successfully.
+ * @failure	<i>Invalid order key</i> - The order identification to recall, specified by the action parameter is not valid.\n
+ * @hook <i>onRecalledByPreview()</i> - called after the View is retrieved from production, before the actual sale is created.\n
+ * @remarks
+ *
+ * Property Messages:\n
+ *	 MSG_BC_SKIPCAR: when the operation type is a skip car.
+ * 
+ * This BC calls PosShowScreen, PosBackToPreviousScreen and PosRecallNextOrder.
+ */
+function PosHandleRecallScreen(action) {
+	var cmd = "PosHandleRecallScreen";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [action]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosQueryStoredOrder</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosQueryStoredOrder is responsible for handle requests to query the production site for stored orders.
+ * In java script it should be called:<b>PosQueryStoredOrder()</b>
+ * @success Always return true.
+ * @todo Check return codes.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_SKIPCAR: when order is empty.\n
+ */
+function PosQueryStoredOrder() {
+	var cmd = "PosQueryStoredOrder";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoRefreshPictures</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC assists in auto refresh of RecallByScreen.\n
+ * In java script it should be called:<b>PosDoRefreshPictures()</b>
+ * @success Always return true.
+ * @remarks
+ */
+function PosDoRefreshPictures() {
+	var cmd = "PosDoRefreshPictures";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRecallFromMemory</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRecallFromMemory is responsible for display the sale data stored in memory.
+ * In java script it should be called:<b>PosRecallFromMemory()</b>
+ * @success Sale successfully recalled from memory.
+ * @failure <i>onRecallFromMemory() failed</i> - hook returned false.
+ * @failure <i>No Orders</i> - There is no orders to recall from memory.
+ * @hook <i>onRecallFromMemory()</i> - called before BC start.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_NOORDERINMEMORY: Shown when there is no orders to recall from memory.\n
+ *	MSG_REMOVEDFROMMEMORY: Shown when an order is removed from memory.\n
+ */
+function PosRecallFromMemory() {
+	var cmd = "PosRecallFromMemory";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRecallNextOrder</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosRecallNextOrder is responsible for reconstructing a sale from a previouly stored order.
+ * The order to be retrieved (recalled) is defined according to the parameter mode.\n
+ * If this parameter is not suplied the parameter order is used as the order identifier to retrieve from production.\n
+ * Since the stored order is a View it is converted to a real sale.\n
+ * In java script it should be called:<b>PosRecallNextOrder(mode, order)</b>
+ * @param mode - String - Optional parameter, Values: "next" recall the next order on production QUEU,\n
+ *													  "RecallByList" to open a list to choose from\n
+ *													  "RecallForced" to open a list to choose from including opened orders\n
+ *													  "RecallByPreview" to open a screen with pictures to recall,\n
+ *													  "RecallByNumber" opens a dialog to get the order number to retrieve,\n
+ *													  if this parameter the parameter order is used as a key to retrieve the order.\n
+ * @param order - String - Optional parameter, if mode is not supplied and this parameter is received, it means the order to recall.
+ * @success When mode="RecallByPreview" and there are orders to recall.
+ * @success Sale successfully recalled.
+ * @failure <i>Not in sale mode</i> - Register is not in sale mode.
+ * @failure <i>onRecalled() failed</i> - hook returned false.
+ * @failure <i>Open Sale</i> - There is a sale in progress.
+ * @failure <i>Cannot Retrieve List</i> - Cannot retrieve stored orders list from production (mode="next").
+ * @failure <i>No more Order</i> - There are no more orders to recall (mode="RecallByNumber" or "RecallByPreview" or "RecallByList" or "RecallForced").
+ * @failure <i>User Cancelled</i> - User cancelled calculator when asking for order number (mode="RecallByNumber").
+ * @failure <i>Retrieve Order Error</i> - Error trying to recover the order (mode="RecallByNumber");
+ * @failure <i>Invalid Order Number</i> - Entered an invalid order number (mode="RecallByNumber").
+ * @failure <i>User Cancelled</i> - User cancelled when showing the list of orders to recall (mode="RecallByPreview" or "RecallByList" or "RecallForced");
+ * @failure <i>Recall Failed</i> - Recall command failed.
+ * @hook <i>onCreateSale()</i> - called after the View is retrieved from production, before the actual sale is created.
+ * @hook <i>onRecalled()</i> - called after the sale is successfully recreated.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_SALEPROG: Error message, sale in progress.\n
+ *	MSG_BC_NOSTOREDORDER: Error message that there is no previously stored order.\n
+ *	MSG_BC_TXRXPRD: Error message, communication failure.\n
+ */
+function PosRecallNextOrder(mode, order) {
+	var cmd = "PosRecallNextOrder";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd, [mode, order]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSwitchProduction</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSwitchProduction is responsible for search the first available secondary production in the PST list promoting it to primary production (for storing orders).
+ * In java script it should be called:<b>PosSwitchProduction()</b>
+ * @success Production was successfully switched.
+ * @failure <i>Switching Error</i> - An error occurred during production switch.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_PRODUCTION_SWITCHED: Production has been switched.\n
+ *	MSG_BC_NO_PRODUCTION: Error switching production.\n
+ */
+function PosSwitchProduction() {
+	var cmd = "PosSwitchProduction";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoTotal</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoTotal is responsible for totalize the current transaction (sale/waste/refund...).
+ * In java script it should be called:<b>PosDoTotal()</b>
+ * @success Totalization was possible.
+ * @failure <i>Totalization Error</i> - An error occurred during the totalization process.
+ * @sessioncontext <i>"floatLastIndex"</i> - set to "-99".
+ * @sessioncontext <i>"floatLastProdCode"</i> - set to "-99".
+ * @remarks
+ *
+ *	This BC calls PosDoTotalMulti().
+ *
+ */
+function PosDoTotal() {
+	var cmd = "PosDoTotal";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** PosDoTotal_CSL
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosDoTotal</b>\n
+ * Persistence:<b>Persisted</b>\n
+ * This BC totalizes the current transaction (sale/waste/refund...)!\n
+ * In a workflow sequence it is called:<b>PosDoTotal</b>\n
+ * In java script it should be called:<b>PosDoTotal()</b>\n
+ * This BC does not require parameters.\n
+ * Property Messages:\n
+ *   MSG_BC_SALEINCOMP: when the is still an opened choice\n
+ * Hooks: onTotal() - called at BC start\n
+ * Return - rval - True if totalization was possible
+ */
+//
+// function PosDoTotalJS(saleType,screenNumber,screenNumberStore,flags,choices)
+//
+function PosDoTotal_CSL(saleType,screenNumber,screenNumberStore,flags,choices) {
+	var cmd = "PosDoTotal";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+
+	if(PosNotATransactionInProgress(true)) {
+		return(false);
+	}
+	if(!PosSetSaleType(saleType)) {
+		return(false);
+	}
+	// Handle choices...
+	if(!PosAutoChoice()) {
+		return(false);
+	}
+
+	// Handle choices...
+	if(PosSetOnTotalSmartReminder()) {
+		return(false);
+	}
+
+	if(choices != null) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				var choice_screen=choiceArray[i].split("|");
+				if(choice_screen != null) {
+					if(!PosCheckChoice(choice_screen[0],choice_screen[1],true,"MSG_BC_SALE_INCOMPLETE")) {
+						return(false);
+					}
+				}
+			}
+		}
+	}
+	// if(!PosDoTotal()) {
+	if(!executeBC(cmd)) {
+		return(false);
+	}
+	var tenderType=-1;
+	if(PosCheckTransactionKind(1)) {
+		// Refund
+		if(PosCheckRefund()) {
+			var ok=true;
+			// if(PosIsCashlessLoadedJS()) {
+			//	ok=PosItemSelection("cashless.png|cash.png|cancel.png","10|0|-1","Choose","Choose: CASHLESS, CASH or CANCEL");
+			// }
+			// else {
+				ok=PosItemSelection("cash.png|cancel.png","0|-1","Choose","Choose: CASH or CANCEL");
+			// }
+			if(ok) {
+				var ctx = new SessionContext;
+				tenderType=Number(ctx.get("SelectedButtonValue"));
+				if(0 == tenderType) {
+					if(!PosCheckCash()) {
+						tenderType=-1;
+					}
+				}
+			}
+		}
+	}
+	else {
+		if(PosCheckTransactionKind(2)) {
+			// Waste
+			tenderType=0;
+		}
+		else {
+			// Normal Sale
+			var ctx=new SessionContext;
+			if((Number(ctx.get("DTStoreMode")) != TANDEM_FACE) && (PosCheckSessionProperty("workingMode","orderTaker") || (PosCheckSessionProperty("workingMode","both") && PosCheckSessionProperty("saleRecalled","false")))) {
+				PosShowScreen(screenNumberStore);
+			}
+			else {
+				PosShowScreen(screenNumber);
+			}
+			return(true);
+		}
+	}
+	if((tenderType < 0) || !PosDoTender(tenderType,-1)) {
+		PosDoBackFromTotal();
+		return(false);
+	}
+	return(PosDoEndOfSale_CSL(true,flags,0));	
+}
+
+/** PosDoTotalConfirm_CSL
+ *
+ * @brief - This BC totalizes a sale and check if total is correct
+ * Return - rval - true if allowed to continue
+*/
+function PosDoTotalConfirm_CSL(saleType,screenNumber,screenNumberStore,flags,choices) {
+	var cmd = "PosDoTotalConfirm";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+
+	var retTot = PosDoTotal_CSL(saleType,screenNumber,screenNumberStore,flags,choices);
+	if( retTot == false ) return false;
+	var ctx=new SessionContext;
+
+	//Verificar se OrderInProgress
+	var checkOrder = PosCheckParameter('OperationMode', 'CheckOrderTotal', 'true');
+
+	checkOrder = checkOrder && (Number(ctx.get("DTStoreMode")) != TANDEM_FACE) && (PosCheckSessionProperty("workingMode","orderTaker") || (PosCheckSessionProperty("workingMode","both") && PosCheckSessionProperty("saleRecalled","false")));
+
+	if( checkOrder ) {
+		var retConf = PosShowConfirmationMessage('Is your order correct on the screen ?','Store','Return');
+		if( retConf ) {
+			//Do Store order
+			PosDoStore_CSL();
+		} else {
+			//Do modify order / back from total
+			PosDoBackFromTotal();
+//			PosSetCOD(saleType)
+			if( !PosCheckSessionProperty('view','') ) {
+				PosCreateReport('VIEW', 'receipt@reports.nps', 'NOPREVIEW|SAVE', '_CASHLESS');
+			}
+			PosSetSessionProperty('BackFromTotal', 'true');
+			PosShowScreen(ctx.get("baseScreenId"));
+		}
+	}
+
+	return retTot;
+}
+
+/** PosDoStore_CSL
+ *
+ * @brief - This BC store the sale in a tendering process
+ * Return - rval - true if should stop execution
+ */
+function PosDoStore_CSL() {
+	var cmd = "PosDoStore_CSL";
+	CSL_dbglog(7, SRC_BC_TOTAL, cmd, "Start");
+
+	if(!PosDoStore()) {
+		return(false);
+	}
+	PosSetSessionProperty("activatedCOD","0","true");
+	var ctx=new SessionContext;
+	PosShowScreen(ctx.get("baseScreenId"));
+	
+	if(PosCheckSessionProperty("pickListAutomaticPrint","on")) {
+		var hlp = new BusinessObjectHelper;
+		var showCanceledItems = hlp.findParamInSectionConfig("showCanceledItems","UserInterface");
+		PosCreateReport("FULLCONSVIEW","reportPickList@reports.nps","NOPREVIEW",showCanceledItems+":1");
+	}
+	
+	return(true);
+}
+
+
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700a9b521822b3401b9d421226e30e0537a0b0ed8e004dd0152f88402865343257903dd5e30effc30a9a36ba7e3805d58c9eb040010
+ * =============================================================================================================================
+*/

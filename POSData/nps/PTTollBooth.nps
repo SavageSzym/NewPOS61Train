@@ -1,0 +1,275 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* PTTollBooth.nps
+* This NPS file implements Portugal specific toll booth payment functions
+* Author - Jose Coelho (McDonald's PT)
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+//VERSÃO 2.1 DE 2010-01-18
+
+var OperatorID = "";
+var OperatorName = "";
+
+function PTTollBoothPaymentJS(TenderID) {
+	var TollBoothEnabled=npTCLXmlGetINI("PTTollBooth", "Enabled");
+	if (TollBoothEnabled==1){
+		PosCreateReport ("CASH","PTConfigInfo@PTTollBooth.nps",'NOPREVIEW|MANDATORY', ""); // This is to get the configuration
+		var hlp=new BusinessObjectHelper; 		// Create the CASH report to get StoreId and PosNumber
+		var item = hlp.getReportXML("CASH");
+		var repCfg= new XML(item[0].toString() );
+		var repCfg2= new XML(item[1].toString() )
+		var BoothID=npTCLXmlGetINI("PTTollBooth", "BoothID");
+		var POSNumber=repCfg.PosId;
+		var POSNumber=POSNumber.substring(4,6);
+		var StoreID=repCfg2.@storeId;
+		var businessDateTime=repCfg.@creationDate.substring(0,8)+repCfg.@creationDate.substring(9,11)+repCfg.@creationDate.substring(12,14)+repCfg.@creationDate.substring(15,17)
+		var xmlCurrentView = new XML(hlp.getCurrentView());
+		var currentSaleSum = xmlCurrentView.@totalAmount;
+		var currentSaleSum=String(currentSaleSum)
+		var currentSaleSum=currentSaleSum.replace(".","")
+							
+		PosDisplayText(API.getLocalMsg("MSG_PTTOLLBOOTH_WAIT"),1)
+		var Result = npTCLEvalEx("vv_payment " + POSNumber + " " + BoothID + " " + API.setZerosOnLeft(StoreID, 4) +  API.setZerosOnLeft(POSNumber, 3) + businessDateTime + " " + currentSaleSum)
+		//PosShowMessage("vv_payment " + POSNumber + " " + BoothID + " " + API.setZerosOnLeft(StoreID, 4) +  API.setZerosOnLeft(POSNumber, 3) + businessDateTime + " " + currentSaleSum);
+	
+		//var Result = npTCLEvalEx("vv_payment 2 1 0003002200907131235 100")
+		//var Result = "00PAGAMENTO VIA VERDE EFECTUADO\nCOM SUCESSO"; 
+		if (Result.substring(0,2)=="00") {
+			PosDoTenderJS(TenderID,-1,"NOPREVIEW|SAVE")
+			PosDisplayText("",1)
+			PosShowMessage(Result.substr(2,Result.length -3));
+			return true;
+		}
+		else {
+			Message=API.getLocalMsg("MSG_PTTOLLBOOTH_ERROR") + ": " + Result.substring(0,2) + " \n " + Result.substring(2,Result.length -1);
+			PosDisplayText("",1)
+			PosShowMessage(Message);
+			return false;
+		}
+	} else {
+			PosShowMessage("MSG_PTTOLLBOOTH_NOTCONFIGURED");
+			return false;
+	}
+}
+
+function PTTollBoothOpenJS() {
+	var Message="";
+	var TollBoothEnabled=npTCLXmlGetINI("PTTollBooth", "Enabled");
+	if (TollBoothEnabled==1){	
+		PosCreateReport ("CASH","PTConfigInfo@PTTollBooth.nps", "", ""); // This is to get the configuration
+		var hlp=new BusinessObjectHelper; // Create the CASH report 
+		var item = hlp.getReportXML("CASH");
+		var repCfg= new XML(item[0].toString() );
+		var POSNumber=repCfg.PosId;
+		var POSNumber=POSNumber.substring(4,6);
+		var BoothID=npTCLXmlGetINI("PTTollBooth", "BoothID");
+		
+		PosDisplayText(API.getLocalMsg("MSG_PTTOLLBOOTH_WAIT"),1)
+		var Result = npTCLEvalEx("vv_openperiod " + POSNumber + " " + BoothID);				//var Result = "00TOLLBOOTH OPENING MESSAGE";
+		if (Result.substring(0,2)=="00") {
+			Message=Result.substr(2,Result.length -3)
+		}
+		else {
+			Message=API.getLocalMsg("MSG_PTTOLLBOOTH_ERROR") + ": " + Result.substring(0,2) + " \n " + Result.substring(2,Result.length -1);
+		}
+		PosDisplayText("",1)
+		PosShowMessage(Message);
+		return true;
+	} else {
+			PosShowMessage("MSG_PTTOLLBOOTH_NOTCONFIGURED");
+			return false;
+	}
+}
+
+function PTTollBoothCloseJS() {
+	var Message="";
+	var strReport="";
+	
+	var TollBoothEnabled=npTCLXmlGetINI("PTTollBooth", "Enabled");
+	if (TollBoothEnabled==1){	
+		PosCreateReport ("CASH","PTConfigInfo@PTTollBooth.nps", "", ""); // This is to get the configuration
+
+		var hlp=new BusinessObjectHelper; // Create the CASH report 
+		var item = hlp.getReportXML("CASH");
+		var repCfg= new XML(item[0].toString() );
+		var repCfg2= new XML(item[1].toString() )
+		var POSNumber=repCfg.PosId;
+		var POSNumber=POSNumber.substring(4,6);
+		var BoothID=npTCLXmlGetINI("PTTollBooth", "BoothID");
+		
+		PosDisplayText(API.getLocalMsg("MSG_PTTOLLBOOTH_WAIT"),1)
+		var Result = npTCLEvalEx("vv_closeperiod " + POSNumber + " " + BoothID); 		//var Result = "00TOLLBOOTH CLOSING MESSAGE"; 
+
+		if (Result.substring(0,2)=="00") {
+			Message=Result.substr(17,Result.length -18);
+			strReport=API.center(API.getLocalMsg("MSG_PTTOLLBOOTH_CLOSINGREPORT"), 39) + "\n";	
+			strReport=strReport + API.center(API.getLocalMsg("MSG_RECEIPT_STORE") + " " + repCfg2.@storeId + " " + repCfg.StoreName, 39) + "\n";	
+			strReport=strReport + API.center(API.getLocalMsg("MSG_RECEIPT_REG") + " "  + repCfg.PosId, 39 ) + "\n";	
+			strReport=strReport + API.getLocalMsg("MSG_RECEIPT_MANAGER_ID") + " " + repCfg.Manager.@id + " " + repCfg.Manager.@name + "\n";	
+			strReport=strReport + API.getLocalMsg("MSG_RECEIPT_CASHIER_ID") + " " + OperatorID + " " + OperatorName + "\n";	
+			var businessDate=repCfg2.POS.@businessDate.substring(6,8)+ "/" + repCfg2.POS.@businessDate.substring(4,6) + "/" + repCfg2.POS.@businessDate.substring(0,4)
+			strReport=strReport + API.getLocalMsg("MSG_RECEIPT_BUSINESS_DATE") + businessDate + "\n\n";
+			strReport=strReport + API.getLocalMsg("MSG_PTTOLLBOOTH_TCSNUM") + Result.substring(3,9)  + "\n";	
+			var GrossSales = API.formatNumber(Number(Result.substring(10,16) / 100), "000000.00", 8);
+			strReport=strReport + API.getLocalMsg("MSG_PTTOLLBOOTH_GROSSSALES") + GrossSales + "\n";	
+			strReport=strReport + "======================================" + "\n";
+			strReport=strReport + API.center( API.getLocalMsg("MSG_RECEIPT_PRINTEDON") + API.formatDateTime(repCfg.@creationDate ,"dd/MM/yyyy HH:mm:ss"),39) + "\n";
+			strReport=strReport + "======================================" + "\n";
+			strReport="CASHLESS:" + strReport +"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+			//NOPREVIEW
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', strReport);
+		}
+		else {
+			Message=API.getLocalMsg("MSG_PTTOLLBOOTH_ERROR") + ": " + Result.substring(0,2) + " \n " + Result.substring(2,Result.length -1);
+		}
+		PosShowMessage(Message);
+		return true;
+	} else {
+		PosShowMessage("MSG_PTTOLLBOOTH_NOTCONFIGURED");
+		return false;
+	}
+}
+
+
+function PTTollBoothGetStatusJS(arg) {
+	var TollBoothEnabled=npTCLXmlGetINI("PTTollBooth", "Enabled");
+	if (TollBoothEnabled==1){	
+		PosDisplayText(API.getLocalMsg("MSG_PTTOLLBOOTH_WAIT"),1)
+		var Result = npTCLEvalEx("vv_getstatus " + arg )			//var Result = "00TOLLBOOTH GET STATUSMESSAGE MESSAGE" 
+		if (Result.substring(0,2)=="00") {
+			Message=Result.substring(2,Result.length -1)
+		}
+		else {
+			Message=API.getLocalMsg("MSG_PTTOLLBOOTH_ERROR") + ": " + Result.substring(0,2) + " \n " + Result.substring(2,Result.length -1);
+		}
+		PosDisplayText("",1)
+		PosShowMessage(Message);
+	} else {
+		PosShowMessage("MSG_PTTOLLBOOTH_NOTCONFIGURED");
+	}
+	return true
+}
+
+
+
+
+
+
+
+
+
+
+//--------------------------
+// HB SOTEC (based on GetConfigInfo from eurecs.nps)
+// retreive global configuration
+//------------------------------------
+function PTConfigInfo (config, data)
+{
+  API.dbg("getEurecsInfo");
+   var rootCash;
+   var rootPmix;   
+   var rootView;   
+   var rootHourlySales;
+   var rootSOS;   
+   var rootCustom;   
+   var rootProduct;   
+   var rootTimePunch;   
+
+	initGlobalt();
+	//API.dbg ("  getConfigInfo  " + config);
+	rootConfig = new XML(config);
+	//API.dbg ("  GETConfigInfo" + rootConfig);
+	//API.dbg("eurecs config "+config + "  ");
+	//API.dbg("eurecs data "+data);
+	Country = rootConfig.Country.toUpperCase();
+    
+    PosSetSessionProperty ("CountryID", Country, "true");   
+
+	PosId   = rootConfig.PosId;
+	StoreID = rootConfig.StoreId;
+	
+	
+	for(var i = 0; i < data.length; i++) {
+	   if(data[i] != null) {
+   		var xml = new XML(data[i]);
+   		var dataType = xml.@requestDataType.toLowerCase();			
+       	//API.dbg ("Reports init - dataType XML" + dataType);			
+   		if("cash" == dataType) {
+   			rootCash = xml;
+   		}else if("pmix" == dataType) {
+   			rootPmix = xml;
+   		}else if("view" == dataType) {
+   			rootView = xml;
+   		}else if("hourlysales" == dataType) {
+   			rootHourlySales = xml;
+   		}else if("sos" == dataType) {
+   			rootSOS = xml;
+			}else if("custom" == dataType) {
+				rootCustom = xml;
+			}else if("prods" == dataType) {
+				rootProduct = xml;
+			}else if("timepunch" == dataType) {
+				rootTimePunch = xml;
+			}
+		}
+	}
+	
+	var length = rootCash.POS.OperatorSession.length();
+	var operatorSession = rootCash.POS.OperatorSession;
+	if(operatorSession!=null && Number(length) != 0)
+	{
+		OperatorID = operatorSession[length-1].@id;
+		OperatorName = operatorSession[length-1].@name;
+		 //API.dbg("getEurecsInfo OperatorID " + OperatorID);
+	}
+	if(rootView !=null )
+	{
+		var view = rootView.View;
+    } 
+	
+	
+// <StoreId>1275</StoreId>
+// <PosId>POS001</PosId>
+// <Header>\nThank You For Eating At\nYardley Wood</Header> 
+// <Footer>Vat Number : 371057172</Footer> 
+// <StoreName>Yardley Wood</StoreName> 
+// <StoreAddress>Yardley Wood</StoreAddress>
+// <StoreZipCode>B14 4BJ</StoreZipCode>
+// <City>Birmingham</City>
+// <Country>UK</Country>
+// <StorePhoneNumber>0121 430 4214</StorePhoneNumber>
+// <Email></Email>
+// <HomePage></HomePage>
+// <HelpDeskInfo>0000-00-0000</HelpDeskInfo>
+// <Locale>en_UK</Locale>
+// <DateFormat>dd-MM-yyyy</DateFormat>
+// <ReportFlags>NOPREVIEW</ReportFlags>
+// <DataTypes>CASH</DataTypes>
+// <Manager id="3" name="Carl Sagan"/>	
+
+	return outputBuffer;
+}
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437000574ac45e5ffe19b141c2a6db472f446b1d9efe77cf74cece4cc0f521bc812965e872b4d12c358bdab473b74fc1e40abb2050010
+ * =================================================================================================================================
+*/

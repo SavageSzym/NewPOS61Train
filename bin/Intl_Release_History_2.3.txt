@@ -1,0 +1,661 @@
+WinEPTS Client 2.3.x Release History
+==============================================
+
+2010-01-26
+----------
+NCRClient.dll	2.3.1.459
+WE_Client.exe	2.3.1.455
+wecommon.bpl	2.3.1.470
+Trace.bpl		2.3.1.82
+
+1. Generic: Abnormal WEClient Interface (WEC IF) behaviour when Cancel button
+pressed while receiving the 'APPROVED' message from the service. 
+Fixed: If Cancel button is pressed before the APPROVED message is displayed,
+the transaction is being considered aborted on WEC IF side, and all 
+possible incoming process (A8) and 'approved' (B0, ...) messages are ignored.
+
+2. Generic: Once WEClient service received an Abort message (A0) from WEC IF,
+it will proceed with the cancellation command as normal, but will not send any 
+ready process (A8) or 'approved' (B0, ...) messages to WEC IF anymore.
+
+
+
+2010-01-08
+----------
+NCRClient.dll           2.3.1.458
+WE_Client.exe           2.3.1.454
+wecommon.bpl            2.3.1.169
+Trace.bpl               2.3.1.82
+
+1. Generic: WEClient window displays empty result text and locks the background
+windows if the OK button is pressed while the process status in the window is changing.
+Fixed.
+Raised by UK Ref #20091218000161 (no iStar ID).
+
+
+2009-12-24
+----------
+NCRClient.dll           2.3.1.457
+WE_Client.exe           2.3.1.454
+wecommon.bpl            2.3.1.169
+Trace.bpl               2.3.1.82
+
+1. Generic: More traces added for:
+NCRClient_dll/uNCRInterClientMgr.pas/UDPServerUDPRead
+WEInterface/uWEInterface.pas/UDPServerUDPRead
+Raised by UK Ref #20091220000123.
+.
+
+2009-09-02
+----------
+NCRClient.dll           2.3.1.257
+WE_Client.exe           2.3.1.354
+wecommon.bpl            2.3.1.169
+Trace.bpl               2.3.1.82
+
+1. Cumulative update for UK.
+
+
+2009-08-27
+----------
+NCRClient.dll           2.3.1.252
+WE_Client.exe           2.3.1.354
+wecommon.bpl            2.3.1.169
+Trace.bpl               2.3.1.82
+
+1. Cumulative update for UK.
+
+
+2009-08-24
+----------
+NCRClient.dll           2.3.1.235
+WE_Client.exe           2.3.1.319
+wecommon.bpl            2.3.1.164
+Trace.bpl               2.3.1.82
+
+1. NCR Contactless EMV added for test purposes.
+
+
+2009-08-20
+----------
+NCRClient.dll           2.3.1.235
+WE_Client.exe           2.3.1.307
+wecommon.bpl            2.3.1.158
+Trace.bpl               2.3.1.82
+
+1. Cumulative Update for UK. (unreleased)
+
+
+2009-08-19
+----------
+NCRClient.dll           2.3.1.235
+WE_Client.exe           2.3.1.307
+wecommon.bpl            2.3.1.158
+Trace.bpl               2.3.1.82
+
+1. Cumulative Update for Italy.
+
+
+2009-08-19
+----------
+NCRClient.dll           2.3.1.235
+WE_Client.exe           2.3.1.307
+wecommon.bpl            2.3.1.158
+Trace.bpl               2.3.1.82
+
+1. Cumulative Update for Poland.
+
+
+2009-08-19
+----------
+PayPAN.exe				2.3.1.40
+
+1. PayPAN utility for manual payment by insertiing card number and 
+expiry datecreated.
+
+
+
+2009-08-10
+----------
+HYPKioskCHClient.bpl    2.3.1.116
+LibEft.dll              0.0.0.0
+
+1. CH: Result values from LibEft functions are now logged and
+sent to ECS.
+
+
+2009-08-07
+----------
+WE_Client.exe			2.3.1.304
+
+1. Generic: ACK message lost if WEClient goes in timeout of waiting
+for the Pinpad response during the reset phase at the end of the 
+transaction (due to OP_POSRESPONSE substituted with OP_PPTIMEOUT).
+Fixed.
+
+
+2009-07-27
+----------
+WE_Client.exe           2.3.1.250
+
+1. Generic (raised by CH): ACK to error accepted from a different
+POS that the one the transaction has started from. As a result, all
+messages after that ACK are send to a wrong POS. Fixed.
+
+
+
+2009-07-24
+----------
+NCRClient.dll           2.3.1.235
+WE_Client.exe           2.3.1.300
+wecommon.bpl            2.3.1.158
+Trace.bpl               2.3.1.82
+
+1. WE_Client.exe Generic: Authorisatin Request 0x70 implemented.
+2. WE_Client.exe OTI: recompiled.
+3. NCRClient.dll: Numbers added to items in the Option Selection.
+(TODO: Add Abort as the last option for WinEPTS configuration)
+
+
+2009-07-23
+----------
+HYPKioskCHClient.bpl    2.3.1.106
+LibEft.dll              0.0.0.0
+
+1. CH: Messages "Approved" and "Declined" were replaced with the 
+original message from the terminal
+2. Better exception handling.
+For example, if you start WEClient with the terminal disconnected, 
+when you call a "Payment" the old version times out, the new warns 
+immediately that the terminal is disconnected and that the payment is 
+not possible.
+
+
+2009-07-21
+----------
+NCRClient.dll           2.3.1.232
+WE_Client.exe           2.3.1.289
+wecommon.bpl            2.3.1.145
+Trace.bpl               2.3.1.82
+
+1. Rebuild for distribution to UK.
+
+
+2009-07-13
+----------
+NCRClient.dll           2.3.1.231
+WE_Client.exe           2.3.1.285
+wecommon.bpl            2.3.1.144
+Trace.bpl               2.3.1.82
+
+1. Magnetic Loyalty-001 cards (Hungarian Shell Cards) management added.
+(ExpDate)
+
+
+
+2009-07-09
+----------
+NCRClient.dll           2.3.1.231
+WE_Client.exe           2.3.1.283
+wecommon.bpl            2.3.1.143
+Trace.bpl               2.3.1.82
+
+1. Generic: uWEInterface.pas: LastPosIdx is now updated after receiving
+$AA msg via NotifyOptionSelection(). (Initially raised by FI.)
+
+2. Generic: Trace.bpl refresh: critical section objects are now the 
+properties of TFileTraceWriter object instead of being global inside 
+"inplementation" section.
+
+3. FI: ePayClient.bpl recompiled for using the new Trace.bpl interface.
+
+
+2009-07-09
+----------
+NCRClient.dll           2.3.1.230
+WE_Client.exe           2.3.1.278
+wecommon.bpl            2.3.1.141
+Trace.bpl               2.3.1.82
+
+1. Generic: In several situations, trace logging functions were used
+improperly, which caused synchronization issued with other WEClient 
+processes. WE_Client module is cleared. Trace module is re-designed
+to allow the correct sharing of the trace buffer between multiple
+trace writer processes and a single process writing to a file.
+
+2. Generic: Card insertion feature (D3/D4) is fixed for Refund. Tested 
+also for other operation types.
+
+
+2009-07-02
+----------
+HYPKioskCHClient.bpl    2.3.1.103
+HYPClient.bpl           2.3.1.50
+NCRClient.dll           2.3.1.218
+WE_Client.exe           2.3.1.249
+wecommon.bpl            2.3.1.116
+Trace.bpl               2.3.1.44
+FileLogExtractorSvc.exe 2.1.0.49
+LibEft.dll              0.0.0.0
+
+1. CH: Implementation of Hypercom ep2 protocol for Thales Artema via
+LibEftTerm static library. Released to Lab testing.
+
+
+2009-06-30
+----------
+NCRClient.dll           2.3.1.213
+WE_Client.exe           2.3.1.249
+wecommon.bpl            2.3.1.116
+Trace.bpl               2.3.1.44
+
+1. IT: Release to Pilot. 
+Fixes: Final error messages are not displayed due to a bug in N5P5-A
+protocol implementation.
+
+
+
+2009-06-25
+----------
+ePayClient.bpl          2.3.1.80
+NCRClient.dll           2.3.1.213
+WE_Client.exe           2.3.1.243
+wecommon.bpl            2.3.1.116
+Trace.bpl               2.3.1.44
+
+1. FI: ePayClient.ini: BlacklistedTitle parameter is added to 
+[Option-EN]/[Option-FI]. Current text set to "Card has been blocked!" 
+
+
+2009-06-24
+----------
+ePayClient.bpl          2.3.1.79
+NCRClient.dll           2.3.1.211
+WE_Client.exe           2.3.1.240
+wecommon.bpl            2.3.1.114
+Trace.bpl               2.3.1.44
+
+1. Generic (raised by FI): Option Selection options are not 
+limited to 20 characters as they have to be according to NCR spec.
+This led to wrong on-screen option formatting during displaying
+of Option Selection dialog.
+
+2. FI: Option Selection dialog is not closed on the transaction timeout.
+Fixed.
+
+
+2009-06-23
+----------
+NCRClient.dll           2.3.1.211
+WE_Client.exe           2.3.1.238
+wecommon.bpl            2.3.1.110
+Trace.bpl               2.3.1.42
+
+1. Relativo alla issue con l'ACK al server non inviato nel caso
+di pagamenti magnetici. Errore logico nel metodo di ricezione dei messaggi sul
+pinpad portava alla perdita dello stato OP_POSRESPONSE inizializzato alla ricezione
+dell'ACK dalla cassa. Sistemato.
+2. Nel caso l'ACK veniva ricevuto nella fase del ResetPinpad, lo stato del client
+non ritornava in Idle. Le transazioni successive finivano nel messaggio del client
+"RIPROVARE (243)", ed era necessario il riavvio del servizio WEClient. 
+
+
+2009-06-19
+----------
+NCRClient.dll           2.3.1.211
+WE_Client.exe           2.3.1.231
+wecommon.bpl            2.3.1.110
+Trace.bpl               2.3.1.42
+
+1. L'aggiornamento cumulativo.
+Relativo alla issue con l'ACK al server non inviato nel caso
+di pagamenti magnetici.
+
+
+2009-06-11
+----------
+ePayClient.bpl          2.3.0.46
+NCRClient.dll           2.3.0.110
+WE_Client.exe           2.3.0.103
+wecommon.bpl            2.3.0.58
+Trace.bpl               2.3.0.23
+
+Notes:
+1. Fixed callback function call for "PIN Bypass".
+
+
+2009-06-09
+----------
+HYPClient.bpl           2.3.1.49
+NCRClient.dll           2.3.1.210
+WE_Client.exe           2.3.1.231
+wecommon.bpl            2.3.1.110
+Trace.bpl               2.3.1.42
+FileLogExtractorSvc.exe 2.1.0.46
+
+Notes:
+1. CH: New "Information Messages" message of EP2 is implemented.
+2. Generic: WEClient Interface not responding issue should be fixed with 
+this update. 
+Problem explanation: In some situations, WEClient Interface returned
+control to the calling POS application before it closed/dismissed
+its final dialog box. 
+
+
+
+2009-06-05
+----------
+ePayClient.bpl          2.3.0.66
+
+Notes:
+1. Used new ePay.dll "Manual Entry" function. 
+2. Fixed loop in Severity Level management using new ePay.dll "Severity Level" implementation.
+3. Fixed bug in "Blacklisted dialog".
+
+
+
+2009-06-01
+----------
+ePayClient.bpl          2.3.0.64
+
+Notes:
+1. Changed payment_set_keyed call function from "payment_set_keyed(_emv,null,0,0);"
+   to "payment_set_keyed(_emv,'',0,0);" like in in new Paravant specification.
+2. Managed Severity Level
+
+* This is a Paravant test release for investigate ePay.dll bugs.
+
+
+2009-05-29
+----------
+FlexiClient.bpl         2.3.0.105
+NCRClient.dll           2.3.1.194
+WE_Client.exe           2.3.1.229
+wecommon.bpl            2.3.1.108
+Trace.bpl               2.3.1.42
+
+1) DK: Added the management of the “Autopayment" property for Online/Offline issue.
+2) DK: Changed the behavior in the opening of the terminal to avoid freezing.
+3) DK: Changed the behavior of the Plugin to provide ever the error receipt.
+
+
+2009-05-29
+----------
+NCRClient.dll           2.3.1.194
+WE_Client.exe           2.3.1.229
+wecommon.bpl            2.3.1.108
+Trace.bpl               2.3.1.42
+
+
+1. Generic. Added management of currencies without cents, to payment, refund,
+void, withdraw. 
+
+
+2009-05-28
+----------
+NCRClient.dll           2.3.1.194
+WE_Client.exe           2.3.1.228
+wecommon.bpl            2.3.1.108
+Trace.bpl               2.3.1.42
+HYPClient.bpl           2.3.1.28
+
+1. HYPClient plugin re-compiled for the build below.
+
+
+2009-05-28
+----------
+NCRClient.dll           2.3.1.194
+WE_Client.exe           2.3.1.228
+wecommon.bpl            2.3.1.108
+Trace.bpl               2.3.1.42
+TLSClient.bpl           2.3.1.38
+
+1. Standalone terminals. Management of Acknowledge messages during Check 
+Card Insertion fixed.
+
+
+2009-05-28
+----------
+NCRClient.dll           2.3.1.194
+WE_Client.exe           2.3.1.227
+wecommon.bpl            2.3.1.108
+Trace.bpl               2.3.1.42
+
+1. Generic. Management of Option Selection and Get Text String states
+fixed.
+
+
+
+2009-05-22
+----------
+NCRClient.dll           2.3.1.174
+WE_Client.exe           2.3.1.217
+wecommon.bpl            2.3.1.103
+Trace.bpl [DEBUG]       2.3.1.25
+Trace_release.bpl       2.3.1.42
+
+1. WE Interface: closing behaviour in case of the error final message
+received is fixed.
+
+
+2009-05-13
+----------
+NCRClient.dll           2.3.1.153
+WE_Client.exe           2.3.1.187
+wecommon.bpl            2.3.1.99
+Trace.bpl               2.3.1.40
+
+
+
+2009-05-11
+----------
+NCRClient.dll           2.3.1.153
+WE_Client.exe           2.3.1.179
+wecommon.bpl            2.3.1.97
+Trace.bpl               2.3.1.40
+
+1. Cumulative update for both attended cash registers and kiosks.
+The code merge between the branch 18/12/2008 and the current project
+tree.
+
+
+2009-05-11
+----------
+NCRClient.dll           2.3.1.153
+WE_Client.exe           2.3.1.178
+wecommon.bpl            2.3.1.97
+Trace.bpl               2.3.1.40
+
+1. Errore sincronizzazione nell'inoltro dell'Ack della cassa 
+al server WinEPTS. Fixed.
+2. Errore sincronizzazione nella ricezione messaggi inviati dal 
+server WinEPTS. Fixed.
+
+
+2009-05-08
+----------
+NCRClient.dll           2.3.0.36
+WE_Client.exe           2.3.0.49
+wecommon.bpl            2.3.0.7
+Trace.bpl               2.3.0.6
+(from SVN branch created 18/12/2008)
+
+1. UK: Transaction aborted by WEInterface while waiting for card insertion 
+error before the PIN timeout expired.
+Jim Rowe:
+"Inserted card but left 'insert PIN' to timeout.
+After timeout POS displays 'WinEPTS Client Service is not responding'    
+expect a more meaningful message
+CR still displays Insert PIN
+Conpleted transaction with card offline."
+
+
+
+
+2009-04-17 (2)
+----------
+NCRClient.dll           2.3.0.32
+WE_Client.exe           2.3.0.25
+wecommon.bpl            2.3.0.4
+Trace.bpl               2.3.0.5
+(from SVN branch created 18/12/2008)
+
+1. UK: the issue below fixed.
+
+
+2009-04-17
+----------
+NCRClient.dll           2.3.0.32
+WE_Client.exe           2.3.0.20
+wecommon.bpl            2.3.0.4
+Trace.bpl               2.3.0.5
+(from SVN branch created 18/12/2008)
+
+1. UK: Issue raised by Jim Rowe. WEClient service seems to block
+on ArrayIndexOutOfBoundsException. try...except code block added to
+track this exception. There's currently no cause found for this
+exception. Pending.
+
+
+2009-04-07
+----------
+NCRClient.dll           2.3.0.32
+WE_Client.exe           2.3.0.17
+wecommon.bpl            2.3.0.2
+Trace.bpl               2.3.0.2
+(from SVN branch created 18/12/2008)
+
+Notes:
+1. UK: Error was caused by a synchronization problem between 
+WEClient Interface (NCRClient.dll) and WEClient service during 
+the Check Card in Reader phase at the end of a transaction. 
+The problem was caused by the difference between the interval 
+of sending card status messages by WEClient service and the 
+interval of waiting for them on the side of WEClient Interface. 
+Timeouts fixed.
+ 
+2. UK: The case reported by Jim could happen in a situation when 
+a transaction had been already accepted by WinEPTS Server when 
+a cashier has pressed the Abort button on the till. The difference 
+between the message IDs of outgoing Abort message and incoming 
+Approved one caused WEClient Interface to stop responding (so that 
+WEClient window didn't go away). All messages that are found improper 
+(like the Approved one after sending an Abort request) are now 
+skipped, to allow WEClient Interface waiting for the proper message 
+(acknowledge to Abort) or to go to WEClient Interface timeout, with 
+a correct error message and without blocking WEClient window.
+
+
+2009-04-01
+----------
+HYPClient.bpl           2.3.0.5
+NCRClient.dll           2.3.0.125
+WE_Client.exe           2.3.0.103
+wecommon.bpl            2.3.0.72
+Trace.bpl               2.3.0.35
+
+Notes:
+1. CH: HYPClient adopted to v.2.3. Only opening and closing of the connection
+to Hypercom terminal are tested. Payment transactions are not tested.
+
+
+2009-03-30
+----------
+TLSClient.bpl           2.3.0.33
+NCRClient.dll           2.3.0.125
+WE_Client.exe           2.3.0.103
+wecommon.bpl            2.3.0.72
+Trace.bpl               2.3.0.35
+
+Notes:
+1. AT: Card Insertion implemented.
+
+
+2009-03-27
+----------
+ePayClient.bpl          2.3.0.46
+NCRClient.dll           2.3.0.110
+WE_Client.exe           2.3.0.103
+wecommon.bpl            2.3.0.58
+Trace.bpl               2.3.0.23
+
+Notes:
+1. Generic: Option selection dialog implemented for standalone terminals
+2. Based on p.1, the following features implemented based on CR:
+- Candidate list selection
+- By-passing of PIN Entry
+- Manual PAN Entry confirmation
+- Management of blacklisted cards
+
+
+
+2009-02-19
+----------
+ePayClient.bpl          2.3.0.24
+
+Notes:
+1. ePayClient.bpl: Bank name read from 1F14 tag to receipt 
+field assignment fixed.
+
+
+
+2009-02-16
+----------
+ePayClient.bpl          2.3.0.23
+NCRClient.dll           2.3.0.61
+WE_Client.exe           2.3.0.43
+wecommon.bpl            2.3.0.32
+Trace.bpl               2.3.0.4
+
+Notes:
+1. ePayClient.bpl: Receipt Layout changes: PIN/Signature.
+
+
+2009-02-09
+----------
+ePayClient.bpl          2.3.0.18
+NCRClient.dll           2.3.0.57
+WE_Client.exe           2.3.0.35
+wecommon.bpl            2.3.0.25
+Trace.bpl               2.3.0.4
+
+Notes:
+1. ePayClient.bpl: Receipt Layout changes.
+
+
+2008-12-19
+----------
+ePayClient.bpl          2.3.0.4
+NCRClient.dll           2.3.0.22
+WE_Client.exe           2.3.0.11
+wecommon.bpl            2.3.0.5
+Trace.bpl               2.3.0.2
+
+Notes:
+
+1. ePayClient.bpl recompiled for the 2.3 release.
+2. FI: Merchant receipt is always printed (even the PIN entry
+has been confirmed)
+
+
+
+2008-12-18
+----------
+HYPCZClient.bpl         2.3.0.1
+NCRClient.dll           2.3.0.22
+WE_Client.exe           2.3.0.11
+wecommon.bpl            2.3.0.5
+Trace.bpl               2.3.0.2
+
+
+Notes
+
+1. WEClient architecture changes to ease development of 
+stand alone terminal plug-ins, with a possibility to share
+code with third partiies.
+
+2. The trace module is isolated into a separate Trace.bpl
+
+3. Tracing levels adjusted. Currently suggested debug level 
+is 6 for all WEClient components. Level 7 is very verbose
+and should be used only by explicit request.

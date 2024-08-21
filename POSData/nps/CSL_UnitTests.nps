@@ -1,0 +1,890 @@
+/** 
+ * @file CSL_UnitTests.nps
+ * @brief This NPS file implements the CSL unit tests.
+ * @addtogroup 	CSL
+ * @defgroup 	UnitTests
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Ricardo (of Creation)
+ * @since SDO-1351 / 2009/06/16
+ *
+ * @version $Id: CSL_UnitTests.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks This should only be included for running tests. In production, this should not be included.
+ * @{
+ */ 
+
+/* Variable used for version control */
+CSL_REPORTS_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+var testsResult = new Array();
+
+ /** 
+ * @brief Business Component to perform CSL Unit tests 
+ *          
+ * This BC is called to performe NewPOS CSL tests, every CSL and Core function must have a set of scenarios implemented
+ * through script to validate them,
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function PosDoCSLTests() {
+	testsResult = new Array();
+	try {
+		testPosPrinterQueryStatus();
+		testPosPrinterPrint();
+		testPosPrinterJobStatus();		
+		testPosEndOfDay();
+		testPosDayOpen();
+		testPosOperatorLogout();
+		testPosDayOpenVerify();
+		testPosEndOfDayVerify();
+		testPosMSRRead();
+		testNPSFile();
+		//testPosNPSExtRequestCmd();
+		testPosCheckBCResult();
+		testPosDoDiscount();
+		//PosChooseVolume("","true");
+		//PosResetQueueStates("true");
+	} catch (e) {
+	   // statements to handle any exceptions
+		PosShowMessage("[EXCEPTION]" + e);
+	   	//logMyErrors(e); // pass exception object to error handler
+	} finally {
+		logResults();
+	}
+}
+
+/** 
+ * @brief CSL unit test for PosNPSExtRequestCmd Business Components and NPS Driver Extension.
+ * This test requires the DLL "tst1.dll". This DLL works as an exemple of external components attached to NewPOS.
+ * In addition, the pos-db.xml and store-db.xml files must be configured according to SDO-1427.
+ */
+function testPosNPSExtRequestCmd() {
+
+	testSuccess();
+	testUnavaliableAdaptor();
+	testInvalidParameter();
+	
+	return;
+	
+	function testSuccess() {
+		var result = PosNPSExtRequestCmd("2", "test");
+		assertTrue(result, "PosNPSExtRequestCmd with default values. This BC should succeed");
+		//var ctx = new SessionContext;
+		//var ctxNPSExtSuccess = ctx.get("NPSExtRequestCmd_Result");
+		
+		var ctxNPSExtSuccess = getLastSuccess("PosNPSExtRequestCmd");
+		if(ctxNPSExtSuccess == "teste 123") {
+			result = true;
+		}
+		else {
+			result = false;
+		}
+		assertTrue(result, "Unexpected value returned by tst1.dll");
+		
+	};
+	
+	function testUnavaliableAdaptor() {
+		var result = PosNPSExtRequestCmd("8", "test");
+		assertFalse(result, "PosNPSExtRequestCmd called with no adaptor configured");
+		//var ctx = new SessionContext;
+		//var ctxNPSExtFail = ctx.get("NPSExtRequestCmd_Failure");
+		
+		var ctxNPSExtFail = getLastFail("PosNPSExtRequestCmd");
+		if(ctxNPSExtFail == "1") {
+			result = true;
+		}
+		else {
+			result = false;
+		}
+		assertTrue(result, "The error code should be 1");
+	};
+	
+	function testInvalidParameter() {
+		var result = PosNPSExtRequestCmd("2");
+		assertFalse(result, "PosNPSExtRequestCmd called with invalid number of parameters. It should fail");
+		//var ctx = new SessionContext;
+		//var ctxNPSExtFail = ctx.get("NPSExtRequestCmd_Failure");
+		var ctxNPSExtFail = getLastFail("PosNPSExtRequestCmd");
+		if(ctxNPSExtFail == "2") {
+			result = true;
+		}
+		else {
+			result = false;
+		}
+		assertTrue(result, "The error code should be 2");
+
+	};
+	
+}
+
+/** 
+ * @brief CSL unit test for cPosSelectVolume Business Components 
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function testcPosSelectVolume() {
+	//Test with volume argument missing, must fail
+	result = cPosSelectVolume();
+	assertFalse(result, "cPosSelectVolume without argument must fail");
+	//Test the success case
+	result = cPosSelectVolume("teste");
+	assertTrue(result,"cPosSelectVolume with message must succeed");
+}
+
+/** 
+ * @brief CSL unit test for cPosChooseVolume Business Components 
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function testcPosChooseVolume() {
+	//Test with volume argument missing, must fail
+	result = cPosChooseVolume();
+	assertFalse(result, "cPosChooseVolume without argument must fail");
+	//Test with the already set volume must fail
+	result = cPosChooseVolume("Standard");
+	assertFalse(result, "cPosChooseVolume with already set volume must fail");
+	//Test with a volume that is not in volume list
+	result = cPosChooseVolume("NoExists");
+	assertFalse(result, "cPosChooseVolume with a volume that is not in volume list must fail");
+	//Test the success case
+	result = cPosChooseVolume("DT_FC_");
+	assertTrue(result, "cPosChooseVolume with a valid volume that is not already set must succeed");
+}
+
+/** 
+ * @brief CSL unit test for PosPrinterQueryStatus Business Components 
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function testPosPrinterQueryStatus() {
+	//Lets check the succes scenario: default adaptor, default printer, default timeout
+	result = cPosPrinterQueryStatus("");
+	assertTrue(result, "PosPrinterQueryStatus with default values must successed");
+	//Now testing with wrong alias name
+//	result = PosPrinterQueryStatus("","wrong alias");
+//	assertFalse(result, "PosPrinterQueryStatus with wrong alias name must fail");
+}
+/** 
+ * @brief CSL unit test for PosPrinterPrint Business Components 
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function testPosPrinterPrint() {
+	testPosPrinterPrintWithSuccess();
+	testPosPrinterPrintWrongAlias();
+	PosPrinterPrintAndWait("","", 0,"Printing data");
+	return;
+	
+	function testPosPrinterPrintWithSuccess() {
+		//Lets check the succes scenario: default adaptor, default printer, default timeout
+		result = cPosPrinterPrint("", -1,"Printing data");
+		assertTrue(result, "cPosPrinterPrint with default values must successed");
+		//Let's check the session context
+		//var ctx=new SessionContext;
+		//var ctxResult = ctx.get("cPosPrinterPrint_Result");
+		var ctxResult = getLastSuccess("cPosPrinterPrint");
+		//var ctxFailure = ctx.get("cPosPrinterPrint_Failure");
+		var ctxFailure = getLastFail("cPosPrinterPrint");
+		assertTrue(ctxResult != null, "cPosPrinterPrint must fill the session context result  with the Job id if succeed");
+		assertTrue(ctxFailure == null, "cPosPrinterPrint must keep the session context failure with null if succeed");		
+	}
+	function testPosPrinterPrintWrongAlias() {
+		//Now testing with wrong alias
+		result = cPosPrinterPrint("Wrong Alias", -1,"Printing data");
+		assertFalse(result, "cPosPrinterPrint with wrong alias name must fail");
+	}
+
+	//Now testing with wrong alias name
+//	result = PosPrinterQueryStatus("","wrong alias");
+//	assertFalse(result, "PosPrinterQueryStatus with wrong alias name must fail");
+}
+function testPosPrinterJobStatus() {
+	testPosPrinterJobStatusWithSuccess();
+	testPosPrinterJobStatusWrongJobId();
+	//testPosPrinterJobStatusTimeout(); // This TEST can not be performed because it the virtual print has very quick execution.
+	return;
+	function testPosPrinterJobStatusWithSuccess() {
+		//Lets check the succes scenario: default adaptor, default printer, default timeout
+		result = cPosPrinterPrint("", -1,"Printing data");
+		assertTrue(result, "PosPrinter in PosPrinterJobStatus must successed");
+		//Let's check the session context
+		//var ctx=new SessionContext;
+		//var ctxJobId = ctx.get("cPosPrinterPrint_Result");
+		var ctxJobId = getLastSuccess("cPosPrinterPrint");
+		result = cPosPrinterJobStatus("", -1, ctxJobId);
+		assertTrue(result, "PosPrinterJobStatus must successed. JobId is available!");
+		//var ctxResult = ctx.get("cPosPrinterJobStatus_Result");
+		var ctxResult = getLastSuccess("cPosPrinterJobStatus");
+		//var ctxFailure = ctx.get("cPosPrinterJobStatus_Failure");
+		var ctxFailure = getLastFail("cPosPrinterJobStatus");
+		assertTrue(ctxResult != null, "PosPrinterJobStatus must fill the session context result  with the Job status + [" + ctxResult + "]");
+		assertTrue(Number(ctxResult) == 3, "PosPrinterJobStatus Job status must be print done [" + ctxResult + "]");
+		assertTrue(ctxFailure == null, "PosPrinterJobStatus must keep the session context failure with null if succeed");		
+	}
+	function testPosPrinterJobStatusTimeout() {
+		//Lets check the succes scenario: default adaptor, default printer, default timeout
+		result = cPosPrinterPrint("", -1,"Printing data");
+		assertTrue(result, "PosPrinter in PosPrinterJobStatus must successed");
+		//Let's check the session context
+		//var ctx=new SessionContext;
+		//var ctxJobId = ctx.get("cPosPrinterPrint_Result");
+		var ctxJobId = getLastSuccess("cPosPrinterPrint");
+		result = cPosPrinterJobStatus("", "1", ctxJobId);
+		assertFalse(result, "PosPrinterJobStatus must fail due the timeout.");
+		//var ctxResult = ctx.get("cPosPrinterJobStatus_Result");
+		var ctxResult = getLastSuccess("cPosPrinterJobStatus");
+		//var ctxFailure = ctx.get("cPosPrinterJobStatus_Failure");
+		var ctxFailure = getLastFail("cPosPrinterJobStatus");
+		assertTrue(ctxResult == null, "PosPrinterJobStatus must keep the session context with null [" + ctxResult + "]");
+		assertTrue(ctxFailure != null, "PosPrinterJobStatus must have the Timeout error");
+		assertTrue(Number(ctxFailure) == 0, "PosPrinterJobStatus must have the Timeout error [" + ctxFailure + "]");		
+				
+	}
+	function testPosPrinterJobStatusWrongJobId() {
+		//Lets check the succes scenario: default adaptor, default printer, default timeout
+		result = cPosPrinterJobStatus("", -1, "555");
+		assertTrue(result, "PosPrinterJobStatus must successed. JobId is available!");
+		//var ctx=new SessionContext;
+		//var ctxResult = ctx.get("cPosPrinterJobStatus_Result");
+		var ctxResult = getLastSuccess("cPosPrinterJobStatus");
+		//var ctxFailure = ctx.get("cPosPrinterJobStatus_Failure");
+		//PosShowMessage(ctxFailure);
+		var ctxFailure = getLastFail("cPosPrinterJobStatus");
+		
+		assertTrue(ctxResult != null, "PosPrinterJobStatus must fill the session context result  with the Job status + [" + ctxResult + "]");
+		assertTrue(Number(ctxResult) == 3, "PosPrinterJobStatus Job status must be done (printed) [" + ctxResult + "]");
+		assertTrue(ctxFailure == null, "PosPrinterJobStatus must keep the session context failure with null if succeed");		
+	}
+	
+}
+function testPosEndOfDay(){
+	//this test must start with open day
+	testPosEndOfDayInvalidParameter();
+	testPosEndOfDaySuccess();
+	testPosEndOfDayInvalidPOSState();
+	
+	return;
+	
+	function testPosEndOfDayInvalidParameter(){
+		result = cPosEndOfDay("invalid");
+		assertFalse(result, "cPosEndOfDay with invalid parameter. This BC should fail.");
+	};
+	
+	function testPosEndOfDaySuccess(){
+		result = cPosEndOfDay("offline");
+		assertTrue(result,"cPosEndOfDay with default values. This BC should succeed.");
+	};
+	
+	function testPosEndOfDayInvalidPOSState(){
+		result = cPosEndOfDay("offline");
+		assertFalse(result,"cPosEndOfDay with POS in invalid state. This BC should fail.");
+	};
+	//POS with closed state
+}
+
+function testPosDayOpen() {
+	//this test must start with close day and no tlog files from current date.
+	testPosDayOpenInvalidPOSMode();
+	testPosDayOpenInvalidDateFormat();
+	testPosDayOpenInvalidDate();
+	testPosDayOpenSuccess();
+	testPosDayOpenDayAlreadyOpen();
+	testPosDayOpenLoggedUser();
+
+	return;
+		
+	function testPosDayOpenInvalidPOSMode(){
+		//test invalid POSMode
+		result = cPosDayOpen("invalid","20090701");
+		assertFalse(result, "Invalid POS mode. This B.C. should fail.");
+	};
+	
+	function testPosDayOpenInvalidDateFormat(){
+		//test invalid date format
+		result = cPosDayOpen("offline","20090740");
+		assertFalse(result,"Invalid date format. This B.C. should fail.");
+	};
+	
+	function testPosDayOpenInvalidDate(){
+		//test invalide date
+		var today = new Date();
+		var previousDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+		var month = setZerosOnLeft(previousDay.getMonth() + 1, 2);
+		var day = setZerosOnLeft(previousDay.getDate(), 2);		
+
+		result = cPosDayOpen("offline","" + previousDay.getFullYear() + month + day);
+		assertFalse(result,"Invalid date. This B.C. should fail.");
+	};
+	
+	function testPosDayOpenSuccess(){
+		//test success
+		var today = new Date();
+		var nextDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+		var month = setZerosOnLeft(nextDay.getMonth() + 1, 2);
+		var day = setZerosOnLeft(nextDay.getDate(), 2);		
+
+		result = cPosDayOpen("offline","" + nextDay.getFullYear() + month + day);
+		assertTrue(result,"cPosDayOpen with default values. This B.C. should succeed.");
+	};
+	
+	function testPosDayOpenDayAlreadyOpen(){
+		//test with day already open
+		result = cPosDayOpen("offline","20090703");
+		assertFalse(result, "Day already open. This B.C. should fail.");
+	};
+	
+	function testPosDayOpenLoggedUser(){
+		//test with logged operator
+		if (executeBC("cPosOperatorLogin",["999","0","Test"])) {
+			result = cPosDayOpen("offline","20090703");
+			assertFalse(result, "Day already open. This B.C. should fail.");
+		}
+	};
+	//POS with logged user
+}
+
+function testPosOperatorLogout(){
+	//this test must start with open day and logged user.
+	testPosOperatorLogoutSuccess();
+	testPosOperatorLogoutNoOperatorLoggedIn();
+	cPosEndOfDay("offline");
+	testPosOperatorLogoutDayClose();
+
+	return;
+
+	function testPosOperatorLogoutSuccess() {
+		//test success
+		result = cPosOperatorLogout();
+		assertTrue(result, "cPosOperatorLogout with default values. This B.C. must succeed.");
+	};
+
+	function testPosOperatorLogoutNoOperatorLoggedIn() {
+		//test operator not logged
+		result = cPosOperatorLogout();
+		assertFalse(result, "There's no logged operator. This B.C. should fail.");
+	};
+	
+	function testPosOperatorLogoutDayClose() {
+		//test close day
+		result = cPosOperatorLogout();
+		assertFalse(result, "Day closed. This B.C. should fail.");
+	};
+	//POS with closed day
+}
+
+function testPosDayOpenVerify(){
+	//This test must start with closed day.
+	testPosDayOpenVerifyInvalidDateFormat();
+	testPosDayOpenVerifyInvalidDate();
+	testPosDayOpenVerifySuccess();
+	testPosDayOpenVerifyInvalidPOSState();
+
+	return;
+
+	function testPosDayOpenVerifyInvalidDateFormat(){
+		//test with invalid date format
+		result = cPosDayOpenVerify("20090740");
+		assertFalse(result,"cPosDayOpenVerify with invalid date format. This B.C. should fail.");
+	}
+	
+	function testPosDayOpenVerifyInvalidDate(){
+		//test with invalid date
+		var today = new Date();
+		var previousDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+		var month = setZerosOnLeft(previousDay.getMonth() + 1, 2);
+		var day = setZerosOnLeft(previousDay.getDate(), 2);		
+
+		result = cPosDayOpenVerify("" + previousDay.getFullYear() + month + day);
+		assertFalse(result,"cPosDayOpenVerify with invalid date. This B.C. should fail.");
+	}
+
+	function testPosDayOpenVerifySuccess(){
+		//test success
+		var today = new Date();
+		var futureDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
+		var month = setZerosOnLeft(futureDay.getMonth() + 1, 2);
+		var day = setZerosOnLeft(futureDay.getDate(), 2);
+
+		result = cPosDayOpenVerify("" + futureDay.getFullYear() + month + day);
+		assertTrue(result, "cPosDayOpenVerify with day closed. This BC should succeed.");
+		//open the day
+		cPosDayOpen("offline","" + futureDay.getFullYear() + month + day);
+	};
+	
+	function testPosDayOpenVerifyInvalidPOSState(){
+		//test with invalid POS state
+		result = cPosDayOpenVerify("20090703");
+		assertFalse(result,"cPosDayOpenVerify with POS in invalid state. This BC should fail.");
+	}
+	//POS with opened day
+}
+
+function testPosEndOfDayVerify(){
+	//this test must start with POS opened day state
+	testPosEndOfDayVerifyPosOpened();
+	testPosEndOfDayVerifyPosClosed();
+	return;
+	
+	function testPosEndOfDayVerifyPosOpened(){
+	//test with POS opened state
+		result = cPosEndOfDayVerify();
+		assertFalse(result, "cPosEndOfDayVerify with POS opened state. This BC should fail.");
+	};
+	
+	function testPosEndOfDayVerifyPosClosed(){
+	//test with POS closed
+		result = cPosEndOfDayVerify();
+		assertFalse(result, "cPosEndOfDayVerify with POS closed state. This BC should fail.")
+	};
+}
+
+/** 
+ * @brief CSL unit test for PosMSRRead Business Components 
+ *
+ * @since - CSL creation in 6.1.16.
+ */
+function testPosMSRRead() {
+	testPosMSRReadExceededTimeout();
+	return;
+	
+	function testPosMSRReadExceededTimeout() {
+		//test timeout exceeded. Parameters (timeout < 0)
+		result = cPosMSRRead("-1");
+		assertFalse(result, "PosMSRRead must have the Timeout error");	
+	};
+}
+
+function testNPSFile() {
+	var path = "C:/test.txt";
+	var testFile = new File(path);
+	
+	testOpenWrite();
+	testSeekRead();
+	testClose();
+	testProperties();
+	testRemove();
+	testListFiles();
+	testRemoveDir();
+	testMove();
+	testCopy();
+	testFileExists();
+	
+	return;
+	
+	function testOpenWrite(){
+		result = testFile.open("w+");
+		assertTrue(result, "Open returned FALSE.");
+		result = testFile.write("123456789");
+		assertTrue(result, "Write returned FALSE.");
+	};
+	
+	function testSeekRead(){
+		result = testFile.seek(5,"SEEK_SET");
+		assertTrue(result, "Seek returned FALSE.");
+		testFile.write("1234");
+		
+		// set LastWrite variable
+		var fullDate = new Date();
+		var month = setZerosOnLeft(fullDate.getMonth() + 1 , 2);
+		var day = setZerosOnLeft(fullDate.getDate(), 2);
+		var hour = setZerosOnLeft(fullDate.getHours(), 2);
+		var minute = setZerosOnLeft(fullDate.getMinutes(), 2);
+		var second = setZerosOnLeft(fullDate.getSeconds(), 2);
+		timeLastWrite = "" + fullDate.getFullYear() + month + day + hour + minute + second;
+				
+		var ret = testFile.read();
+		result = ("123451234" && ret);
+		assertTrue(result, "Result read from file after Seek is incorrect.")
+	};
+	
+	function testClose(){
+		result = testFile.close();
+		var fullDate = new Date();
+		var month = setZerosOnLeft(fullDate.getMonth() + 1 , 2);
+		var day = setZerosOnLeft(fullDate.getDate(), 2);
+		var hour = setZerosOnLeft(fullDate.getHours(), 2);
+		var minute = setZerosOnLeft(fullDate.getMinutes(), 2);
+		var second = setZerosOnLeft(fullDate.getSeconds(), 2);
+		timeLastAccess = "" + fullDate.getFullYear() + month + day + hour + minute + second;
+	};
+	
+	function testProperties(){
+		// Size
+		var fileSize = testFile.size;
+		var fileStr = "123451234";
+		if(fileStr.length == fileSize){
+			result = true;
+		}
+		else{
+			result = false;
+		}
+		assertTrue(result, "Incorrect property: Size");
+		
+		// Creation Date
+		var creationDate = testFile.creationDate;
+		var fullDate = new Date();
+		var today = new Date(fullDate.getFullYear(), fullDate.getMonth(), fullDate.getDate());
+		var month = setZerosOnLeft(today.getMonth() + 1, 2);
+		var day = setZerosOnLeft(today.getDate(), 2);
+		if(creationDate == ("" + today.getFullYear() + month + day)){
+			result = true;
+		}
+		else {
+			result = false;
+		}
+		assertTrue(result, "Incorrect property: Creation Date");
+		
+		// Last Access
+		var lastAccess = testFile.lastAccess;
+		if(timeLastAccess == lastAccess){
+			result = true;
+		}
+		else{
+			result = false;
+		}
+		assertTrue(result, "Incorrect property: Last Access");
+		
+		// Last Write
+		var lastWrite = testFile.lastWrite;
+		if(lastWrite == timeLastWrite){
+			result = true;
+		}
+		else{
+			result = false;
+		}
+		assertTrue(result, "Incorrect property: LastWrite");
+		
+		// Path
+		assertTrue(path==testFile.path);
+	};
+	
+	function testRemove() {
+		//remove() clears all properties and delete the file from system
+		testFile.remove();
+		assertTrue(testFile.size==0,"Test remove() should set size to zero");
+		assertTrue(testFile.creationDate=="","Test remove() should clear CreationDate property");
+		assertTrue(testFile.lastAccess=="","Test remove() should clear lastAccess property");
+		assertTrue(testFile.lastWrite=="","Test remove() should clear lastWrite property");
+	};
+	
+	function testListFiles() {
+	
+		File.createDir("C:/npsTest");
+		file1 = new File("C:/npsTest/test1.txt");
+		file1.open("w+");
+		file2 = new File("C:/npsTest/test2.txt");
+		file2.open("w+");
+		file3 = new File("C:/npsTest/test3.txt");
+		file3.open("w+");
+	
+		fileNames = File.listFiles("C:/npsTest");
+		// 3 files created
+		assertTrue(fileNames.length==3, "Test listFiles should have size 3");
+		var element = fileNames.pop();
+		assertTrue(element == "test3.txt", "Test listFiles returned wrong value from Array");
+		var element = fileNames.pop();
+		assertTrue(element == "test2.txt", "Test listFiles returned wrong value from Array");
+		var element = fileNames.pop();
+		assertTrue(element == "test1.txt", "Test listFiles returned wrong value from Array");
+		
+	};
+	
+	function testRemoveDir() {
+		assertFalse(File.removeDir("C:/npsTest"),"Test removeDir should fail. The directory is not empty");
+		
+		file1.remove();
+		file2.remove();
+		file3.remove();
+		
+		assertTrue(File.removeDir("C:/npsTest"),"Test removeDir should succeed. The directory is empty");
+	};
+	
+	function testMove() {
+		var path1 = "C:/npsTest/test.txt";
+		var path2 = "C:/npsTest2/test2.txt";
+		
+		var dir1 = "C:/npsTest/";
+		var dir2 = "C:/npsTest2/";
+		
+		File.createDir(dir1);
+		File.createDir(dir2);
+		
+		//open file
+		var testFile = new File(path1);
+		testFile.open("w");
+		//move() returns nonzero indicating success. Zero indicates failure
+		result = testFile.move(path2);
+		assertFalse(result,"Open file moved. move() should fail when the file is open.");
+		
+		//closed file
+		testFile.close();
+		result = testFile.move(path2);
+		assertTrue(result,"Closed file. move() should succeed.");
+		
+		//verifying path
+		result = (testFile.path == path2);
+		assertTrue(result,"Path propety is not the set in the file. Should succeed.");
+		
+		//dir1 should be empty after moving file to dir2
+		assertTrue(File.removeDir(dir1),"Test removeDir should succeed. The directory should be empty");
+		
+		testFile.remove();
+		File.removeDir("C:/npsTest");
+		File.removeDir("C:/npsTest2");
+	};
+	
+	function testCopy() {
+		var path1 = "C:/npsTest/test.txt";
+		var path2 = "C:/npsTest2/test2.txt";
+		
+		var dir1 = "C:/npsTest/";
+		var dir2 = "C:/npsTest2/";
+		
+		var content = "File test 1 2 3";
+		
+		File.createDir(dir1);
+		File.createDir(dir2);
+		
+		var testFile1 = new File(path1);
+		testFile1.open("w");
+		testFile1.write(content);
+		testFile1.close();
+		// copy testFile1 to testFile2
+		var testFile2 = testFile1.copy(path2);
+		
+		// test the path property
+		result = (testFile1.path == path1);
+		assertTrue(result, "Original file path was changed after copying");
+		//testFile1.remove();
+		result = (testFile2.path == path2);
+		assertTrue(result, "Copied file has wrong path");
+		
+		// test the content
+		testFile2.open("r");
+		var contentRead = testFile2.read();
+		assertTrue(contentRead == content, "Content copied ["+contentRead+"] is different from the original ["+content+"]");
+		testFile2.close();
+		
+		testFile2.remove();
+		File.removeDir("C:/npsTest");
+		File.removeDir("C:/npsTest2");
+	};
+	
+	function testFileExists() {
+	
+		File.createDir("C:/FileExistTest");
+		var file1 = new File("C:/FileExistTest/test1.txt");
+		file1.open("w+");
+		
+		assertTrue(File.exists("C:/FileExistTest"),"File.exists() should return true for directory 'C:/FileExistTest'");
+		assertTrue(File.exists("C:/FileExistTest/test1.txt"), "File.exists() should return true for file 'C:/FileExistTest/test1.txt'");
+		
+		file1.remove();
+		File.removeDir("C:/FileExistTest");
+	
+		assertFalse(File.exists("C:/FileExistTest"),"File.exists() should return false for directory 'C:/FileExistTest'");
+		assertFalse(File.exists("C:/FileExistTest/test1.txt"), "File.exists() should return false for file 'C:/FileExistTest/test1.txt'");
+		
+		return;
+	};
+}
+
+/** 
+ * @brief CSL unit test for PosCheckBCResult
+ *
+ */
+function testPosCheckBCResult() {
+	
+	//test success
+	var ret = PosCheckBCResult("cPosMSRRead","-1");
+	assertTrue(ret,"Check Session Property should succeed with valid value");
+	
+	//test with invalid value
+	ret = PosCheckBCResult("cPosMSRRead","-2");
+	assertFalse(ret,"Check Session Property should fail with invalid value");
+}
+
+/** 
+ * @brief CSL unit test for PosDoDiscount
+ * This BC was changed since SDO-2166
+ * cPosAddDiscountTable()
+ * cPosAddDiscountAmount()
+ * cPosAddDiscountRate()
+ * cPosRollbackDiscount()
+ * cPosGetMaxAmount() 
+ */
+function testPosDoDiscount() {
+	var result = null;
+	
+	// creates a sale (plain big mac)
+	PosSetCDrawerOpMode("1");
+	
+	PosDoSale("5");
+	
+	var ret = cPosGetMaxAmount();
+	assertTrue(ret,"cPosGetMaxAmount returned false. In any sale it should return true.");
+	
+	testcPosAddDiscountRate();
+	testcPosAddDiscountTable();
+	testcPosAddDiscountAmount();
+	testcPosRollbackDiscount();
+	
+	return;
+	
+	// atomic BCs
+	function testcPosAddDiscountRate() {
+		ret = executeBC("cPosAddDiscountRate", ["0", "11", "50", "% Discount"]);
+		assertFalse(ret, "cPosAddDiscountRate should allow 50% discount");//applyed discount, even with false return
+		
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		ret = executeBC("cPosAddDiscountRate", ["0", "11", "150", "% Discount"]);
+		assertFalse(ret, "PosDoDiscount should not allow more than 100% discount");
+
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		
+		return;
+	}
+	
+	function testcPosAddDiscountTable() {
+		PosDoSale("5");
+		// discountId 0 - 0%
+		ret = executeBC("cPosAddDiscountTable",["0","1",""]);
+		result = getLastSuccess("cPosAddDiscountTable");
+		assertTrue((result != null) && (!ret), "cPosAddDiscountTable, 0% applyed but result not set");
+		assertTrue("0.00" == result, "cPosAddDiscountTable - result different than 0.00");
+		
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		// discountId 1 - 50%
+		ret = executeBC("cPosAddDiscountTable",["1","1",""]);
+		result = getLastSuccess("cPosAddDiscountTable");
+		assertTrue((result != null) && (!ret), "cPosAddDiscountTable, 50% applyed but result not set");
+		assertTrue("1.64" == result, "cPosAddDiscountTable - result different than 1.64 (50%)");
+		
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		// discountId 2 - 100%
+		ret = executeBC("cPosAddDiscountTable",["2","1",""]);
+		result = getLastSuccess("cPosAddDiscountTable");
+		assertTrue((result != null) && (ret), "cPosAddDiscountTable, 100% applyed but result not set");
+		assertTrue("3.29" == result, "cPosAddDiscountTable - result different than 3.29 (100%)");
+		
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		// discountId 3 - 0%
+		ret = executeBC("cPosAddDiscountTable",["3","1",""]);
+		result = getLastSuccess("cPosAddDiscountTable");
+		assertTrue((result != null) && (!ret), "cPosAddDiscountTable, 0% applyed but result not set");
+		assertTrue("0.00" == result, "cPosAddDiscountTable - result different than 0.00 (0%)");
+		
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		
+		return;
+	}
+	
+	function testcPosAddDiscountAmount() {
+		PosDoSale("5");
+		// more than allowed
+		ret = executeBC("cPosAddDiscountAmount",["1","1","500"]);
+		assertFalse(ret,"cPosAddDiscountAmount - more than max allowed should return false");
+		
+		// value allowed
+		ret = executeBC("cPosAddDiscountAmount",["1","1","100"]);
+		assertFalse(ret, "cPosAddDiscountAmount - value allowed to do the discount. Return should be false, but discount amount returned in success message");
+		result = getLastSuccess("cPosAddDiscountAmount");
+		assertTrue("1.00" == result, "cPosAddDiscountAmount - return message should be 1.00");
+		
+		// zero discount
+		PosDoTender("-1", "-1");
+		PosDoEndOfSale();
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		ret = executeBC("cPosAddDiscountAmount",["1","1","0"]);
+		assertFalse(ret,"cPosAddDiscountAmount - zero discount not allowed. It should return false");
+		
+		//success and close the sale (100%)
+		ret = executeBC("cPosAddDiscountAmount",["1","1","329"]);
+		assertTrue(ret, "cPosAddDiscountAmount - value allowed to do the discount. 100% should close the sale in the end");
+		
+		return;
+	}
+	
+	function testcPosRollbackDiscount() {
+		PosSetCashDrawerState("0");
+		PosDoSale("5");
+		// discountId 1 - 50%
+		executeBC("cPosAddDiscountTable",["1","1",""]);
+		ret = executeBC("cPosRollbackDiscount");
+		assertTrue(ret, "testcPosRollbackDiscount - discount cancelled. Should return true");
+		
+		return;
+	}
+}
+
+/**
+ * Format an integer number, returning an string with
+ */
+function setZerosOnLeft(number, totaldigits) {
+	var formatted = new String(number);
+	for (i = formatted.length; i < totaldigits; i++) {
+		formatted = "0" + formatted;
+	}
+	API.dbg("setZerosOnLeft In:" + number + "," + totaldigits + " Out:" + formatted);
+	return formatted;
+}
+function TestFail(type, message) {
+   this.message = message;
+   this.type = type;
+}
+
+function assertTrue(value, message) {
+	if (!value) {
+		testsResult.push(new TestFail("assertTrue", message));
+	}
+}
+function assertFalse(value, message) {
+	if (value) {
+		testsResult.push(new TestFail("assertFalse", message));
+	}
+}
+/**
+ * Display a dialog for each error
+ */
+function logResults() {
+	if (testsResult.length ==0) {
+		PosShowMessage("All tests have been performed successuly");	
+	} else {
+		for (i = 0; i < testsResult.length; i++) {
+			var testerr = testsResult[i];
+			PosShowMessage("[" + testerr.message + "]" + "[" + testerr.type + "]");
+		}
+	}
+}
+/** @} END nps */
+ 
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700f15946d8cafa477b402f82479b96200bf3733b6186cb5d85faef9cc8e2400f1bce278e64f06450a0821df25077b4ef0e8d480010
+ * =============================================================================================================================
+*/

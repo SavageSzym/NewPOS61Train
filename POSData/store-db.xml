@@ -1,0 +1,2088 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/jboss-3.2.2/server/default/deploy/webrfmNP61.war/rfmdata/store-db.xsd">
+	<StoreDB type="all" version="1.0">
+		<StoreDBSeqNumber>2901</StoreDBSeqNumber>
+		<StoreDBDate>2008-10-21</StoreDBDate>
+		<StoreDBTime>06:00:00</StoreDBTime>
+		<StoreProfile>
+			<StoreDetails>
+				<RfmId>34</RfmId>
+				<CompanyId>1</CompanyId>
+				<StoreId>593</StoreId>
+				<StoreAddress>Ventura Retail Park</StoreAddress>
+				<StoreZipCode>B78 3HD</StoreZipCode>
+				<City>Tamworth</City>
+				<Country>UK</Country>
+				<StorePhone>01827 64244</StorePhone>
+				<HelpDeskInfo>0000-00-0000</HelpDeskInfo>
+				<StoreType>
+					<Point>FRONT_COUNTER</Point>
+					<Point>DRIVE_THRU</Point>
+					<Point>WALK_THRU</Point>
+					<Point>DELIVERY</Point>
+					<Point>COLDKIOSK</Point>
+					<Point>MCCAFE</Point>
+					<Point>MCEXPRESS</Point>
+					<Point>COLDKIOSK_DRINK</Point>
+					<Point>CSO</Point>
+					<Point>HOT</Point>
+				</StoreType>
+			</StoreDetails>
+			<BusinessLimits>
+				<SkimTimeLimit>99999</SkimTimeLimit>
+				<SkimAmountLimit>10000</SkimAmountLimit>
+				<ManagerModeTimeLimit>20</ManagerModeTimeLimit>
+				<HighAmountSaleLimit>50</HighAmountSaleLimit>
+				<HighQuantitySaleLimit>10</HighQuantitySaleLimit>
+				<AutoReceiptPrintAmount>0</AutoReceiptPrintAmount>
+				<FcOrderTakerTimeOver>30</FcOrderTakerTimeOver>
+				<FcCashieringTimeOver>10</FcCashieringTimeOver>
+				<FcStoreTimeOver>10</FcStoreTimeOver>
+				<DtWinOneTimeOver>15</DtWinOneTimeOver>
+				<DtWinTwoTimeOver>15</DtWinTwoTimeOver>
+				<DtHeldTimeOver>10</DtHeldTimeOver>
+				<ReductionValidationMode>Limits</ReductionValidationMode>
+				<TRedBeforeTotal>0</TRedBeforeTotal>
+				<TRedAfterTotalAmount>12</TRedAfterTotalAmount>
+				<TRedAfterTotalQuantity>5</TRedAfterTotalQuantity>
+				<BreakfastStartTimeWeekDay>03:00</BreakfastStartTimeWeekDay>
+				<BreakfastStopTimeWeekDay>10:30</BreakfastStopTimeWeekDay>
+				<BreakfastStartTimeWeekEnd>03:00</BreakfastStartTimeWeekEnd>
+				<BreakfastStopTimeWeekEnd>10:30</BreakfastStopTimeWeekEnd>
+				<BlockTime>99999:00</BlockTime>
+				<InitialFloatLimit>200</InitialFloatLimit>
+				<FutureDayOpenLimit>30</FutureDayOpenLimit>
+				<StoreWidePettyCashAmountLimit>999.99</StoreWidePettyCashAmountLimit>
+			</BusinessLimits>
+			<TaxDefinition>
+				<LegalName>LADYBRIDGE TAMWORTH</LegalName>
+				<DefaultReceiptHeader>\nThank You For Eating At\nMcDonald's Ladybridge\nVentura Retail Park\nTamworth\nB78 3HD\nIf You Have Any Comments on Your Visit, \nPlease Feel Free To Email Kris Perry at\n00593@uk.mcd.com.\n\nThank You</DefaultReceiptHeader>
+				<DefaultReceiptFooter>Drive Thru open 24/7\nPhone: 0182764244\nVAT:371057172</DefaultReceiptFooter>
+				<MenuPriceBasis>GROSS</MenuPriceBasis>
+				<CalculationType>BY_ITEM</CalculationType>
+				<DisplayTaxToCustomer>true</DisplayTaxToCustomer>
+				<DisplayTaxOnSalePanel>true</DisplayTaxOnSalePanel>
+				<DisplayTaxOnReceipt>true</DisplayTaxOnReceipt>
+				<GrandTotalExclusions>
+					<GrandTotalOption>GT_PROMO</GrandTotalOption>
+					<GrandTotalOption>GT_WASTE</GrandTotalOption>
+					<GrandTotalOption>GT_REFUND</GrandTotalOption>
+					<GrandTotalOption>GT_VOID</GrandTotalOption>
+					<GrandTotalOption>GT_VOIDITEM</GrandTotalOption>
+					<GrandTotalOption>GT_DISCOUNT</GrandTotalOption>
+				</GrandTotalExclusions>
+			</TaxDefinition>
+			<Localization>
+				<CountryId>UK</CountryId>
+				<Language>en</Language>
+				<Variant></Variant>
+				<DateFormat>dd-MM-yyyy</DateFormat>
+				<TimeFormat>HH:mm:ss</TimeFormat>
+				<DecimalSeparator>.</DecimalSeparator>
+				<ThousandSeparator>,</ThousandSeparator>
+				<CurrencyName>Pound Sterling</CurrencyName>
+				<CurrencySymbol>GBP</CurrencySymbol>
+				<CurrencyDecimals>2</CurrencyDecimals>
+				<MinCirculatingAmount>0.01</MinCirculatingAmount>
+				<MinLegalAmount>0.01</MinLegalAmount>
+			</Localization>
+		</StoreProfile>
+		<TaxTable>
+			<TaxType statusCode="ACTIVE">
+				<TaxId>1</TaxId>
+				<TaxDescription>1</TaxDescription>
+				<TaxRate>20.0</TaxRate>
+				<TaxBasis>GROSS_AMOUNT</TaxBasis>
+				<TaxCalcType>IN_HUNDRED</TaxCalcType>
+				<Rounding>ROUND_HALF_EVEN</Rounding>
+				<Precision>4</Precision>
+			</TaxType>
+			<TaxType statusCode="ACTIVE">
+				<TaxId>2</TaxId>
+				<TaxDescription>2</TaxDescription>
+				<TaxRate>0</TaxRate>
+				<TaxBasis>GROSS_AMOUNT</TaxBasis>
+				<TaxCalcType>IN_HUNDRED</TaxCalcType>
+				<Rounding>ROUND_HALF_EVEN</Rounding>
+				<Precision>4</Precision>
+			</TaxType>
+			<TaxChain statusCode="ACTIVE">
+				<TaxChainId>1</TaxChainId>
+				<TaxTypeId taxId="1"/>
+			</TaxChain>
+			<TaxChain statusCode="ACTIVE">
+				<TaxChainId>2</TaxChainId>
+				<TaxTypeId taxId="2"/>
+			</TaxChain>
+		</TaxTable>
+		<TenderTypes>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>0</TenderId>
+				<TenderFiscalIndex>0</TenderFiscalIndex>
+				<TenderName>GBP</TenderName>
+				<TenderChange id="0" type="CHANGE_WITH" roundToMinAmount="false" maxAllowed="50"/>
+				<TenderCategory>TENDER_NATIVE</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<DefaultSkimLimit>0</DefaultSkimLimit>
+				<DefaultHaloLimit>50</DefaultHaloLimit>
+				<CurrencyDecimals>2</CurrencyDecimals>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>1</TenderId>
+				<TenderFiscalIndex>1</TenderFiscalIndex>
+				<TenderName>GBP5 Voucher</TenderName>
+				<TenderChange type="KEEP_EXCESS" roundToMinAmount="false" maxAllowed="0"/>
+				<TenderCategory>TENDER_GIFT_COUPON</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>REDUCE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<DefaultSkimLimit>0</DefaultSkimLimit>
+				<DefaultHaloLimit>0</DefaultHaloLimit>
+				<CurrencyDecimals>2</CurrencyDecimals>
+				<GiftCoupon>
+					<LegacyId>GBP5 Voucher</LegacyId>
+					<Amount>5</Amount>
+				</GiftCoupon>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>6</TenderId>
+				<TenderFiscalIndex>6</TenderFiscalIndex>
+				<TenderName>LVS</TenderName>
+				<TenderChange type="KEEP_EXCESS" roundToMinAmount="false" maxAllowed="0"/>
+				<TenderCategory>TENDER_OTHER_PAYMENT</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<DefaultSkimLimit>0</DefaultSkimLimit>
+				<DefaultHaloLimit>0</DefaultHaloLimit>
+				<CurrencyDecimals>2</CurrencyDecimals>
+				<CreditSales>
+					<LegacyId>LVS</LegacyId>
+				</CreditSales>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>7</TenderId>
+				<TenderFiscalIndex>7</TenderFiscalIndex>
+				<TenderName>Euro</TenderName>
+				<TenderChange id="0" type="CHANGE_WITH" roundToMinAmount="false" maxAllowed="50"/>
+				<TenderCategory>TENDER_FOREIGN_CURRENCY</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<DefaultSkimLimit>0</DefaultSkimLimit>
+				<DefaultHaloLimit>0</DefaultHaloLimit>
+				<CurrencyDecimals>2</CurrencyDecimals>
+				<ForeignCurrency>
+					<LegacyId>Euro</LegacyId>
+					<ExchangeRate>1.13345</ExchangeRate>
+					<Orientation>FOREIGN_NATIVE</Orientation>
+					<Precision>2</Precision>
+					<Rounding>ROUND_HALF_EVEN</Rounding>
+				</ForeignCurrency>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>8</TenderId>
+				<TenderFiscalIndex>8</TenderFiscalIndex>
+				<TenderName>US$ Dollar</TenderName>
+				<TenderChange id="0" type="CHANGE_WITH" roundToMinAmount="false" maxAllowed="50"/>
+				<TenderCategory>TENDER_FOREIGN_CURRENCY</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<DefaultSkimLimit>0</DefaultSkimLimit>
+				<DefaultHaloLimit>0</DefaultHaloLimit>
+				<CurrencyDecimals>2</CurrencyDecimals>
+				<ForeignCurrency>
+					<LegacyId>US$ Dollar</LegacyId>
+					<ExchangeRate>1.63345</ExchangeRate>
+					<Orientation>FOREIGN_NATIVE</Orientation>
+					<Precision>2</Precision>
+					<Rounding>ROUND_HALF_EVEN</Rounding>
+				</ForeignCurrency>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>21</TenderId>
+				<TenderFiscalIndex>21</TenderFiscalIndex>
+				<TenderName>Amex</TenderName>
+				<TenderChange type="EXACT_AMOUNT" roundToMinAmount="false" maxAllowed="0"/>			
+				<TenderCategory>TENDER_ELECTRONIC_PAYMENT</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NOT_OPEN_DRAWER</TenderFlag>
+					<TenderFlag>IS_BANK_CHECK</TenderFlag>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<CurrencyDecimals>0</CurrencyDecimals>
+				<ElectronicPayment>
+					<LegacyId>Amex</LegacyId>
+				</ElectronicPayment>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>22</TenderId>
+				<TenderFiscalIndex>22</TenderFiscalIndex>
+				<TenderName>Streamline</TenderName>
+				<TenderChange type="EXACT_AMOUNT" roundToMinAmount="false" maxAllowed="0"/>			
+				<TenderCategory>TENDER_ELECTRONIC_PAYMENT</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NOT_OPEN_DRAWER</TenderFlag>
+					<TenderFlag>IS_BANK_CHECK</TenderFlag>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<CurrencyDecimals>0</CurrencyDecimals>
+				<ElectronicPayment>
+					<LegacyId>Streamline</LegacyId>
+				</ElectronicPayment>
+			</TenderType>
+			<TenderType statusCode="ACTIVE">
+				<TenderId>23</TenderId>
+				<TenderFiscalIndex>23</TenderFiscalIndex>
+				<TenderName>Credit Sales</TenderName>
+				<TenderChange type="EXACT_AMOUNT" roundToMinAmount="false" maxAllowed="0"/>			
+				<TenderCategory>TENDER_ELECTRONIC_PAYMENT</TenderCategory>
+				<TenderFlags>
+					<TenderFlag>NOT_OPEN_DRAWER</TenderFlag>
+					<TenderFlag>IS_BANK_CHECK</TenderFlag>
+					<TenderFlag>NO_SKIM</TenderFlag>
+				</TenderFlags>
+				<TaxOption>CALCULATE</TaxOption>
+				<SubtotalOption>CALCULATE</SubtotalOption>
+				<CurrencyDecimals>0</CurrencyDecimals>
+				<ElectronicPayment>
+					<LegacyId>Credit Sales</LegacyId>
+				</ElectronicPayment>
+			</TenderType>
+		</TenderTypes>
+		<DiscountTables>
+			<DiscountTable>
+				<DiscountId>0</DiscountId>
+				<DiscountDescription>Customer</DiscountDescription>
+				<DiscountRate>20</DiscountRate>
+				<TaxOption>REDUCE</TaxOption>
+			</DiscountTable>
+			<DiscountTable>
+				<DiscountId>1</DiscountId>
+				<DiscountDescription>Employee Meal</DiscountDescription>
+				<DiscountRate>100</DiscountRate>
+				<TaxOption>REDUCE</TaxOption>
+			</DiscountTable>
+			<DiscountTable>
+				<DiscountId>2</DiscountId>
+				<DiscountDescription>Manager Meal</DiscountDescription>
+				<DiscountRate>50</DiscountRate>
+				<TaxOption>REDUCE</TaxOption>
+			</DiscountTable>
+			<DiscountTable>
+				<DiscountId>3</DiscountId>
+				<DiscountDescription>Police</DiscountDescription>
+				<DiscountRate>50</DiscountRate>
+				<TaxOption>REDUCE</TaxOption>
+			</DiscountTable>
+		</DiscountTables>
+		<Production>
+			<NameTable>
+				<Queue id="QUE8004" name="FC" shortName="FC" type="FC"/>
+				<Queue id="QUE8007" name="DT" shortName="DT" type="DT"/>
+				<Queue id="QUE8010" name="MFY Side1" shortName="Side1" type="MFY"/>
+				<Queue id="QUE8011" name="MFY Side2" shortName="Side2" type="MFY"/>
+				<Queue id="QUE8009" name="RED" shortName="RED" type="RED"/>
+				<Queue id="QUE8028" name="HUBHOOK" shortName="COD" type="COD"/>
+			</NameTable>
+			<KVSRoutes>
+			    <Route id="109" path="QUE8010|QUE8011"/>
+				<Route id="110" path="QUE8010|QUE8011"/>
+				<Route id="112" path="QUE8009"/>
+				<Route id="114" path="QUE8028"/>
+				<Route id="261" path="QUE8010|QUE8011"/>
+				<Route id="262" path="QUE8009"/>
+				<Route id="265" path="QUE8028"/>
+				<Route id="268" path="QUE8028"/>
+				<Route id="269" path="QUE8028"/>
+				<Route id="270" path="QUE8028"/>
+				<Route id="273" path="QUE8028"/>
+				<Route id="301" path="QUE8028"/>
+			</KVSRoutes>
+			<VolumeTable>
+				<Volume name="Standard" path="QUE8029,QUE9000"/>
+			</VolumeTable>
+		</Production>
+	</StoreDB>
+	<ColorDB type="default">
+		<ColorName name="CORAL" value="#FF7F50"/>
+		<ColorName name="DARKGREEN" value="#6400"/>
+		<ColorName name="BLANCHEDALMOND" value="#FFEBCD"/>
+		<ColorName name="SEAGREEN" value="#2E8B57"/>
+		<ColorName name="TURQUOISE" value="#40E0D0"/>
+		<ColorName name="FIREBRICK" value="#B22222"/>
+		<ColorName name="LIGHTSEAGREEN" value="#20B2AA"/>
+		<ColorName name="DEFAULTBACKGROUND" value="#FFFFFF"/>
+		<ColorName name="AZURE" value="#F0FFFF"/>
+		<ColorName name="CHARTREUSE" value="#7FFF00"/>
+		<ColorName name="DARKSLATEGRAY" value="#2F4F4F"/>
+		<ColorName name="KHAKI" value="#F0E68C"/>
+		<ColorName name="DARKGRAY" value="#A9A9A9"/>
+		<ColorName name="ANTIQUEWHITE" value="#FAEBD7"/>
+		<ColorName name="CHOCOLATE" value="#D2691E"/>
+		<ColorName name="MIDNIGHTBLUE" value="#191970"/>
+		<ColorName name="DARKVIOLET" value="#9400D3"/>
+		<ColorName name="GRAY" value="#808080"/>
+		<ColorName name="DARKGOLDENROD" value="#B886BB"/>
+		<ColorName name="BLACK" value="#0"/>
+		<ColorName name="LIGHTGRAY" value="#D3D3D3"/>
+		<ColorName name="BISQUE" value="#FFE4C4"/>
+		<ColorName name="VIOLET" value="#EE82EE"/>
+		<ColorName name="CORNFLOWERBLUE" value="#6495ED"/>
+		<ColorName name="SLATEBLUE" value="#6A5ACD"/>
+		<ColorName name="OLIVEDRAB" value="#6B8E23"/>
+		<ColorName name="BEIGE" value="#F5F5DC"/>
+		<ColorName name="MEDIUMORCHID" value="#BA55D3"/>
+		<ColorName name="ROSYBROWN" value="#BC8F8F"/>
+		<ColorName name="MINTCREAM" value="#F5FFFA"/>
+		<ColorName name="DARKMAGENTA" value="#8B008B"/>
+		<ColorName name="SADDLEBROWN" value="#8B4513"/>
+		<ColorName name="DARKKHAKI" value="#BDB76B"/>
+		<ColorName name="MEDIUMSEAGREEN" value="#3CB371"/>
+		<ColorName name="MAGENTA" value="#FF00FF"/>
+		<ColorName name="DARKTURQUOISE" value="#00CED1"/>
+		<ColorName name="LAWNGREEN" value="#7CFC00"/>
+		<ColorName name="BRIGHTWHITE" value="#FFFFFF"/>
+		<ColorName name="PURPLE" value="#800080"/>
+		<ColorName name="PERU" value="#CD853F"/>
+		<ColorName name="FORESTGREEN" value="#228B22"/>
+		<ColorName name="HONEYDEW" value="#F0FFF0"/>
+		<ColorName name="ROYALBLUE" value="#41690"/>
+		<ColorName name="INDIGO" value="#4B0082"/>
+		<ColorName name="FLORALWHITE" value="#FFFAF0"/>
+		<ColorName name="MISTYROSE" value="#FFE4E1"/>
+		<ColorName name="SPRINGGREEN" value="#00FF7F"/>
+		<ColorName name="OLDLACE" value="#FDF5E6"/>
+		<ColorName name="MAROON" value="#800000"/>
+		<ColorName name="MOCCASIN" value="#FFE4B5"/>
+		<ColorName name="PAPAYAWHIP" value="#FFEFD5"/>
+		<ColorName name="WHEAT" value="#F5DEB3"/>
+		<ColorName name="MEDIUMVIOLETRED" value="#C71585"/>
+		<ColorName name="MEDIUMTURQUOISE" value="#48D1CC"/>
+		<ColorName name="RED" value="#FF0000"/>
+		<ColorName name="DARKSLATEBLUE" value="#483D8B"/>
+		<ColorName name="CADETBLUE" value="#5F9EA0"/>
+		<ColorName name="DARKBLUE" value="#00008B"/>
+		<ColorName name="ORANGERED" value="#FF4500"/>
+		<ColorName name="LIGHTGREEN" value="#90EE90"/>
+		<ColorName name="LIGHTSKYBLUE" value="#87CEFA"/>
+		<ColorName name="PEACHPUFF" value="#FFDAB9"/>
+		<ColorName name="SIENNA" value="#A0522D"/>
+		<ColorName name="LAVENDERBLUSH" value="#FFF0F5"/>
+		<ColorName name="BLUEVIOLET" value="#8A2BE2"/>
+		<ColorName name="BLUE" value="#0000FF"/>
+		<ColorName name="PALEGREEN" value="#98FB98"/>
+		<ColorName name="LIGHTBLUE" value="#ADD8E6"/>
+		<ColorName name="PLUM" value="#DDA0DD"/>
+		<ColorName name="POWDERBLUE" value="#B0E0E6"/>
+		<ColorName name="LIMEGREEN" value="#32CD32"/>
+		<ColorName name="DODGERBLUE" value="#1E90FF"/>
+		<ColorName name="MEDIUMPURPLE" value="#9370DB"/>
+		<ColorName name="AQUAMARINE" value="#7FFFD4"/>
+		<ColorName name="LAVENDER" value="#E6E6FA"/>
+		<ColorName name="DARKORANGE" value="#FF8C00"/>
+		<ColorName name="DEEPSKYBLUE" value="#00BFFF"/>
+		<ColorName name="TEAL" value="#008080"/>
+		<ColorName name="YELLOW" value="#FFFF00"/>
+		<ColorName name="NAVY" value="#80"/>
+		<ColorName name="DARKSEAGREEN" value="#8FBC8B"/>
+		<ColorName name="LIGHTSTEELBLUE" value="#B0C4DE"/>
+		<ColorName name="DEFAULTFOREGROUND" value="#000000"/>
+		<ColorName name="INDIANRED" value="#CD5C5C"/>
+		<ColorName name="LIGHTYELLOW" value="#FFFFE0"/>
+		<ColorName name="DARKOLIVEGREEN" value="#556B2F"/>
+		<ColorName name="SNOW" value="#FFFAFA"/>
+		<ColorName name="MEDIUMSLATEBLUE" value="#7B68EE"/>
+		<ColorName name="ORANGE" value="#FFC800"/>
+		<ColorName name="PINK" value="#FFC0CB"/>
+		<ColorName name="DARKSALMON" value="#E9967A"/>
+		<ColorName name="SILVER" value="#C0C0C0"/>
+		<ColorName name="LIGHTPINK" value="#FFB6C1"/>
+		<ColorName name="MEDIUMBLUE" value="#0000CD"/>
+		<ColorName name="FUCHSIA" value="#FF00FF"/>
+		<ColorName name="DIMGRAY" value="#696969"/>
+		<ColorName name="BROWN" value="#A52A2A"/>
+		<ColorName name="STEELBLUE" value="#4682B4"/>
+		<ColorName name="DARKCYAN" value="#008B8B"/>
+		<ColorName name="LIGHTCORAL" value="#F08080"/>
+		<ColorName name="NAVAJOWHITE" value="#FFDEAD"/>
+		<ColorName name="SALMON" value="#FA8072"/>
+		<ColorName name="ALICEBLUE" value="#F0F8FF"/>
+		<ColorName name="PALEGOLDENROD" value="#EEE8AA"/>
+		<ColorName name="LEMONCHIFFON" value="#FFFACD"/>
+		<ColorName name="LIGHTSALMON" value="#FFA07A"/>
+		<ColorName name="CYAN" value="#00FFFF"/>
+		<ColorName name="GREENYELLOW" value="#ADFF2F"/>
+		<ColorName name="HOTPINK" value="#FF69B4"/>
+		<ColorName name="WHITESMOKE" value="#F5F5F5"/>
+		<ColorName name="LIGHTSLATEGRAY" value="#778899"/>
+		<ColorName name="LIGHTCYAN" value="#E0FFFF"/>
+		<ColorName name="MEDIUMSPRINGGREEN" value="#00FA9A"/>
+		<ColorName name="TAN" value="#D2B48C"/>
+		<ColorName name="BURLYWOOD" value="#DEB887"/>
+		<ColorName name="TRANSPARENT" value="#FFFFFF"/>
+		<ColorName name="AQUA" value="#00FFFF"/>
+		<ColorName name="OLDGRAY" value="#D4D0C8"/>
+		<ColorName name="DARKRED" value="#8B0000"/>
+		<ColorName name="SLATEGRAY" value="#708090"/>
+		<ColorName name="DEEPPINK" value="#FF1493"/>
+		<ColorName name="GREEN" value="#008000"/>
+		<ColorName name="LIGHTBLACK" value="#404040"/>
+		<ColorName name="GOLD" value="#FFD700"/>
+		<ColorName name="LIGHTMAGENTA" value="#FF00FF"/>
+		<ColorName name="YELLOWGREEN" value="#9ACD32"/>
+		<ColorName name="GOLDENROD" value="#DAA520"/>
+		<ColorName name="OLIVE" value="#808000"/>
+		<ColorName name="LIGHTGOLDENRODYELLOW" value="#FAFAD2"/>
+		<ColorName name="LINEN" value="#FAF0E6"/>
+		<ColorName name="LIME" value="#00FF00"/>
+		<ColorName name="MEDIUMAQUAMARINE" value="#66CDAA"/>
+		<ColorName name="PALEVIOLETRED" value="#DB7093"/>
+		<ColorName name="CRIMSON" value="#DC143C"/>
+		<ColorName name="SKYBLUE" value="#87CEEB"/>
+		<ColorName name="PALETURQUOISE" value="#AFEEEE"/>
+		<ColorName name="SEASHELL" value="#FFF5EE"/>
+		<ColorName name="WHITE" value="#FFFFFF"/>
+		<ColorName name="TOMATO" value="#FF6347"/>
+		<ColorName name="DARKORCHID" value="#9932CC"/>
+		<ColorName name="LIGHTRED" value="#FF0000"/>
+		<ColorName name="GAINSBORO" value="#DCDCDC"/>
+		<ColorName name="IVORY" value="#FFFFF0"/>
+		<ColorName name="CORNSILK" value="#FFF8DC"/>
+		<ColorName name="SANDYBROWN" value="#F4A460"/>
+		<ColorName name="GHOSTWHITE" value="#F8F8FF"/>
+		<ColorName name="ORCHID" value="#DA70D6"/>
+		<ColorName name="THISTLE" value="#D8BFD8"/>
+	</ColorDB>
+	<Configurations>
+		<Configuration type="BOI">
+			<Section name="main">
+				<Parameter name="ShowConsoleWindow" value="false"/>
+			</Section>
+		</Configuration>
+		<Configuration type="HOT">
+			<Section name="OperationMode">
+				<Parameter name="applyUpdMode" value="NP61"/>
+				<Parameter name="enableAVM" value="false"/>
+			</Section>
+			<Section name="FileNames">
+				<Parameter name="screen" value="screenHot.xml"/>
+				<Parameter name="workflow" value="workflow.xml"/>
+			</Section>
+			<Section name="NPScripts">
+				<Parameter name="HOTScript" value="hotBO.nps"/>
+			</Section>
+			<Section name="UserInterface">
+				<Parameter name="messageTotalColor" value="LIGHTYELLOW"/>
+				<Parameter name="messageListColor" value="WHITE"/>
+				<Parameter name="sizeIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="messagePlusMinusFontColor" value="BLACK"/>
+				<Parameter name="messageDlgFontColor" value="BLACK"/>
+				<Parameter name="messageBtnFont" value="Arial-BOLD-10"/>
+				<Parameter name="messageDlgFont" value="Arial-BOLD-12"/>
+				<Parameter name="mainScreenNumber" value="1000"/>
+				<Parameter name="imagesSource" value="images\repositoryH.zip"/>
+				<Parameter name="messageNormalColor" value="LIGHTGRAY"/>
+				<Parameter name="sizeIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="sizeIndicatorForeground" value="DARKGREEN"/>
+				<Parameter name="messageTotalFont" value="Arial-BOLD-12"/>
+				<Parameter name="messageDlgBackground" value="LIGHTCORAL"/>
+				<Parameter name="messagePlusMinusFont" value="Arial-BOLD-18"/>
+				<Parameter name="dateBackground" value="LIGHTGRAY"/>
+				<Parameter name="messagePlusMinusColor" value="LIGHTYELLOW"/>
+				<Parameter name="messageTotalFontColor" value="BLACK"/>
+				<Parameter name="messageBtnColor" value="CORAL"/>
+				<Parameter name="dateFont" value="Arial-NORMAL-10"/>
+				<Parameter name="sizeIndicatorBackground" value="YELLOW"/>
+				<Parameter name="sizeIndicatorTransparency" value="false"/>
+				<Parameter name="messageBtnFontColor" value="BLACK"/>
+				<Parameter name="dateFontColor" value="RED"/>
+				<Parameter name="messageNumberFont" value="Arial-NORMAL-24"/>
+				<Parameter name="messageNormalFontColor" value="BLACK"/>
+				<Parameter name="messageListFont" value="Arial-BOLD-10"/>
+				<Parameter name="messageNormalFont" value="Arial-NORMAL-10"/>
+				<Parameter name="showSizeIndicatorBorder" value="true"/>
+				<Parameter name="messageListFontColor" value="BLACK"/>
+				<Parameter name="timeoutShowNumber" value="10000"/>
+				<Parameter name="orderNbrFormat" value="1"/>
+				<Parameter name="messageGrillListFont" value="Arial-BOLD-13"/>
+        <Parameter name="panelNaming" value="DTName" />
+        <Parameter name="grillImage" value="grill_image.png" />
+        <Parameter name="expanddisplayimageup" value="arrowup.png" />
+        <Parameter name="expanddisplayimagedown" value="arrowdown.png" />
+			</Section>
+			<Section name="PosType">
+				<Parameter name="POD" value="HOT"/>
+				<Parameter name="RemPOD" value="FRONT_COUNTER"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="decomposeVM" value="false"/>
+			</Section>
+			<!-- Added For NP6 6.1.16 RC2 SDO-1783 25th November 2009 Chris Appleton -->
+			<Section name="Persistence">
+				<Parameter name="maxTLOGRegisters" value="1000"/>
+			</Section>
+		</Configuration>
+		<Configuration type="KVS">
+			<Section name="UserInterface">
+			<!-- Colours -->
+				<!-- New order on screen -->
+				<Parameter name="frontColorDefault" value="BLACK"/>
+				<Parameter name="backColorDefault" value="LIGHTGREEN"/>
+				<Parameter name="cellHeaderFrontColor" value="BLACK"/>
+				<!-- cellHeaderBackColor doesn't actually exist -->
+				<Parameter name="cellHeaderBackColor" value="GHOSTWHITE"/>
+				<Parameter name="cellFooterFrontColor" value="BLACK"/>
+				<Parameter name="cellFooterBackColor" value="YELLOW"/>
+				<!-- Order past threshold -->
+				<Parameter name="frontColorAfterFirstThreshold" value="BLACK"/>
+				<Parameter name="backColorAfterFirstThreshold" value="RED"/>
+				<Parameter name="frontColorAfterSecondThreshold" value="BLACK"/>
+				<Parameter name="backColorAfterSecondThreshold" value="RED"/>
+				<!-- Order recalled -->
+				<Parameter name="frontColorUndo" value="BLACK"/>
+				<Parameter name="backColorUndo" value="SALMON"/>
+				<Parameter name="frontColorServed" value="BLACK"/>
+				<Parameter name="backColorServed" value="LIGHTMAGENTA"/>
+				<Parameter name="cellHeaderSelectedColor" value="YELLOW"/>
+			<!-- Colours new in NewPOS 6.1 -->
+				<!-- Skip car -->
+				<Parameter name="cellFooterFrontColorSkipCar" value="RED"/>
+				<Parameter name="cellFooterBackColorSkipCar" value="GRAY"/>
+				<Parameter name="frontColorSkipCar" value="BLACK"/>
+				<Parameter name="backColorSkipCar" value="LIGHTGREEN"/>
+			<!-- Deprecated in KVS Configuration NewPOS 6.1 p76 Production 20080229 -->
+				<Parameter name="backColorStored" value="DARKSEAGREEN"/>
+				<Parameter name="backColorTender" value="DARKSEAGREEN"/>
+				<Parameter name="backColorRecall" value="LIGHTMAGENTA"/>
+				<Parameter name="backColorInProgress" value="ROYALBLUE"/>
+				<Parameter name="backColorPaid" value="DARKSEAGREEN"/>
+				<Parameter name="backColorHeld" value="DARKSEAGREEN"/>
+				<Parameter name="frontColorTender" value="GHOSTWHITE"/>
+				<Parameter name="frontColorStored" value="GHOSTWHITE"/>
+				<Parameter name="frontColorPaid" value="GHOSTWHITE"/>
+				<Parameter name="frontColorHeld" value="GHOSTWHITE"/>
+				<Parameter name="frontColorRecall" value="GHOSTWHITE"/>
+				<Parameter name="frontColorInProgress" value="GHOSTWHITE"/>
+				<Parameter name="multiOrderEven" value="DARKGREEN"/>
+				<Parameter name="multiOrderOdd" value="BLUE"/>
+				<Parameter name="wallPaper" value="BckGround01.png"/>
+				<Parameter name="backImageInProgress"/>
+				<Parameter name="backImageHeld"/>
+				<Parameter name="backImagePaid"/>
+				<Parameter name="backImageTendered"/>
+				<Parameter name="backImageServed"/>
+				<Parameter name="backImageDefault"/>
+			<!-- Changed order -->
+				<Parameter name="frontColorChgAfterServed" value="BLACK"/>
+				<Parameter name="backColorChgAfterServed" value="RED"/>
+				<Parameter name="cellHeaderColor" value="GHOSTWHITE"/>
+				<Parameter name="cellFooterFrontColorVoided" value="RED"/>
+				<Parameter name="cellFooterBackColorVoided" value="GRAY"/>
+				<Parameter name="frontColorVoided" value="BLACK"/>
+				<Parameter name="backColorVoided" value="LIGHTGREEN"/>
+				<Parameter name="backColorSepLine" value="BLACK"/>				
+				<Parameter name="backColorGrilled" value="YELLOW"/>
+			<!-- Fonts (matching zoom button presses 0 default to 3) -->
+				<Parameter name="font" value="Arial-BOLD-22"/>
+				<Parameter name="font1" value="Arial-BOLD-28"/>
+				<Parameter name="font2" value="Arial-BOLD-38"/>
+				<Parameter name="font3" value="Arial-BOLD-22"/>
+			<!-- Rows and Columns (matching zoom button presses 0 default to 3) -->
+				<Parameter name="columns" value="4"/>
+				<Parameter name="columns1" value="3"/>
+				<Parameter name="columns2" value="2"/>
+				<Parameter name="columns3" value="4"/>
+				<Parameter name="rows" value="2"/>
+				<Parameter name="rows1" value="2"/>
+				<Parameter name="rows2" value="2"/>
+				<Parameter name="rows3" value="3"/>
+				<Parameter name="heldCells" value="0"/>
+				<Parameter name="heldCells1" value="0"/>
+				<Parameter name="heldCells2" value="0"/>
+				<Parameter name="heldCells3" value="0"/>
+			<!-- Misc Config -->
+				<Parameter name="displayOrderAmount" value="true"/>
+				<Parameter name="blinkChgItem" value="true"/>
+				<Parameter name="firstThreshold" value="50"/>
+				<Parameter name="secondThreshold" value="50"/>
+				<Parameter name="horizontalPos" value="0"/>
+				<Parameter name="height" value="768"/>
+				<Parameter name="width" value="1024"/>
+				<Parameter name="blinkDelay" value="500"/>
+				<Parameter name="timeToResetCursor" value="10"/>
+				<Parameter name="displaySaleType" value="false"/>
+				<Parameter name="ignoreDisplayOrder" value="false"/>
+				<Parameter name="unboundItem" value="REGULAR_DRINK|BREAKFAST_DRINK|SHAKES"/>
+				<Parameter name="displayMajorMinor" value="DT"/>
+				<Parameter name="maskOrderNumbers" value="true"/>
+				<Parameter name="displayOrderKey" value="WT"/>
+				<Parameter name="presentationType" value="SWING"/>
+				<Parameter name="displayServiceNumber" value="false"/>
+			</Section>
+			<Section name="Beep">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="beepOnBump"/>
+				<Parameter name="beepOnNewOrder" value="FIRST"/>
+				<Parameter name="timeout" value="15"/>
+				<Parameter name="serviceType" value="GPR"/>
+				<Parameter name="command" value="bop1.wav"/>
+			</Section>
+			<Section name="BumpBar">
+				<Parameter name="className" value="com.ngpos.arch.services.kvs.main.drivers.VirtualBumpBar"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="orderBy" value="numbering"/>
+			</Section>
+			<Section name="Localization">
+				<Parameter name="variant" value="0"/>
+				<Parameter name="countryId" value="UK"/>
+				<Parameter name="language" value="en"/>
+			</Section>
+		</Configuration>
+		<Configuration type="MFY">
+			<Section name="LoadBalance">
+				<Parameter name="FilterBy" value="Item"/>
+				<Parameter name="persistencePath" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="EventRecorder">
+				<Parameter name="adaptorname" value="EventRecorder"/>
+				<Parameter name="operationMode" value="Unique"/>
+				<Parameter name="path" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="BufferEngine">
+				<Parameter name="resetStatisticsOnWaste" value="true"/>
+				<Parameter name="n" value="2"/>
+				<Parameter name="m" value="2"/>
+				<Parameter name="alpha" value=".1"/>
+				<Parameter name="status" value="off"/>
+				<Parameter name="wasteDelay" value="off"/>
+				<Parameter name="lambda" value=".2"/>
+				<Parameter name="countGrill" value="off"/>
+				<Parameter name="period" value="3"/>
+				<Parameter name="x" value="3"/>
+				<Parameter name="a" value=".18"/>
+				<Parameter name="beta" value=".7"/>
+				<Parameter name="virtualPOS"/>
+			</Section>
+			<Section name="ItemRepository">
+				<Parameter name="cycleQuantity" value="2"/>
+				<Parameter name="wasteDelay" value="180"/>
+				<Parameter name="path" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="GrillPrinter">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				<Parameter name="enableUpdateMode" value="false"/>
+				<Parameter name="consolidatedGrill" value="false"/>
+				<Parameter name="autoGrillEnabled" value="true"/>
+				<Parameter name="printCancelGrillSlip" value="true"/>
+				<Parameter name="autoGrillItemsBehind" value="1"/>
+				<Parameter name="autoGrillTime" value="30"/>
+			</Section>
+		</Configuration>
+		<Configuration type="POS">
+			<Section name="CustomerDisplay">
+				<Parameter name="showItemPrice" value="false"/>
+				<Parameter name="showGrill" value="true"/>
+				<Parameter name="showLongName" value="true"/>
+				<Parameter name="showVoid" value="true"/>
+			</Section>
+			<Section name="Cash">
+				<Parameter name="initialFloat" value="100"/>
+				<Parameter name="CountTCsFullDiscEM" value="0"/>
+			</Section>
+			<Section name="Drivers">
+				<Parameter name="jcomdriver" value="gnu.io.RXTXCommDriver"/>
+			</Section>
+      <Section name="GrillPrinter">
+        <Parameter name="enabled" value="true" />
+        <Parameter name="grillSlipReport" value="grillSlipStar@reports.nps" />
+        <Parameter name="consolidatedGrill" value="false" />
+        <Parameter name="autoGrillEnabled" value="true" />
+        <Parameter name="printCancelGrillSlip" value="true" />
+        <Parameter name="autoGrillItemsBehind" value="1" />
+        <Parameter name="autoGrillTime" value="30" />
+      </Section>
+			<Section name="UserInterface">
+				<Parameter name="imgFilter" value="5"/>
+				<Parameter name="posIdIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="drawerIconForeground" value="LIGHTBLACK"/>
+				<Parameter name="showCashierInfoBorder" value="true"/>
+				<Parameter name="frameHeight" value="768"/>
+				<Parameter name="imagesResolution" value="1024,768"/>
+				<Parameter name="showStatusIconBorder" value="true"/>
+				<Parameter name="doubleCrewPanelBackgroundServed" value="YELLOW"/>
+				<Parameter name="cashierInfoForeground" value="LIGHTBLACK"/>
+				<Parameter name="openIcon" value="POSOpen.png"/>
+				<Parameter name="dateTimeForeground" value="LIGHTBLACK"/>
+				<Parameter name="salePanelSelectedForeground" value="WHITE"/>
+				<Parameter name="DDTMaxOrders" value="8"/>
+				<Parameter name="grillPanelBackground" value="OLDGRAY"/>
+				<Parameter name="orderTimerFont" value="Arial-BOLD-12"/>
+				<Parameter name="modeIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="frameTitleBackground" value="BLACK"/>
+				<Parameter name="messageIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="saleInfoForeground" value="LIGHTBLACK"/>
+				<Parameter name="salePanelDirection" value="WEST"/>
+				<Parameter name="operatorIcon" value="UserLogged.png"/>
+				<Parameter name="posIdIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="statusIconBorderColor" value="GRAY"/>
+				<Parameter name="unboundItem" value="REGULAR_DRINK|BREAKFAST_DRINK|SHAKES"/>
+				<Parameter name="posIdIndicatorTransparency" value="false"/>
+				<Parameter name="storedOrdersIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="utilPanelBackground" value="OLDGRAY"/>
+				<Parameter name="doubleCrewButtonBgUp" value="LIGHTGRAY"/>
+				<Parameter name="screenTimeout" value="15"/>
+				<Parameter name="showOrderTimerBorder" value="true"/>
+				<Parameter name="pickListFont" value="Arial-BOLD-25"/>
+        <Parameter name="DDTPictureRecall" value="false" />
+				<Parameter name="showCursor" value="false"/>
+				<Parameter name="doubleCrewButtonServedCaption" value="served"/>
+				<Parameter name="showDateTimeBorder" value="true"/>
+				<Parameter name="orderTimerBorderColor" value="GRAY"/>
+				<Parameter name="storedOrdersIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="selectedPreviewBackground" value="DIMGRAY"/>
+				<Parameter name="imagesSource" value="./images/repository.1024x768.zip"/>
+				<Parameter name="quantityIndicatorFont" value="Arial-BOLD-16"/>
+				<Parameter name="maxOrderLocal" value="0"/>
+				<Parameter name="sizeIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="showCanceledItems" value="true"/>
+				<Parameter name="showStoredOrdersIndicatorBorder" value="true"/>
+				<Parameter name="orderTimerForeground" value="LIGHTBLACK"/>
+				<Parameter name="quantityIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="doubleCrewStatus" value="true"/>
+				<Parameter name="showZeroPrices" value="false"/>
+				<Parameter name="nonInitIcon" value="POSNotStarted.png"/>
+				<Parameter name="modeIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="drawerIconFont" value="Arial-BOLD-12"/>
+				<Parameter name="showUtilPanelBorder" value="true"/>
+				<Parameter name="showSizeIndicatorBorder" value="true"/>
+				<Parameter name="previewListBackground" value="GRAY"/>
+				<Parameter name="drawerIconBackground" value="OLDGRAY"/>
+				<Parameter name="sizeIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="storedOrdersIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="salePanelGroupLineColor" value="GREEN"/>
+				<Parameter name="showQuantityIndicatorBorder" value="true"/>
+				<Parameter name="showDrawerIconBorder" value="true"/>
+				<Parameter name="cashierInfoBackground" value="OLDGRAY"/>
+				<Parameter name="sizeIndicatorTransparency" value="false"/>
+				<Parameter name="crewPanelAutoServeMaxTTS" value="0"/>
+				<Parameter name="dateTimeBackground" value="OLDGRAY"/>
+				<Parameter name="messageDlgFont" value="Arial-BOLD-16"/>
+				<Parameter name="DDTsupport" value="true"/>
+				<Parameter name="cashierInfoBorderColor" value="GRAY"/>
+				<Parameter name="modeIndicatorTransparency" value="false"/>
+				<Parameter name="saleInfoBackground" value="OLDGRAY"/>
+				<Parameter name="doubleCrewButtonTextUp" value="BLACK"/>
+				<Parameter name="messageIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="cashierInfoFont" value="Arial-BOLD-12"/>
+				<Parameter name="doubleCrewButtonBgDn" value="LIGHTBLUE"/>
+				<Parameter name="salePanelSelectedBackground" value="BLACK"/>
+				<Parameter name="showMessageIndicatorBorder" value="true"/>
+				<Parameter name="doubleCrewRestoreOrdersOnReboot" value="true"/>
+				<Parameter name="cashierInfoTransparency" value="false"/>
+				<Parameter name="enableDragAndDrop" value="false"/>
+				<Parameter name="messageIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="statusIconBackground" value="OLDGRAY"/>
+				<Parameter name="operatorTimeBlockedIcon" value="TimeBlockedUserLogged.png"/>
+				<Parameter name="drawerIconBorderColor" value="GRAY"/>
+				<Parameter name="statusIconTransparency" value="false"/>
+				<Parameter name="messageIndicatorAlertForeground" value="LIGHTBLACK"/>
+				<Parameter name="grillPanelFont" value="Arial-BOLD-16"/>
+				<Parameter name="posIdIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="selectedTabForeground" value="BLACK"/>
+				<Parameter name="storedOrdersIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="quantityIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="dateTimeFont" value="Arial-BOLD-12"/>
+				<Parameter name="showSalePanelBorder" value="true"/>
+				<Parameter name="showItemPrice" value="false"/>
+				<Parameter name="dateTimeTransparency" value="false"/>
+				<Parameter name="showServedButton" value="true"/>
+				<Parameter name="utilPanelTransparency" value="true"/>
+				<Parameter name="drawerClosedIcon"/>
+				<Parameter name="sizeIndicatorBorderColor" value="GRAY"/>
+				<Parameter name="doubleCrewPanelBackground" value="OLDGRAY"/>
+				<Parameter name="grillPanelForeground" value="BLACK"/>
+				<Parameter name="salePanelTransparency" value="false"/>
+				<Parameter name="cancelledItemFont" value="Arial-ITALIC-12"/>
+				<Parameter name="showSaleInfoBorder" value="true"/>
+				<Parameter name="salePanelFont" value="Arial-BOLD-16"/>
+				<Parameter name="frameTitleFont" value="Arial-BOLD-12"/>
+				<Parameter name="showCloseButton" value="false"/>
+				<Parameter name="showModeIndicatorBorder" value="true"/>
+				<Parameter name="modeIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="frameWidth" value="1024"/>
+				<Parameter name="utilPanelBorderColor" value="GRAY"/>
+				<Parameter name="frameTitleForeground" value="ORANGE"/>
+				<Parameter name="orderTimerBackground" value="OLDGRAY"/>
+				<Parameter name="doubleCrewUndoEnabled" value="true"/>
+				<Parameter name="saleInfoFont" value="Arial-BOLD-14"/>
+				<Parameter name="doubleCrewPanelTransparency" value="false"/>
+				<Parameter name="drawerIconTransparency" value="false"/>
+				<Parameter name="messageIndicatorTransparency" value="false"/>
+				<Parameter name="salePanelBorderColor" value="GRAY"/>
+				<Parameter name="closedIcon" value="POSClosed.png"/>
+				<Parameter name="timeBlockedIcon" value="TimeBlocked.png"/>
+				<Parameter name="doubleCrewMaxOrderBumped" value="99"/>
+				<Parameter name="sizeIndicatorBackground" value="OLDGRAY"/>
+				<Parameter name="dateTimeBorderColor" value="GRAY"/>
+				<Parameter name="driver" value="com.ngpos.pos.presentation.UiSwingDriver"/>
+				<Parameter name="panelNaming" value="DTName"/>
+				<Parameter name="doubleCrewButtonTextDn" value="BLACK"/>
+				<Parameter name="consolidatePricesOnVm" value="true"/>
+				<Parameter name="doNotShowInGrillScreen" value="80000003|80000005|80000009"/>
+				<Parameter name="doubleCrewAutoBumpLimit" value="1"/>
+				<Parameter name="quantityIndicatorForeground" value="LIGHTBLACK"/>
+				<Parameter name="messageIndicatorAlertBackground" value="YELLOW"/>
+				<Parameter name="salePanelBackground" value="OLDGRAY"/>
+				<Parameter name="orderTimerTransparency" value="false"/>
+				<Parameter name="modeIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="DedicatedCOD" value="true"/>
+				<Parameter name="KeypadDigitLimit" value="8"/>
+				<Parameter name="doubleCrewFont" value="Arial-BOLD-12"/>
+				<Parameter name="posIdIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="orderTimerAlertForeground" value="RED"/>
+				<Parameter name="messageIndicatorFont" value="Arial-BOLD-12"/>
+				<Parameter name="selectedTabBackground" value="RED"/>
+				<Parameter name="quantityIndicatorTransparency" value="false"/>
+				<Parameter name="drawerOpenIcon"/>
+				<Parameter name="storedOrdersIndicatorTransparency" value="false"/>
+				<Parameter name="doubleCrewMaxOrderLocal" value="5"/>
+				<Parameter name="previewListForeground" value="WHITE"/>
+				<Parameter name="mainScreenNumber" value="1"/>
+				<Parameter name="explodeSaleOnTotal" value="true"/>
+				<!-- <Parameter name="separateVM" value="false"/> -->
+				<!-- <Parameter name="indentConsolidatedSale" value="false"/> -->
+				<!-- Added For NP6 6.1.15  29th December 2009 -->
+				<Parameter name="missingItemForeground" value="RED" />
+        <Parameter name="missingItemBackground" value="LIGHTYELLOW" />
+				<Parameter name="missingItemAlertForeground" value="WHITE" />
+        <Parameter name="missingItemAlertBackground" value="RED" />
+        <Parameter name="missingItemLineQty" value="5" />
+				<Parameter name="buttonPriceVPosition" value="LEFT"/>
+				<Parameter name="buttonPriceHPosition" value="LEFT"/>
+				<Parameter name="buttonPriceFont" value="Arial-BOLD-10"/>
+				<Parameter name="buttonPriceBgColor" value="WHITE"/>
+				<Parameter name="buttonPriceFgColor" value="BLACK"/>
+				<Parameter name="buttonPriceSymbol" value="GBP"/>
+				<Parameter name="dynamicCrewPanel" value="3"/>
+				<Parameter name="fcMaximizeCrewPanelIcon" value="maxCrewIcon.png"/>
+				<Parameter name="fcMinimizeCrewPanelIcon" value="minCrewIcon.png"/>
+        <Parameter name="changeFont" value="Arial-BOLD-14" />
+        <Parameter name="changeFontColor" value="BLUE" />
+        <Parameter name="changeMultipleLines" value="true" />
+        <Parameter name="PromoItemAuthorityLimits" value="enable" />
+        <Parameter name="PromoItemAuthorityLevel" value="manager" />
+			</Section>
+			<Section name="SpecialTransactions">
+				<Parameter name="sendRefund" value="true"/>
+				<Parameter name="checkRefund" value="false"/>
+			</Section>
+			<Section name="PosType">
+				<Parameter name="POD" value="FRONT_COUNTER"/>
+				<Parameter name="tandemBooth"/>
+				<Parameter name="RemPOD" value="FRONT_COUNTER"/>
+				<Parameter name="booth" value="1"/>
+			</Section>
+			<Section name="FileNames">
+				<Parameter name="screen" value="screen.xml"/>
+				<Parameter name="workflow" value="workflow.xml"/>
+			</Section>
+			<Section name="Report">
+				<Parameter name="pickListAutomaticPrint" value="off"/>
+				<Parameter name="reportPreviewFont" value="Monospaced-BOLD-12"/>
+				<Parameter name="reportPreviewSmallFont" value="Monospaced-BOLD-10"/>
+        <Parameter name="receiptAutomaticPrint" value="off" />
+        <Parameter name="enablePrint" value="on" />
+				<Parameter name="printLogin" value="true"/>
+				<Parameter name="reportDestination" value="printer+file+screen"/>
+				<Parameter name="printOnEnd" value="off"/>
+				<Parameter name="receiptMandatoryPrint" value="off"/>
+			</Section>
+			<Section name="Grill">
+				<Parameter name="pressedDoneImage" value="GrillDone_i.png"/>
+				<Parameter name="clearImage" value="GrillReset.png"/>
+				<Parameter name="pressedClearImage" value="GrillReset_i.png"/>
+				<Parameter name="doneImage" value="GrillDone.png"/>
+				<Parameter name="cancelImage" value="GrillBack.png"/>
+				<Parameter name="backgroundImage" value="BckGround01.png"/>
+				<Parameter name="pressedCancelImage" value="GrillBack_i.png"/>
+			</Section>
+			<Section name="BankCheck">
+				<Parameter name="defaultBankID" value="033"/>
+				<Parameter name="printBankCheckBeforeEnd" value="off"/>
+			</Section>
+			<Section name="EventRecorder">
+				<Parameter name="adaptorname" value="EventRecorder"/>
+				<Parameter name="verificationInterval" value="120"/>
+				<Parameter name="operationMode" value="Unique"/>
+				<Parameter name="path" value="../OutPutFiles/"/>
+			</Section>
+			<Section name="OperationMode">
+				<Parameter name="automaticOperatorLogin" value="false"/>
+				<Parameter name="fiscal" value="off"/>
+				<Parameter name="restartAfterOpen" value="true"/>
+				<Parameter name="autoRecall" value="true"/>
+				<Parameter name="consolidateTenders" value="2"/>
+				<Parameter name="smartReminder" value="true"/>
+			</Section>
+			<Section name="EFT">
+				<Parameter name="serverIP" value="10.200.2.1"/>
+				<Parameter name="pathForLog" value="c:/tmp/"/>
+				<Parameter name="useKeyboard" value="true"/>
+				<Parameter name="useCMC7" value="false"/>
+				<Parameter name="logoImg" value="c:/logo.jpg"/>
+			</Section>
+			<!-- Added For NP6 6.1.16 NPS-5801 25th November 2009 Chris Appleton -->
+			<Section name="CSO">
+				<Parameter name="networkCheckPeriod" value="3"/>
+				<Parameter name="networkCheckCustomerMessagePeriod" value="3"/>
+				<Parameter name="networkCheckServices" value="KVS8017|QUE8017"/>
+				<Parameter name="networkCheckTimeout" value="10"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Persistence">
+			<Section name="main">
+				<Parameter name="databasePath" value="../../OutPutFiles/db/"/>
+				<Parameter name="isFailover" value="false"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Presentation">
+			<Section name="KvsOptions">
+				<Parameter name="enableDisplay" value="AFTERSTORE"/>
+				<Parameter name="paidInFront" value="false"/>
+				<Parameter name="bumpOnTotal" value="true"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="turnOffKitchenEnabled" value="false"/>
+				<Parameter name="decomposeVM" value="true"/>
+			</Section>
+			<Section name="GrillPrinter">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				<Parameter name="consolidatedGrill" value="false"/>
+				<Parameter name="autoGrillEnabled" value="true"/>
+				<Parameter name="printCancelGrillSlip" value="true"/>
+				<Parameter name="autoGrillItemsBehind" value="1"/>
+				<Parameter name="autoGrillTime" value="30"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Production">
+			<Section name="KvsOptions">
+				<Parameter name="paidInFront" value="false"/>
+				<Parameter name="bumpOnTotal" value="true"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="decomposeVM" value="false"/>
+      </Section>
+      <Section name="GrillPrinter">
+        <Parameter name="enabled" value="true" />
+        <Parameter name="grillSlipReport" value="grillSlipStar@reports.nps" />
+        <Parameter name="enableUpdateMode" value="false" />
+        <Parameter name="consolidatedGrill" value="false" />
+        <Parameter name="autoGrillEnabled" value="true" />
+        <Parameter name="printCancelGrillSlip" value="true" />
+        <Parameter name="autoGrillItemsBehind" value="1" />
+        <Parameter name="autoGrillTime" value="30" />
+			</Section>
+		</Configuration>
+		<Configuration type="Production.MFY">
+			<Section name="LoadBalance">
+				<Parameter name="FilterBy" value="Item"/>
+				<Parameter name="persistencePath" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="EventRecorder">
+				<Parameter name="adaptorname" value="EventRecorder"/>
+				<Parameter name="operationMode" value="Unique"/>
+				<Parameter name="path" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="KvsOptions">
+				<Parameter name="paidInFront" value="false"/>
+				<Parameter name="bumpOnTotal" value="true"/>
+			</Section>
+			<Section name="BufferEngine">
+				<Parameter name="resetStatisticsOnWaste" value="true"/>
+				<Parameter name="n" value="2"/>
+				<Parameter name="m" value="2"/>
+				<Parameter name="alpha" value=".1"/>
+				<Parameter name="status" value="off"/>
+				<Parameter name="wasteDelay" value="off"/>
+				<Parameter name="lambda" value=".2"/>
+				<Parameter name="countGrill" value="off"/>
+				<Parameter name="period" value="3"/>
+				<Parameter name="x" value="3"/>
+				<Parameter name="a" value=".18"/>
+				<Parameter name="beta" value=".7"/>
+				<Parameter name="virtualPOS"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="forwardAlias" value="false"/>
+				<Parameter name="decomposeVM" value="true"/>
+			</Section>
+			<Section name="ItemRepository">
+				<Parameter name="cycleQuantity" value="2"/>
+				<Parameter name="wasteDelay" value="180"/>
+				<Parameter name="path" value="../OutPutFiles/db/"/>
+			</Section>
+			<Section name="GrillPrinter">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				<Parameter name="enableUpdateMode" value="false"/>
+				<Parameter name="consolidatedGrill" value="false"/>
+				<Parameter name="autoGrillEnabled" value="true"/>
+				<Parameter name="printCancelGrillSlip" value="true"/>
+				<Parameter name="autoGrillItemsBehind" value="1"/>
+				<Parameter name="autoGrillTime" value="30"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Production.Routing">
+			<Section name="LoadBalance">
+				<Parameter name="FilterBy" value="Item"/>
+			</Section>
+			<Section name="KvsOptions">
+				<Parameter name="enableDisplay" value="ONSTART"/>
+				<Parameter name="paidInFront" value="false"/>
+				<Parameter name="bumpOnTotal" value="true"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="processOrders" value="ONSTART"/>
+				<Parameter name="forwardAlias" value="false"/>
+				<Parameter name="turnOffKitchenEnabled" value="false"/>
+				<Parameter name="decomposeVM" value="true"/>
+			</Section>
+			<Section name="ItemRepository">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="cycleQuantity" value="2"/>
+				<Parameter name="wasteDelay" value="180"/>
+			</Section>
+			<Section name="GrillPrinter">
+				<Parameter name="enabled" value="true"/>
+				<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				<Parameter name="consolidatedGrill" value="false"/>
+				<Parameter name="autoGrillEnabled" value="true"/>
+				<Parameter name="printCancelGrillSlip" value="true"/>
+				<Parameter name="autoGrillItemsBehind" value="1"/>
+				<Parameter name="autoGrillTime" value="30"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Router">
+			<Section name="KvsRoutes">
+				<Parameter name="queueSource"/>
+				<Parameter name="routes"/>
+			</Section>
+		</Configuration>
+		<Configuration type="STO">
+			<Section name="main">
+				<Parameter name="incomingControlFile" value="../OutPutFiles/control/incomingControl.dat"/>
+				<Parameter name="incomingUpdateFolder" value="../OutPutFiles/availableupdates/"/>
+				<Parameter name="ShowConsoleWindow" value="false"/>
+				<Parameter name="imageRepositoryGen" value="./images/repository.1024x768.zip"/>
+			<!-- Added by Chris Appleton 10th June RFM Update testing -->
+				<Parameter name="ShowSplashWindow" value="false"/> 
+				<Parameter name="DaysToKeepBackup" value="2"/> 
+        <Parameter name="WayNode" value="300" />
+			</Section>
+		</Configuration>
+		<Configuration type="StoreProduction">
+      <Section name="GrillPrinter">
+        <Parameter name="enabled" value="true" />
+        <Parameter name="grillSlipReport" value="grillSlipStar@reports.nps" />
+        <Parameter name="enableUpdateMode" value="false" />
+        <Parameter name="consolidatedGrill" value="false" />
+        <Parameter name="autoGrillEnabled" value="true" />
+        <Parameter name="printCancelGrillSlip" value="true" />
+        <Parameter name="autoGrillItemsBehind" value="1" />
+        <Parameter name="autoGrillTime" value="30" />
+      </Section>
+			<Section name="KvsOptions">
+				<Parameter name="enableDisplay" value="ONSTART"/>
+				<Parameter name="paidInFront" value="false"/>
+				<Parameter name="bumpOnTotal" value="true"/>
+			</Section>
+			<Section name="WayOfWork">
+				<Parameter name="podBlockList"/>
+				<Parameter name="processOrders" value="ONSTART"/>
+				<Parameter name="autoTakePicture" value="true"/>
+				<Parameter name="decomposeVM" value="false"/>
+			</Section>
+		</Configuration>
+		<Configuration type="UPD">
+			<Section name="main">
+				<Parameter name="ShowConsoleWindow" value="false"/>
+				<Parameter name="imageRepositoryGen" value="./images/repository.1024x768.zip"/>
+				<!-- Added For NP6 6.1.15  29th December 2009 -->
+				<!-- <Parameter name="GoForwardHook" value="<pathname for the external hook>" /> -->
+				<!-- <Parameter name="GoForwardHookTimeout" value="<timeout in seconds" /> -->
+			</Section>
+		</Configuration>
+		<Configuration type="WAY">
+			<Section name="main">
+				<Parameter name="ShowConsoleWindow" value="true"/>		
+        <Parameter name="StagingDirectory" value="d:/APPLY UPDATE/Staging/" />
+        <Parameter name="WayDownStatusFile" value="d:/APPLY UPDATE/waydown.ctl" />
+        <Parameter name="StagingStatusFile" value="d:/APPLY UPDATE/stageNO.ctl" />
+        <Parameter name="StagingFilesToExclude" value="*.wav|*.zip|*.so|*.jar|pstdb*.*|*.txt|*.lck|*.lock|HOT_UPDT*|OutPutFiles*" />
+				<Parameter name="ApplyUpdateTimeout" value="600"/>
+				<Parameter name="RollbackTimeout" value="300"/>
+				<!-- Added For NP6 6.1.15  29th December 2009 -->
+				<Parameter name="GoForwardExecuteTimeLimit" value="22:00" />
+				<!-- Added For NP6 6.1.16 NPS-5387 25th November 2009 Chris Appleton -->
+				<Parameter name="checkOpenOrdersOnClose" value="true"/>
+        <Parameter name="UseUSBackOffice" value="false" />
+			</Section>
+			<Section name="TLOG">
+				<Parameter name="tlogfolder" value="TLOG"/>
+			</Section>
+			<!-- Added For NP6 6.1.16 NPS-5501 25th November 2009 Chris Appleton -->
+			<Section name="STLD">
+        <Parameter name="DaysToKeep" value="5" />
+				<Parameter name="AlwaysNeedProduction" value="true"/>
+			</Section>
+		</Configuration>
+		<Configuration type="WEB">
+			<Section name="main">
+				<Parameter name="ShowConsoleWindow" value="false"/>
+				<!-- Added For NP6 6.1.16 NPS-5822 25th November 2009 Chris Appleton -->
+				<Parameter name="XMLRPCTrxTimeout" value="60" />
+			</Section>
+			<Section name="FileNames">
+				<Parameter name="workflow" value="workflow.xml"/>
+			</Section>
+			<Section name="WebServer">
+				<Parameter name="port" value="8080"/>
+				<Parameter name="virtualdir" value="..\WayWeb"/>
+				<Parameter name="defaultdocument" value="way.html"/>
+			</Section>
+		</Configuration>
+		<Configuration type="Store.wide">
+			<Section name="ERC">
+                <Parameter name="ERCForSelectedItem" value="true"/>
+            </Section>
+			<Section name="VAT">
+				<Parameter name="VatNumber" value="371057172"/>
+				<Parameter name="VatNumberPrint"/>
+			</Section>
+			<Section name="Cash">
+				<Parameter name="ProductCodeFilter" value="9999"/>
+				<Parameter name="allowExcessSkim" value="false"/>
+			</Section>
+			<Section name="Persistence">
+				<Parameter name="type" value="FlatDB"/>
+				<Parameter name="baseFolder" value="../OutPutFiles/db/"/>
+        <Parameter name="monthsToKeepLog" value="1" />
+			</Section>
+			<Section name="Drivers">
+				<Parameter name="jcomdriver" value="gnu.io.RXTXCommDriver"/>
+			</Section>
+			<Section name="UserInterface">
+				<Parameter name="defaultFontSizeModifier" value="1"/>
+				<Parameter name="defaultFontName" value="Arial Unicode MS"/>
+			</Section>
+			<Section name="AdditionalGiftCard">
+				<Parameter name="HighQuantityLimit" value="99"/>
+			</Section>
+			<Section name="NPScripts">
+				<Parameter name="managerAuthorization" value="validateManager.nps"/>
+				<Parameter name="scriptCommandsWeb" value="BusinessComponentsWeb.nps"/>
+				<Parameter name="initialFloat" value="floatReceipt.nps"/>
+				<Parameter name="scriptCommands" value="BusinessComponents.nps"/>
+				<Parameter name="posReports" value="reports.nps"/>
+				<Parameter name="scriptCommandsBOI" value="BusinessComponentsBOI.nps"/>
+				<Parameter name="waste" value="scriptWastePrint.nps"/>
+				<Parameter name="scriptCommandsWay" value="BusinessComponentsWay.nps"/>
+				<Parameter name="scriptCommandsHot" value="BusinessComponentsHot.nps"/>
+        <Parameter name="scriptCommandsLocal" value="BusinessComponentsCSOLocal.nps" />
+        <Parameter name="posScriptCommands" value="BusinessComponentsCSO.nps" />
+				<Parameter name="password" value="createPassword.nps"/>
+				<Parameter name="wbsReports" value="reports.nps"/>
+				<Parameter name="skim" value="skimReceipt.nps"/>
+        <Parameter name="kvsReceipt" value="expoReceipt@reports.nps" />
+        <Parameter name="kvsServeReceipt" value="expoReceipt@reports.nps" />
+      </Section>
+      <Section name="PrintOnServe">
+        <Parameter name="Picklist" value="0" />
+        <Parameter name="DuplicateReceiptWithBarCode" value="1" />
+        <Parameter name="DuplicateReceipt" value="1" />
+        <Parameter name="PicklistWithBarCode" value="0" />
+      </Section>
+      <Section name="OrderNumber">
+        <Parameter name="PosIdFormat" value="0" />
+        <Parameter name="OrderNumberBigger" value="1" />
+        <Parameter name="OrderIdFormat" value="00" />
+        <Parameter name="OrderNumberSeperator" />
+        <Parameter name="OrderNumberFormat" value="1" />
+        <Parameter name="FirstReceiptEmpty" value="0" />
+      </Section>
+      <Section name="PrintOnNetworkPrinter">
+        <Parameter name="PicklistOnSecondPrinter" value="0" />
+        <Parameter name="PrinterAliases" value="" />
+        <Parameter name="DuplicateReceiptWithBarCode" value="0" />
+        <Parameter name="DuplicateReceiptOnSecondPrinter" value="0" />
+        <Parameter name="PrinterList" value="" />
+        <Parameter name="PicklistWithBarCode" value="0" />
+			</Section>
+			<Section name="AuthorizationLevel">
+				<Parameter name="manager" value="86"/>
+				<Parameter name="system" value="90"/>
+				<Parameter name="supervisor" value="88"/>
+			</Section>
+			<Section name="FileNames">
+				<Parameter name="product" value="product-db.xml"/>
+				<Parameter name="productNames" value="names-db.xml"/>
+				<Parameter name="userSecurity" value="security.data"/>
+			</Section>
+			<Section name="Compatibility">
+				<Parameter name="disableBackwardCompatibility" value="true"/>
+			</Section>
+			<Section name="Security">
+        <Parameter name="managerAuthorization" value="login" />
+				<Parameter name="authorizationAtStartup" value="false"/>
+			</Section>
+			<Section name="Messaging">
+				<Parameter name="networkAdaptorBaseIp"/>
+				<Parameter name="networkCheckTime" value="5"/>
+				<Parameter name="multicastPackageLength" value="5120"/>
+				<Parameter name="obligate" value="true"/>
+				<Parameter name="multicastIp"/>
+				<Parameter name="multicastPort"/>
+				<Parameter name="WSCheckTime" value="60"/>
+				<!-- Added By Chris Appleton, initial probably correct spelling, second from mailed update -->
+				<Parameter name="multicastTTL" value="5"/>
+				<Parameter name="mutlicastTTL" value="5"/>
+			</Section>
+			<Section name="CODRouting">
+				<Parameter name="Mapping" value="COD0001=1|COD0002=2"/>
+				<Parameter name="Routing" value="POS0019=DCOD0001|POS0017=DCOD0002|POS0001|POS0002|POS0003|POS0004|POS0005|POS0006|POS0007|POS0020"/>
+			</Section>
+			<Section name="OrderDisplay">
+        <Parameter name="HOTDisplayMode" value="CHRONOLOGICAL" />
+        <Parameter name="DisplayGroup" value="15|20|30|130|140|230|240|330|340" />
+				<Parameter name="displayMode" value="BYPRODUCT"/>
+			</Section>
+			<Section name="ProductionPresets">
+				<Parameter name="HeldTimeOver" value="30"/>
+				<Parameter name="CashieringTimeOver" value="15"/>
+				<Parameter name="DtWinOneTimeOver" value="30"/>
+				<Parameter name="PresentationTimeOver" value="10"/>
+				<Parameter name="TotalTimeOver" value="90"/>
+				<Parameter name="OrderTakerTimeOver" value="30"/>
+				<Parameter name="StoreTimeOver" value="30"/>
+				<Parameter name="DtWinTwoTimeOver" value="30"/>
+				<!-- Added For NP6 6.1.3 B6 7th December 2009 Chris Appleton -->
+        <Parameter name="MultiOverTotalTime" value="CsoOrder:30|FcOrder:75|MFY35:35" />
+				<Parameter name="MultiOverPresentationTime" value="CsoOrder:30|FcOrder:10"/>
+				<Parameter name="CashieringPresentationTimeOver" value="10"/>
+			</Section>
+			<Section name="printer">
+				<Parameter name="printerInitCode" value="28|67|1"/>
+				<Parameter name="printerCutCode" value="27|109"/>
+				<Parameter name="printerControlChar" value="printerControlChar.properties"/>
+				<Parameter name="linesToAdd" value="5"/>
+				<Parameter name="translateTable" value="printer_ansi.data"/>
+			</Section>
+			<Section name="OperationMode">
+				<Parameter name="isFundStore" value="false"/>
+				<Parameter name="kvsSelectionMode" value="ALL"/>
+				<Parameter name="SOSSubtract" value="OVERRING|REFUND"/>
+				<!-- Added By Chris Appleton, Crash Point Testing -->
+				<!-- <Parameter name="DTStoreMode" value="TANDEM_SPEAKER"/> -->
+				<Parameter name="DTStoreMode" value="REGULAR"/>
+				<!-- Added For NP6 6.1.16 NPS-5387 25th November 2009 Chris Appleton -->
+				<Parameter name="checkOpenOrdersOnClose" value="true"/>
+				<Parameter name="checkOpenOrdersOnDrawerChange" value="true"/>
+				<!-- Added For NP6 6.1.16 NPS-5853 25th November 2009 Chris Appleton -->
+				<Parameter name="EquivalentMenuDecomposition" value="true"/>
+			</Section>
+			<!-- Added For NP6 6.1.3 B6 7th December 2009 Chris Appleton -->
+			<Section name="SOS_Reports">
+        <Parameter name="typesids" value="FC;FC|DT|MFY; DT;MFY" />
+        <Parameter name="typesclasses" value="Front Counter;Consolidated;Drive Thru;MFY" />
+        <Parameter name="typesimages" value="D10 Front Counter|FC.png;D10 CSR|CSR.png;D10 Drive Thru|DTD.png;MFY|Mfy.png" />
+        <Parameter name="typesreports" value="reportSosD10Fcr@reports.nps;reportSosCsr@reports.nps; reportSosD10DTRH@reports.nps; reportSosMfy@reports.nps" />
+			</Section>
+			<!-- Added For Script 2.02.03 12th January 2010 Chris Appleton -->
+			<Section name="Receipt">
+        <Parameter name="OrderNumberRange" value="2" />
+        <Parameter name="GrillDisplayLongName" value="true" />
+        <Parameter name="GrillStickerEnable" value="1" />
+        <Parameter name="GrillStickerRows" value="15" />
+        <Parameter name="GrillDisplayReverseProductCodes" value="1740;1845;1848;1861;1865;1878;1883;1889;1895;2411;2415;2419;6460;6470;5894;5895;5896" />
+			</Section>
+      <Section name="Report">
+        <Parameter name="trunc24h" value="false" />
+      </Section>
+		</Configuration>
+	</Configurations>
+	<Adaptors>
+		<Adaptor type="npAdpPSW" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpPsw.dll"/>
+				<Parameter name="adaptorname" value="npAdpPsw"/>
+				<Parameter name="drivername" value="npPSWCli.dll"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="surepos.magnetic.card" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="logicalname" value="Magnetic Card"/>
+				<Parameter name="stopbits" value="1"/>
+				<Parameter name="startwith" value="0x003B"/>
+				<Parameter name="service" value="com.ngpos.drivers.ibm.MagneticCardDriverSurePOS"/>
+				<Parameter name="bytestoread" value="37"/>
+				<Parameter name="databits" value="8"/>
+				<Parameter name="timeout" value="20000"/>
+				<Parameter name="adaptorname" value="MagneticCard"/>
+				<Parameter name="endwith" value="0x003F"/>
+				<Parameter name="baudrate" value="19200"/>
+				<Parameter name="usenativedriver" value="false"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="npAdpABS" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM1"/>
+				<Parameter name="traceLog" value="Abslog.txt"/>
+				<Parameter name="baudRate" value="9600"/>
+				<Parameter name="DefaultIce" value="1"/>
+				<Parameter name="WasteDelay" value="2"/>
+				<Parameter name="mode" value="1"/>
+				<Parameter name="ABSPourMethod" value="2"/>
+				<Parameter name="strMap" value="519,0,1,0,1|520,1,1,0,1|521,2,1,0,1|522,3,1,0,1|1297,4,1,0,1|5401,1,1,0,1|650,0,2,0,1|651,1,2,0,1|652,2,2,0,1|653,3,2,0,1|1298,4,2,0,1|5402,1,2,0,1|4459,0,3,0,1|4460,1,3,0,1|4461,2,3,0,1|4462,3,3,0,1|4463,4,3,0,1|4496,1,3,0,1|9961,0,4,0,1|9962,1,4,0,1|9963,2,4,0,1|9964,3,4,0,1|9965,4,4,0,1|9966,1,4,0,1|719,0,5,0,1|720,1,5,0,1|721,2,5,0,1|722,3,5,0,1|1300,4,5,0,1|5403,1,5,0,1|619,0,6,0,1|620,1,6,0,1|621,2,6,0,1|622,3,6,0,1|1299,4,6,0,1|5405,1,6,0,1|450,0,7,0,1|451,1,7,0,1|452,2,7,0,1|453,3,7,0,1|1306,4,7,0,1|1290,1,7,0,1|7886,0,8,0,1|7887,1,8,0,1|7888,2,8,0,1|7889,3,8,0,1|7890,4,8,0,1|8883,1,8,0,1|978,0,15,0,1|960,1,15,0,1|979,1,15,0,1|980,2,15,0,1|981,3,15,0,1|4184,2,0,0,5|79,0,0,0,5|50,1,0,0,5|80,2,0,0,5|208,3,0,0,5|1444,4,0,0,5|5407,1,0,0,5|9010,0,0,0,2|9011,0,0,0,0|9012,0,0,0,1"/>
+				<Parameter name="service" value="npAdpABS.dll"/>
+				<Parameter name="PrinterClass" value="2"/>
+				<Parameter name="adaptorname" value="npAdpABS"/>
+				<Parameter name="strGrillMap" value="9010,1,973|9011,-1,973|9012,0,973"/>
+				<Parameter name="drivername" value="npDrvABS.dll"/>
+				<Parameter name="Period" value="1"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="keyboard.bumpbar" startonload="true">
+			<Section name="main">
+				<Parameter name="print" value="'p'|'P'"/>
+				<Parameter name="portname"/>
+				<Parameter name="recall" value="'r'|'R'"/>
+				<Parameter name="logicalname" value="Keyboard Virtual BumpBar"/>
+				<Parameter name="rotate" value="'l'|'L'"/>
+				<Parameter name="next" value="'n'|'N'"/>
+				<Parameter name="service" value="com.ngpos.drivers.general.BumpBarDriverKeyboard"/>
+				<Parameter name="sideon" value="'o'|'O'"/>
+				<Parameter name="sideoff" value="'x'|'X'"/>
+				<Parameter name="serveheld" value="'e'|'E'"/>
+				<Parameter name="home" value="'h'|'H'"/>
+				<Parameter name="adaptorname" value="BumpBar"/>
+				<Parameter name="undo" value="'u'|'U'"/>
+				<Parameter name="held" value="'a'|'A'"/>
+				<Parameter name="zoom" value="'z'|'Z'"/>
+				<Parameter name="serve" value="'s'|'S'"/>
+				<Parameter name="dtfconoff" value="'f'|'F'"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.cashdrawer" startonload="false">
+			<Section name="main">
+				<Parameter name="drawertype" value="0"/>
+				<Parameter name="verificationintervalbeforeopen" value="3"/>
+				<Parameter name="drivername" value="virtualCD.dll"/>
+				<Parameter name="verificationintervalafteropen" value="1"/>
+				<Parameter name="logicalname" value="Virtual Cash Drawer"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="npAdpPrn" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpPrn.dll"/>
+				<Parameter name="portname" value="report.txt"/>
+				<Parameter name="adaptorname" value="npAdpPrn"/>
+				<Parameter name="drivername" value="npParPrn.dll"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="native.magnetic.card" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="logicalname" value="Magnetic Card - Native"/>
+				<Parameter name="service" value="com.ngpos.drivers.natives.MagneticCardNativeDriver"/>
+				<Parameter name="bytestoread" value="37"/>
+				<Parameter name="timeout" value="30000"/>
+				<Parameter name="adaptorname" value="MagneticCard"/>
+				<Parameter name="drivername" value="PanDrv2k.dll"/>
+				<Parameter name="baudrate" value="9600"/>
+				<Parameter name="usenativedriver" value="true"/>
+				<Parameter name="message" value="Swipe card to authorize this operation"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="network.camera" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.general.UrlCameraDriver"/>
+				<Parameter name="user"/>
+				<Parameter name="url"/>
+				<Parameter name="adaptorname" value="ImageCapture"/>
+				<Parameter name="srcBooth" value="INACTIVE"/>
+				<Parameter name="pwd"/>
+				<Parameter name="logicalname" value="Network camera"/>
+				<Parameter name="id" value="1"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="network.camera2" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.general.UrlCameraDriver"/>
+				<Parameter name="user"/>
+				<Parameter name="url"/>
+				<Parameter name="adaptorname" value="ImageCapture"/>
+				<Parameter name="pwd"/>
+				<Parameter name="logicalname" value="Net camera 2"/>
+				<Parameter name="id" value="2"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="ISPcmu" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpBOI.dll"/>
+				<Parameter name="adaptorname" value="npISPcmu"/>
+				<Parameter name="drivername" value="ISPcmuUS.dll"/>
+				<Parameter name="logicalname" value="Back Office Interface"/>
+			</Section>
+			<Section name="ISP">
+				<Parameter name="serial" value="0"/>
+				<Parameter name="DebugMode" value="1"/>
+				<Parameter name="ISPNewPOSdir" value="c:\OUTBOI\isp"/>
+				<Parameter name="R2D2interval" value="300"/>
+				<Parameter name="ISPport" value="1"/>
+				<Parameter name="SyncTime" value="1"/>
+				<Parameter name="ISPbaudrate" value="9600"/>
+				<Parameter name="service" value="9007"/>
+				<Parameter name="address"/>
+				<Parameter name="CashLessActive" value="1"/>
+				<Parameter name="KVSList" value="Side1|Side2|FC"/>
+				<Parameter name="CmuFiles" value="C:\OUTBOI\"/>
+			</Section>
+			<Section name="Payload">
+				<Parameter name="compressed" value="0"/>
+				<Parameter name="tableVersion" value="1"/>
+				<Parameter name="newCMU" value="0"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="par.customer.display" startonload="true">
+			<Section name="main">
+				<Parameter name="replaceLineFeed" value="true"/>
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="openedforbusiness" value="POS Open - Welcome to McDonald's"/>
+				<Parameter name="logicalname" value="Customer Display - PAR"/>
+				<Parameter name="service" value="com.ngpos.drivers.natives.CustomerDisplayNativeDriver "/>
+				<Parameter name="closedforbusiness" value="POS Closed"/>
+				<Parameter name="adaptorname" value="CustomerDisplay"/>
+				<Parameter name="drivername" value="ParDrv.dll"/>
+				<Parameter name="baudrate" value="9600"/>
+				<Parameter name="lines" value="2"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="npAdpRpr" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpRpr.dll"/>
+				<Parameter name="portname" value="report.txt"/>
+				<Parameter name="adaptorname" value="npAdpRpr"/>
+				<Parameter name="drivername" value="npSerPrn.dll"/>
+				<Parameter name="escSeq" value="printerTMControlChar.properties"/>
+				<Parameter name="LinesBefore" value="0"/>
+				<Parameter name="LinesAfter" value="6"/>
+				<Parameter name="utf8table" value="Utf8ToAnsi.txt"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="npCLayer" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npCLayer"/>
+				<Parameter name="adaptorname" value="npCLayer"/>
+        <Parameter name="CodePage" value="1252" />
+			</Section>
+			<Section name="AdditionalGiftCard">
+				<Parameter name="contact" value="For gift card balance call 1-877-458-2200"/>
+				<Parameter name="max_gcard_rdm_qty" value="7"/>
+				<Parameter name="cashout_thold" value="4.99"/>
+			</Section>
+			<Section name="POSOptions">
+				<Parameter name="CashlessSignLimit" value="24.99"/>
+				<Parameter name="CashlessRefundInfoLimit" value="200"/>
+				<Parameter name="BitMapFile" value="images\repository.zip"/>
+				<Parameter name="PathLog" value="..\out"/>
+			</Section>
+			<Section name="Telequipt">
+				<Parameter name="CoinPort" value="2"/>
+				<Parameter name="extname"/>
+				<Parameter name="baudRate" value="2400"/>
+        <Parameter name="MaximumChangeAmount" value="5.00" />
+			</Section>
+			<Section name="Everest">
+				<Parameter name="EftServerIP"/>
+				<Parameter name="SoftPOSVersion" value="61"/>
+				<Parameter name="MerchantID"/>
+				<Parameter name="SerialPort" value="1"/>
+				<Parameter name="MsgTimeOut" value="2"/>
+				<Parameter name="EftServerPort"/>
+				<Parameter name="contact" value="For gift card balance call 1-877-458-2200"/>
+        <Parameter name="extname" value="mpcpos.dll" />
+				<Parameter name="CashBack"/>
+				<Parameter name="BaudRate" value="9600"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="standard.account" startonload="true">
+			<Section name="main">
+				<Parameter name="valuename" value="npacMaGetValues"/>
+				<Parameter name="clonename" value="npacCloneAccount"/>
+				<Parameter name="totalname" value="npacMaGetTotals"/>
+				<Parameter name="newname" value="npacNewAccount"/>
+				<Parameter name="deletename" value="npacDeleteAccount"/>
+				<Parameter name="drivername" value="npAccGST.dll"/>
+				<Parameter name="addname" value="npacMaAddItem"/>
+				<Parameter name="logicalname" value="Account"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="conf.apply.update" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npUpdtRFM"/>
+				<Parameter name="adaptorname" value="npUpdtRFM"/>
+				<Parameter name="drivername" value="npUpdtFile.dll"/>
+        <Parameter name="RFMStatusDirectory" value="d:\RFMLocal\status" />
+				<Parameter name="RFMExceptionsStatusCode" value="0|20|40"/> 
+				<Parameter name="RFMBaseStatusCode" value="1000"/> 
+				<Parameter name="RFMCountryISO" value="UK"/> 
+			</Section>
+			<Section name="RFMFILE">
+        <Parameter name="RFMHSU" value="1515" />
+        <Parameter name="IncomingFolder" value="d:\RFMLocal\INCOMING" />
+				<Parameter name="Country" value="UK"/>
+			</Section>
+			<Section name="RFM">
+				<Parameter name="RFMPass" value="033a083801300231"/>
+				<Parameter name="RFMHSU" value="34"/>
+				<Parameter name="RFMUser" value="apupdt"/>
+				<Parameter name="RFMPort" value="443"/>
+				<Parameter name="RFMURL" value="https://rfm.qa.newpos.com/np61"/>
+				<Parameter name="RFMCheckCertificate" value="0"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="surepos.customer.display" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.ibm.CustomerDisplayDriverSurePOS"/>
+				<Parameter name="portname" value="COM4"/>
+				<Parameter name="closedforbusiness" value="POS Closed"/>
+				<Parameter name="openedforbusiness" value="POS Open - Welcome to McDonald's"/>
+				<Parameter name="adaptorname" value="CustomerDisplay"/>
+				<Parameter name="logicalname" value="SurePOS Customer Display"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="file.printer" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.virtual.FilePrinterDriver"/>
+				<Parameter name="portname" value="LPT1"/>
+				<Parameter name="adaptorname" value="Printer"/>
+				<Parameter name="logicalname" value="Non Fiscal Printer"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="ncr.keyboard.magnetic.card" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.general.MagneticCardDriverKeyboard"/>
+				<Parameter name="adaptorname" value="MagneticCard"/>
+				<Parameter name="bytestoread" value="37"/>
+				<Parameter name="timeout" value="20000"/>
+				<Parameter name="endwith" value="0x000A"/>
+				<Parameter name="usenativedriver" value="false"/>
+				<Parameter name="startwith"/>
+				<Parameter name="logicalname" value="NCR Magnetic Card"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.customer.display" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.virtual.CustomerDisplayService"/>
+				<Parameter name="closedforbusiness" value="POS Closed"/>
+				<Parameter name="openedforbusiness" value="POS Open - Welcome to McDonald's"/>
+				<Parameter name="adaptorname" value="CustomerDisplay"/>
+				<Parameter name="logicalname" value="Virtual Customer Display"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.linedisplay" startonload="false">
+			<Section name="main">
+				<Parameter name="numLines" value="2"/>
+				<Parameter name="LoadDriver" value="LD"/>
+				<Parameter name="effectSaleText" value="3"/>
+				<Parameter name="displayLongName" value="true"/>
+				<Parameter name="effectInfoText" value="1"/>
+				<Parameter name="logicalname" value="Virtual Line Display"/>
+				<Parameter name="numColumns" value="20"/>
+				<Parameter name="drivername" value="virtualLD.dll"/>
+				<Parameter name="serialport" value="0"/>
+			</Section>
+			<Section name="RCD">
+				<Parameter name="service" value="npAdpRCD.dll"/>
+				<Parameter name="ViewType" value="1"/>
+				<Parameter name="adaptorname" value="npAdpRCD"/>
+				<Parameter name="workingMode" value="orderTaker"/>
+				<Parameter name="drivername" value="npDrvRCD.dll"/>
+				<Parameter name="logicalname" value="Remote Customer Order Display"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="tlog" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpTlog"/>
+				<Parameter name="adaptorname" value="npAdpTlog"/>
+				<Parameter name="ft.alias" value="TLOG"/>
+				<Parameter name="drivername" value="npTLOG.dll"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="external.system" startonload="true">
+			<Section name="main">
+				<!-- <Parameter name="service" value="COCDriver"/> -->
+        <Parameter name="service" value="CODDriver" />
+        <Parameter name="adaptorname" value="ExternalTCPSystem" />
+        <Parameter name="includeKVSSide" value="true" />
+        <Parameter name="MapToSide2" />
+        <Parameter name="MapToSide1" />
+        <Parameter name="ip" />
+        <Parameter name="port" />
+        <Parameter name="logicalname" value="External IP System" />
+      </Section>
+    </Adaptor>
+    <Adaptor type="external.system1" startonload="true">
+      <Section name="main">
+        <Parameter name="service" value="CODDriver" />
+        <Parameter name="adaptorname" value="ExternalTCPSystem" />
+        <Parameter name="includeKVSSide" value="true" />
+        <Parameter name="MapToSide2" />
+        <Parameter name="MapToSide1" />
+        <Parameter name="ip" />
+        <Parameter name="port" />
+        <Parameter name="logicalname" value="External IP System" />
+      </Section>
+    </Adaptor>
+    <Adaptor type="external.system2" startonload="true">
+      <Section name="main">
+        <Parameter name="service" value="CODDriver" />
+        <Parameter name="adaptorname" value="ExternalTCPSystem" />
+        <Parameter name="includeKVSSide" value="true" />
+        <Parameter name="MapToSide2" />
+        <Parameter name="MapToSide1" />
+        <Parameter name="ip" />
+        <Parameter name="port" />
+        <Parameter name="logicalname" value="External IP System" />
+      </Section>
+    </Adaptor>
+    <Adaptor type="external.system3" startonload="true">
+      <Section name="main">
+        <Parameter name="service" value="CODDriver" />
+        <Parameter name="adaptorname" value="ExternalTCPSystem" />
+        <Parameter name="includeKVSSide" value="true" />
+        <Parameter name="MapToSide2" />
+        <Parameter name="MapToSide1" />
+        <Parameter name="ip" />
+        <Parameter name="port" />
+        <Parameter name="logicalname" value="External IP System" />
+      </Section>
+    </Adaptor>
+    <Adaptor type="external.system4" startonload="true">
+      <Section name="main">
+				<Parameter name="service" value="CODDriver"/>				
+				<Parameter name="adaptorname" value="ExternalTCPSystem"/>
+				<Parameter name="includeKVSSide" value="true"/>
+				<Parameter name="MapToSide2"/>
+				<Parameter name="MapToSide1"/>
+				<Parameter name="ip"/>
+				<Parameter name="port"/>
+				<Parameter name="logicalname" value="External IP System"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="panasonic.cash.drawer" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="verificationintervalbeforeopen" value="5"/>
+				<Parameter name="verificationintervalafteropen" value="5"/>
+				<Parameter name="encoding" value="Shift_JIS"/>
+				<Parameter name="logicalname" value="Panasonic Cash Drawer"/>
+				<Parameter name="drawertype" value="1"/>
+				<Parameter name="model" value="JS930"/>
+				<Parameter name="service" value="npAdpCd.dll"/>
+				<Parameter name="adaptorname" value="npAdpCd"/>
+				<Parameter name="drivername" value="DrvAllPan.dll"/>
+				<Parameter name="baudrate" value="9600"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.cash.drawer.dollar" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.virtual.CashDrawerService"/>
+				<Parameter name="adaptorname" value="CashDrawer"/>
+				<Parameter name="operationmode" value="1"/>
+				<Parameter name="logicalname" value="Virtual Cash Drawer (GBP)"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="hot.printer" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="Printer"/>
+				<Parameter name="flush" value="true"/>
+				<Parameter name="portname" value="COM1:"/>
+				<Parameter name="baudrate" value="57600"/>
+				<Parameter name="adaptorname" value="Palm"/>
+				<Parameter name="supplierdll" value="npPrn.dll"/>
+				<Parameter name="drivername" value="npDPrnSr.dll"/>
+				<Parameter name="logicalname" value="Printer"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="serial.bumpbar" startonload="true">
+			<Section name="main">
+				<Parameter name="databits" value="8"/>
+				<Parameter name="zoom"/>
+				<Parameter name="serve"/>
+				<Parameter name="sideon"/>
+				<Parameter name="print"/>
+				<Parameter name="adaptorname" value="BumpBar"/>
+				<Parameter name="recall"/>
+				<Parameter name="serveheld"/>
+				<Parameter name="dtfconoff"/>
+				<Parameter name="stopbits" value="1"/>
+				<Parameter name="timeout" value="20000"/>
+				<Parameter name="next"/>
+				<Parameter name="sideoff"/>
+				<Parameter name="baurate"/>
+				<Parameter name="logicalname" value="Serial BumpBar"/>
+				<Parameter name="baudrate" value="1200"/>
+				<Parameter name="rotate"/>
+				<Parameter name="portname" value="COM1"/>
+				<Parameter name="home"/>
+				<Parameter name="undo"/>
+				<Parameter name="held"/>
+				<Parameter name="service" value="com.ngpos.drivers.general.BumpBarDriverSerial"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="printer.adaptor.1" startonload="true">
+			<Section name="main">
+				<Parameter name="printerControlChar" value="printerControlChar.properties"/>
+				<Parameter name="portname" value="COM1"/>
+				<Parameter name="encoding" value="UTF8"/>
+				<Parameter name="logicalname" value="Non Fiscal Printer"/>
+				<Parameter name="service" value="com.ngpos.drivers.printer.PrinterDriverGeneral"/>
+				<Parameter name="printerInitCode" value="28|67|1"/>
+				<Parameter name="adaptorname" value="Printer"/>
+				<Parameter name="linesToAdd" value="3"/>
+				<Parameter name="printerCutCode" value="27|109"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="xmlrpccli" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpHttp.dll"/>
+				<Parameter name="url" value="http://10.162.81.71:8080/goform/RPC2"/>
+				<Parameter name="adaptorname" value="npAdpHttp"/>
+				<Parameter name="drivername" value="npDrvHTTP.dll"/>
+				<Parameter name="logicalname" value="XML RPC Client"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.magnetic.card" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.virtual.VirtualMagneticCardReader"/>
+				<Parameter name="adaptorname" value="MagneticCard"/>
+				<Parameter name="bytestoread" value="37"/>
+				<Parameter name="timeout" value="20000"/>
+				<Parameter name="endwith" value="0x003A,0x0002"/>
+				<Parameter name="usenativedriver" value="false"/>
+				<Parameter name="startwith" value="0x0001,0x00E7"/>
+				<Parameter name="logicalname" value="Virtual Magnetic Card"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="panasonic.card.reader" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpMsr.dll"/>
+				<Parameter name="model" value="JS930"/>
+				<Parameter name="adaptorname" value="npAdpMsr"/>
+				<Parameter name="drivername" value="DrvAllPan.dll"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="virtual.card.reader" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpMsr.dll"/>
+				<Parameter name="adaptorname" value="npAdpMsr"/>
+				<Parameter name="drivername" value="VirtualMSR.dll"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="npAdpCOD" startonload="true">
+			<Section name="main">
+				<Parameter name="descriptionGrill" value="D"/>
+				<Parameter name="SerialPort" value="1"/>
+				<Parameter name="displayLongName" value="true"/>
+				<Parameter name="logicalname" value="Customer Order Display"/>
+				<!-- Updated For NP6 6.1.15  29th December 2009 -->
+        <Parameter name="OutputFilename" value="d:\NewPOS61\Out\COD-Debug.txt" />
+				<Parameter name="descriptionEVM" value="D"/>
+				<Parameter name="CODMaxLineLength" value="20"/>
+				<Parameter name="service" value="npAdpCOD.dll"/>
+				<Parameter name="CODType" value="delphi"/>
+				<Parameter name="indentGrill" value="3"/>
+				<Parameter name="adaptorname" value="npAdpCOD"/>
+				<Parameter name="indentEVM" value="1"/>
+				<Parameter name="drivername" value="npDrvCOD.dll"/>
+				<!-- Updated For NP6 6.1.15  29th December 2009 -->
+				<Parameter name="CODMaxLineQtty" value="15"/> <!-- the limit value is 20 -->
+				<Parameter name="OutToFile" value="false"/>
+				<Parameter name="BaudRate" value="9600"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="panasonic.line.display" startonload="true">
+			<Section name="main">
+				<Parameter name="numLines" value="2"/>
+				<Parameter name="adaptorname" value="npAdpLd"/>
+				<Parameter name="model" value="JS930"/>
+				<Parameter name="showTenderPriority" value="due|tax|discount|pays|total"/>
+				<Parameter name="drivername" value="DrvAllPan.dll"/>
+				<Parameter name="indentChoiceGrill" value="3"/>
+				<Parameter name="showWaste" value="both"/>
+				<Parameter name="showRefund" value="both"/>
+				<Parameter name="displayLineFeed" value="\n"/>
+				<Parameter name="numColumns" value="20"/>
+				<Parameter name="displayLongName" value="true"/>
+				<Parameter name="LoadDriver" value="LD"/>
+				<Parameter name="energySaverTime" value="000000"/>
+				<Parameter name="font" value="Arial-regular-9"/>
+				<Parameter name="effectSaleText" value="1"/>
+				<Parameter name="showPaidPriority" value="change|total|sumpay|discount"/>
+				<Parameter name="showOverring" value="msg"/>
+				<Parameter name="baudrate" value="9600"/>
+				<Parameter name="idleMsgTime" value="10000"/>
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="splitDescription" value="false"/>
+				<Parameter name="showSalePriority" value="total|grills|choice|items"/>
+				<Parameter name="showCancel" value="msg"/>
+				<Parameter name="ticker" value="2"/>
+				<Parameter name="service" value="npAdpLd.dll"/>
+				<Parameter name="effectInfoTex" value="1"/>
+				<Parameter name="effectInfoText" value="1"/>
+				<Parameter name="setDTR" value="C"/>
+				<Parameter name="setRTS" value="C"/>
+			</Section>
+			<Section name="RCD">
+				<Parameter name="service" value="npAdpRCD.dll"/>
+				<Parameter name="ViewType" value="1"/>
+				<Parameter name="adaptorname" value="npAdpRCD"/>
+				<Parameter name="workingMode" value="orderTaker"/>
+				<Parameter name="drivername" value="npDrvRCD.dll"/>
+				<Parameter name="logicalname" value="Remote Customer Order Display"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="native.cash.drawer" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="verificationintervalbeforeopen" value="10"/>
+				<Parameter name="verificationintervalafteropen" value="1"/>
+				<Parameter name="logicalname" value="Cash Drawer - Native"/>
+				<Parameter name="drawertype" value="1"/>
+				<Parameter name="service" value="com.ngpos.drivers.natives.CashDrawerNativeDriver"/>
+				<Parameter name="adaptorname" value="CashDrawer"/>
+				<Parameter name="drivername" value="PanDrv2k.dll"/>
+				<Parameter name="operationmode" value="0"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="ncr.customer.display" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="com.ngpos.drivers.ncr.CustomerDisplayDriverNCR"/>
+				<Parameter name="portname" value="COM4"/>
+				<Parameter name="closedforbusiness" value="POS Closed"/>
+				<Parameter name="openedforbusiness" value="POS Open - Welcome to McDonald's"/>
+				<Parameter name="adaptorname" value="CustomerDisplay"/>
+				<Parameter name="logicalname" value="PROTEC Customer Display"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="native.customer.display" startonload="true">
+			<Section name="main">
+				<Parameter name="replaceLineFeed" value="true"/>
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="openedforbusiness" value="POS Open - Welcome to McDonald's"/>
+				<Parameter name="logicalname" value="Customer Display - Native"/>
+				<Parameter name="service" value="com.ngpos.drivers.natives.CustomerDisplayNativeDriver"/>
+				<Parameter name="closedforbusiness" value="POS Closed"/>
+				<Parameter name="adaptorname" value="CustomerDisplay"/>
+				<Parameter name="drivername" value="PanDrv2k.dll"/>
+				<Parameter name="baudrate" value="9600"/>
+				<Parameter name="lines" value="2"/>
+			</Section>
+		</Adaptor>
+		<!-- Added For NP6 6.1.16 NPS-5501 25th November 2009 Chris Appleton -->
+    <Adaptor type="npAdpPubl" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpPubl.dll"/>
+				<Parameter name="adaptorname" value="npAdpPubl"/>
+				<Parameter name="drivername" value="npDrvPubl.dll"/>
+				<Parameter name="driverbasename" value="npDrvPubl"/>
+				<Parameter name="logicalname" value="Publisher adaptor"/>
+        <Parameter name="loaddriver" value="EVT|PRD|MNI" />
+        <Parameter name="TLDdir" value="d:\NewPOS61\TLD" />
+				<Parameter name="productionlist" value="FC|DT|MFY:S1|MFY:S2"/>
+			</Section>
+		</Adaptor>
+    <Adaptor type="npAdpTLD" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpTLD.dll" />
+				<Parameter name="adaptorname" value="npAdpTLD" />
+				<Parameter name="drivername" value="npTLDEng.dll" />
+        <Parameter name="subscribers" value="MNI|PRD|EVT" />
+        <Parameter name="outdir" value="d:\NewPOS61\STLD" />
+        <Parameter name="tmpdir" value="d:\NewPOS61\STLD\TEMP" />
+			</Section>
+		</Adaptor>
+		<Adaptor type="DSLDevDrv.linedisplay" startonload="true">
+			<Section name="main">
+				<Parameter name="numLines" value="2"/>
+				<Parameter name="openedforbusiness" value="Welcome to McDonald's"/>
+				<Parameter name="adaptorname" value="npAdpLd"/>
+				<Parameter name="showTenderPriority" value="due|tax|discount|pays|total"/>
+				<Parameter name="drivername" value="DSLDevDrv.dll"/>
+				<Parameter name="showWaste" value="both"/>
+				<Parameter name="showRefund" value="both"/>
+				<Parameter name="displayLineFeed" value="\n"/>
+				<Parameter name="numColumns" value="20"/>
+				<Parameter name="displayLongName" value="true"/>
+				<Parameter name="LoadDriver" value="LD"/>
+				<Parameter name="energySaverTime" value="000000"/>
+				<Parameter name="effectSaleText" value="1"/>
+				<Parameter name="effectInfoText" value="1"/>
+				<Parameter name="showPaidPriority" value="change|total"/>
+				<Parameter name="indentChoiseGrill" value="3"/>
+				<Parameter name="logicalname" value="LINE_DISPLAY"/>
+				<Parameter name="showOverring" value="msg"/>
+				<Parameter name="idleMsgTime" value="10000"/>
+				<Parameter name="splitDescription" value="false"/>
+				<Parameter name="showSalePriority" value="total|grills|choice|items"/>
+				<Parameter name="showCancel" value="msg"/>
+				<Parameter name="ticker" value="2"/>
+				<Parameter name="supplierdrv" value="drvstub.dll"/>
+				<Parameter name="closedforbusiness" value="Sorry - this POS is closed"/>
+				<Parameter name="service" value="npAdpLD.dll"/>
+			</Section>
+			<Section name="HWConfiguration">
+				<Parameter name="POSmagstLogicalName" value="MSR"/>
+				<Parameter name="POSmagst" value="drvstub.dll"/>
+				<Parameter name="POSdisplLogicalName" value="LINE_DISPLAY"/>
+				<Parameter name="POSdispl" value="drvstub.dll"/>
+				<Parameter name="POScashLogicalName" value="DRAWER1"/>
+				<Parameter name="POScash" value="drvstub.dll"/>
+			</Section>
+			<Section name="DSL">
+				<Parameter name="MSRAsynchronousMode" value="0"/>
+				<Parameter name="LogLevel" value="0"/>
+				<Parameter name="LocalPort" value="20007"/>
+				<Parameter name="LogFilename" value="DSTUB.LOG"/>
+				<Parameter name="RemotePort" value="20008"/>
+				<Parameter name="RemoteServiceName" value="DSLDrv"/>
+				<Parameter name="LocalServiceName" value="DSEvent"/>
+				<Parameter name="ConfigurationFile" value="DSL.XML"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="DSLDevDrv.cash" startonload="true">
+			<Section name="main">
+        <Parameter name="verificationintervalbeforeopen" value="3" />
+				<Parameter name="verificationintervalafteropen" value="5"/>
+				<Parameter name="logicalname" value="DRAWER1"/>
+				<Parameter name="drawertype" value="1"/>
+				<Parameter name="supplierdrv" value="drvstub.dll"/>
+				<Parameter name="model" value="JS930"/>
+				<Parameter name="service" value="npAdpCd.dll"/>
+				<Parameter name="adaptorname" value="npAdpCd"/>
+				<Parameter name="drivername" value="DSLDevDrv.dll"/>
+				<Parameter name="operationmode" value="0"/>
+			</Section>
+			<Section name="HWConfiguration">
+				<Parameter name="POSmagstLogicalName" value="MSR"/>
+				<Parameter name="POSmagst" value="drvstub.dll"/>
+				<Parameter name="POSdisplLogicalName" value="LINE_DISPLAY"/>
+				<Parameter name="POSdispl" value="drvstub.dll"/>
+				<Parameter name="POScashLogicalName" value="DRAWER1"/>
+				<Parameter name="POScash" value="drvstub.dll"/>
+			</Section>
+			<Section name="DSL">
+				<Parameter name="MSRAsynchronousMode" value="0"/>
+				<Parameter name="LogLevel" value="2"/>
+				<Parameter name="LocalPort" value="20007"/>
+				<Parameter name="LogFilename" value="DSTUB.LOG"/>
+				<Parameter name="RemotePort" value="20008"/>
+				<Parameter name="RemoteServiceName" value="DSLDrv"/>
+				<Parameter name="LocalServiceName" value="DSEvent"/>
+				<Parameter name="ConfigurationFile" value="DSL.XML"/>
+			</Section>
+		</Adaptor>
+		<Adaptor type="DSLDevDrv.cardreader" startonload="true">
+			<Section name="main">
+				<Parameter name="portname" value="COM3"/>
+				<Parameter name="bytestoreread" value="37"/>
+				<Parameter name="logicalname" value="MSR"/>
+				<Parameter name="MSRTrackNo" value="2"/>
+				<Parameter name="supplierdrv" value="drvstub.dll"/>
+				<Parameter name="model" value="JS930"/>
+				<Parameter name="service" value="npAdpMsr.dll"/>
+				<Parameter name="timeout" value="30000"/>
+				<Parameter name="adaptorname" value="npAdpMsr"/>
+				<Parameter name="drivername" value="DSLDevDrv.dll"/>
+				<Parameter name="baudrate" value="9600"/>
+				<Parameter name="message" value="Swipe card to authorise this operation"/>
+			</Section>
+			<Section name="HWConfiguration">
+				<Parameter name="POSmagstLogicalName" value="MSR"/>
+				<Parameter name="POSmagst" value="drvstub.dll"/>
+				<Parameter name="POSdisplLogicalName" value="LINE_DISPLAY"/>
+				<Parameter name="POSdispl" value="drvstub.dll"/>
+				<Parameter name="POScashLogicalName" value="DRAWER1"/>
+				<Parameter name="POScash" value="drvstub.dll"/>
+			</Section>
+			<Section name="DSL">
+				<Parameter name="MSRAsynchronousMode" value="0"/>
+				<Parameter name="LogLevel" value="2"/>
+				<Parameter name="LocalPort" value="20007"/>
+				<Parameter name="LogFilename" value="DSTUB.LOG"/>
+				<Parameter name="RemotePort" value="20008"/>
+				<Parameter name="RemoteServiceName" value="DSLDrv"/>
+				<Parameter name="LocalServiceName" value="DSEvent"/>
+				<Parameter name="ConfigurationFile" value="DSL.XML"/>
+			</Section>
+		</Adaptor>
+		<!-- Updated For NP6 6.1.15  29th December 2009 -->
+		<Adaptor type="npAdpKvsSound" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpKvsSound.dll"/>
+				<Parameter name="adaptorname" value="npAdpKvsSound"/>
+				<Parameter name="drivername" value="npDrvKvsSound.dll"/>
+				<Parameter name="logicalname" value="Kvs Sound 015" />
+			</Section>
+		</Adaptor>
+		<!-- KvsComm - communicates with production and POS -->
+		<Adaptor type="npAdpKvsComm" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpKvsComm.dll" />
+				<Parameter name="adaptorname" value="npAdpKvsComm" />
+				<Parameter name="drivername" value="npDrvKvsComm.dll" />
+			</Section>
+		</Adaptor>
+		<!-- KvsUI - Communicates with KvsUI -->
+		<Adaptor type="npAdpKvsUI" startonload="true">
+			<Section name="main">
+				<Parameter name="service" value="npAdpKvsUI.dll" />
+				<Parameter name="adaptorname" value="npAdpKvsUI" />
+				<Parameter name="drivername" value="npDrvKvsUI.dll" />
+				<Parameter name="KvsUIAddress" value="127.0.0.1" />
+				<Parameter name="KvsUIPort" value="5452" />
+			</Section>
+		</Adaptor>
+		<Adaptor type="standard.ui" startonload="true">
+			<Section name="main">
+				<Parameter name="cmdTPUI" value="../kiosk/McDonalds.Kiosk.Shell.exe"/>
+				<Parameter name="actionPort" value="888"/>
+				<Parameter name="eventPort" value="999"/>
+				<Parameter name="drivername" value="npposNewGUI.dll"/>
+			</Section>
+		</Adaptor>
+	</Adaptors>
+</Document>

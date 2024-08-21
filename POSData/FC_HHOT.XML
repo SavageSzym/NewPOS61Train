@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/usr/local/jboss-3.2.2/server/default/deploy/webrfmJP.war/rfmdata/pos-db.xsd" version="1.0" name="HOT 52">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+		<Section name="Messaging">
+			<Parameter name="networkAdaptorBaseIp"/>
+			<Parameter name="serverPort" value="60002"/>
+		</Section>		
+		<!-- Added For NP6 6.1.16 RC2 SDO-1783 25th November 2009 Chris Appleton -->
+		<Section name="Persistence">
+			<Parameter name="monthsToKeepLog" value="0"/>
+		</Section>	
+	</Configuration>
+	<Services>
+		<Service name="052" type="HOT" classname="npHOT.dll" startonload="true" quitOnFail="false">
+			<Configuration imports="HOT">
+				<Section name="PosType">
+					<Parameter name="RemPOD" value="DRIVE_THRU"/>
+				</Section>
+			</Configuration>
+			<UsedServices>
+				<UsedService serviceType="WAY">
+					<Member name="300" alias="" />
+				</UsedService>
+				<UsedService serviceType="UPD">
+					<Member name="300" alias="" />
+				</UsedService> 
+				<UsedService serviceType="RPR">
+					<Member name="001" alias=""/>
+				</UsedService>
+			</UsedServices>
+		</Service>
+	</Services>
+</PosDB>

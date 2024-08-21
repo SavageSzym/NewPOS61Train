@@ -1,0 +1,75 @@
+/** 
+ * @file CSL_Security.nps
+ * @brief This NPS file implements BusinessComponents Security.
+ * @addtogroup 	CSL
+ * @defgroup 	Security
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Raphael (of Creation)
+ * @since NPS-4831 / 2009/06/22
+ *
+ * @version $Id: CSL_Security.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Business components related to Security.
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_SECURITY_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable. */
+SRC_BC_SECURITY='CSL_Security.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetAuthorization</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC asks for manager authorization for a given level.
+ * If the parameter SingleSignOn is received as TRUE and a previous authorization for this level or
+ * higher was granted, this authorization is granted. If not the KeyPad/Calculator or the
+ * magnetic stripe is activated requesting the password.
+ * It is also possible to show a message to the operator, using the parameter "message".
+ * This "message" is used to look for the native language message in the system messages file,
+ * (pos-messages_xx.properties). If the native language message is not found the text is used as it is.
+ *
+ * @param level - string - Authorization level ("manager", "supervisor" or "system": they should be defined in Section AuthorizationLevel of store-db).
+ * @param message - string - optional - message to exhibit. If not received the default message (MSG_PROMPTID) is exhibited.
+ * @param SingleSignOn - string/BOOL - optional - TRUE for single sign on (default:FALSE).
+ * @success Password ok. Authorization granted successfully.
+ * @failure	<i>Error on hook: onRequestCard()</i> - The hook returned false when trying to request card.\n
+ * @failure	<i>Error validating card</i> - The hook onValidateManagerCard() returned false value.\n
+ * @failure <i>Invalid password</i> - Error validating the identifier/password given by the user.
+ * @hook <i>onRequestCard()</i> - called before swipe card activation - should open message window.
+ * @hook <i>onValidateManagerCard(minLevel,cardData)</i> - called to validade card data.
+ * @hook <i>onEndRequestCard(mode)</i> - called after swipe card activation - should close message window.
+ * @remarks
+ *
+ * Property Messages:\n
+ *	 MSG_PROMPTCARD: Prompt message to get  the manager identification.\n
+ *   MSG_PROMPTID: Prompt message for operator identification.\n
+ *   MSG_PROMPTPSWD: Prompt message for operator password.\n
+ *   MSG_INVPASSWD: Error message for invalid password.\n
+ *
+ * This BC calls PosShowMessage.
+ */
+function PosGetAuthorization(level, message, SingleSignOn) {
+	var cmd = "PosGetAuthorization";
+	CSL_dbglog(7, SRC_BC_SECURITY, cmd, "Start");
+	return executeBC(cmd, [level, message, SingleSignOn]);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d37393437004b171d92c64be5d9261b43a49bf9f47f26e128bfb980705b0651ca96ff07063b2667b882a0315923ccfa2781b80a223a85370010
+ * =============================================================================================================================
+*/

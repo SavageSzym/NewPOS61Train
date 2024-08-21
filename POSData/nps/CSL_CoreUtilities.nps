@@ -1,0 +1,1267 @@
+ /** 
+ * @file CSL_CoreUtilities.nps
+ * @brief This NPS file implements BusinessComponents Core Utilities.
+ * @addtogroup 	CSL
+ * @defgroup 	CoreUtilities
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_CoreUtilities.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_COREUTILITIES_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable. */
+SRC_BC_UTIL='CSL_CoreUtilities.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChangeUserPassword</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosChangeUserPassword is responsible for change or reset a user password.
+ * In java script it should be called:<b>PosChangeUserPassword(userId, password)</b>
+ * @param userId - String - User id for whom to change password.
+ * @param password - String - New password.
+ * @failure <i>Always</i> - Always return false.
+ * @hook <i>onChangeUserPassword()</i> - Called before BC execution.
+ * @todo Check *rval value.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_INVRPTTYPE: Invalid parameter.\n
+ *	MSG_INVPASSWD: Invalid password.\n
+ *  MSG_BC_CHGPSWDERR: Error changing password.\n
+ *  MSG_BC_CHGPSWDOK: Correct Execution.\n
+ */
+function PosChangeUserPassword(userId, password) {
+	var cmd = "PosChangeUserPassword";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [userId, password]);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckCashDrawer</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckCashDrawer is responsible for check if there is at least one cash drawer open.
+ * In java script it should be called:<b>PosCheckCashDrawer()</b>
+ * @success Adaptor not loaded.
+ * @success Cash drawer closed.
+ * @failure <i>Cash drawer Opened</i> - There is at least one cash drawer opened.
+ */
+function PosCheckCashDrawer() {
+	var cmd = "PosCheckCashDrawer";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosIsCashDrawerForced</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosIsCashDrawerForced is responsible for gets the cash drawer operation mode.
+ * In POS with multiple drawers, the drawers can be identified by their names.\n
+ * In java script it should be called:<b>PosIsCashDrawerForced(drawers)</b>
+ * @param drawers - String - Optional parameter, names of drawers to open, separeted by |.
+ * @success cash drawer is in a forced operation mode.
+ * @failure <i>Not Forced</i> - cash drawer is not in a forced operation mode.
+ */
+function PosIsCashDrawerForced(drawers) {
+	var cmd = "PosIsCashDrawerForced";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [drawers]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosOpenCashDrawer</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosOpenCashDrawer is responsible for open the cash drawer. The opening can be made in a forced way, as when called through a button.\n
+ * In POS with multiple drawers, the drawers can be identified by their names.\n
+ * In java script it should be called:<b>PosOpenCashDrawer(force, drawers)</b>
+ * @param force - String - Optional, "true" (default) indicates that it is a forced open.
+ * @param drawers - String - Optional, names of drawers to open, separeted by |.
+ * @success Drawer Opened.
+ * @failure <i>Open Error</i> - An error occurred while opening drawer.
+ */
+function PosOpenCashDrawer(force, drawers) {
+	var cmd = "PosOpenCashDrawer";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [force, drawers]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetCashDrawerState</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetCashDrawerState is responsible for handle a change of state in cash drawer.
+ * In java script it should be called:<b>PosSetCashDrawerState(state, saleTic)</b>
+ * @param state - String - State to set: 1 for open, 9 for not authorized open, 0 for close, 8 for not authorized close.
+ * @param saleTic - String - Optional, sale tic count for close drawer.
+ * @success Adaptor not loaded.
+ * @success Ivalid state.
+ * @failure <i>onDrawerOpening() failed</i> - hook returned false.
+ * @failure <i>onDrawerClosing() failed</i> - hook returned false.
+ * @hook <i>onDrawerOpening()</i> - invoked if state=1.
+ * @hook <i>onDrawerClosing()</i> - invoked if state=0.
+ * @todo Check Invalid state.
+ */
+function PosSetCashDrawerState(state, saleTic) {
+	var cmd = "PosSetCashDrawerState";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [state, saleTic]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetCDrawerOpMode</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetCDrawerOpMode is responsible for set the cash drawer operation mode. The operation mode 0 is the normal operation.\n
+ * this value set to 1 means that the drawer state will be a permanent forced closed state.\n
+ * In POS with multiple drawers, the drawers can be identified by their names.\n
+ * In java script it should be called:<b>PosSetCDrawerOpMode(mode, drawers)</b>
+ * @param mode - String - Optional, 0: normal opeartion, 1: force closed satate (if parameter not supplied toggles).
+ * @param drawers - String - Optional, names of drawers to open, separeted by |.
+ * @success Cash Drawer operation mode change request sent.
+ * @failure <i>onSetCDrawerOpMode() failed</i> - hook returned false.
+ * @hook <i>onSetCDrawerOpMode()</i> - called after BC parameter validation, before actual execution.
+ */
+function PosSetCDrawerOpMode(mode, drawers) {
+	var cmd = "PosSetCDrawerOpMode";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [mode, drawers]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckTandemEnableInProduction</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckTandemEnableInProduction is responsible for check if the production has tandem enabled or not.
+ * In java script it should be called:<b>PosCheckTandemEnableInProduction()</b>
+ * @success Tandem Enabled.
+ * @failure <i>No Tandem</i> - No tandem in use.
+ * @failure <i>Tandem disabled</i> - Tandem is disabled.
+ * @sessioncontext <i>"tandemEnable"</i> - set to the value "true" or "false" according to the state of tandem.
+ */
+function PosCheckTandemEnableInProduction() {
+	var cmd = "PosCheckTandemEnableInProduction";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChangeDtWorkingMode</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosChangeDtWorkingMode is responsible for set the DRIVE THRU working mode to Order taker, Cashier or Order Taker + Cashier.\n
+ * Internally it sets the working mode session context to the desired mode.\n
+ * It is used instead of PosSetSessionProperty so that we have a different TLOG entry.\n
+ * In java script it should be called:<b>PosChangeDtWorkingMode(workingMode)</b>
+ * @param workingMode - String - DRIVE THRU working mode, allowed strings are: 'orderTaker' or 'cashier' or 'both'.
+ * @success DRIVE THRU working mode successfully changed.
+ * @failure <i>Argument Missing</i> - workingMode argument is missing.
+ * @failure <i>onChangeDtWorkingMode() failed</i> - hook returned false.
+ * @failure <i>Invalid Mode</i> - Invalid working mode entered.
+ * @hook <i>onChangeDtWorkingMode()</i> - invoked before BC execution.
+ * @sessioncontext <i>"workingMode"</i> - Set to the value of workingMode parameter, and read to set COD working mode.
+ */
+function PosChangeDtWorkingMode(workingMode) {
+	var cmd = "PosChangeDtWorkingMode";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [workingMode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChangePOD</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosChangePOD is responsible for change the Point of Distribution for the POS.\n
+ * If no parameter is received it toggles the current destination from FRONT_COUNTER to DRIVE_THRU and vice-versa.\n
+ * Its not possible to change the destination to FC if there is a transaction in progress or multiorder is active.\n
+ * In java script it should be called:<b>PosChangePOD(POD)</b>
+ * @param POD - String - Optional, POD shoud be one of the valid Point of Distribution names:\n
+ *									FRONT_COUNTER,DRIVE_THROUGH,WALK_THROUGH,DELIVERY,COLDKIOSK,MCCAFE,MCEXPRESS,\n
+ *									COLDKIOSK_DRINK,CSO,HOT,MCD,CHIPOTLE,BOSTON_MARKET,DONATOS\n
+ *                                  In the abscence of parameter or any other value,\n
+ *                                  toggles from FRONT_COUNTER to DRIVE_THRU and vice-versa...\n
+ * @success POD mode changed.
+ * @failure <i>Logged Operator</i> - You cannot change the register mode because there is a crew person logged in.
+ * @failure <i>Stored Orders</i> - You are not allowed to change the register mode when there are stored orders.
+ * @failure <i>User Cancelled</i> - User cancelled on confirmation.
+ * @sessioncontext <i>"workingMode"</i> - Read to get POS working mode.
+ * @sessioncontext <i>"activatedCOD"</i> - If POD is a Front Counter set it to "", else set it to "0".
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_POD_OPLOGGED: There is a sale in progress.\n
+ *	MSG_BC_STORED_ORDERS: There are stored orders.\n
+ *	MSG_BC_CHANGEPOD: Prompts to confirm operation.\n
+ */
+function PosChangePOD(POD) {
+	var cmd = "PosChangePOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [POD]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChangeRemPOD</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosChangeRemPOD is responsible for set the remote POD to FRONT_COUNTER or DRIVE_THRU.\n
+ * It is used particularly to change the destination of orders taken by the HOT.\n
+ * If no parameter is received it toggles the current destination from FRONT_COUNTER to DRIVE_THRU and vice-versa.\n
+ * Its not possible to change the destination to FC if there is a transaction in progress or multiorder is active.\n
+ * In java script it should be called:<b>PosChangeRemPOD(remPOD)</b>
+ * @param remPOD - String - Optional, remote POD, shoud be FRONT_COUNTER, DRIVE_THRU, HOT, STAND_ALONE, WALK_THRU, 
+ * DELIVERY, COLDKIOSK, MCCAFE, MCEXPRESS, COLDKIOSK_DRINK, CSO, MCD, CHIPOTLE, BOSTON_MARKET, DONATOS
+ *                                     STAND_ALONE meaning that orders will not be send (used as stand alone),\n
+ *                                     abscence of parameter or any other value,\n
+ *                                     toggles from FRONT_COUNTER to DRIVE_THRU and vice-versa...\n
+ * @success Requested POD is the current one.
+ * @success Remote POD successfully changed.
+ * @failure <i>Stand Alone not Allowed</i> - Can operate in stand alone mode only.
+ * @failure <i>Front Counter Change not allowed</i> - if sale in progress and multiorder set, does not allow change to FRONT COUNTER.
+ * @failure <i>onChangeRemPOD() failed</i> - hook returned false.
+ * @hook <i>onChangeRemPOD()</i> - invoked before set "RemPOD".
+ * @sessioncontext <i>"RemPOD"</i> - set to the value of remPOD parameter.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_STANDALONE: Cannot operate in Stand Alone mode.\n
+ *	MSG_BC_SALEPROG: There is a sale in progress.\n
+ */
+function PosChangeRemPOD(remPOD) {
+	var cmd = "PosChangeRemPOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [remPOD]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosAppendSessionProperty</b>.
+ *
+ * Persistence:<b>Persisted (according to parameter)</b>\n
+ * The PosAppendSessionProperty is responsible for append a value for a property (given by a key) in the session context.\n
+ * In java script it should be called:<b>PosAppendSessionProperty(key, value, persist, msgGroup)</b>
+ * @param key - String - key in session context which value will be getten.
+ * @param value - String - value to be getten.
+ * @param persist - String - optional, "true" if should persist in TLOG\n
+ * @param msgGroup - String - optional, if supplied and its value is "true" a multicast message is sent.
+ * @success Session context variable successfully set to given value.
+ * @failure <i>Argument Missing</i> - key or value parameter is missing.
+ * @failure <i>Failed to Set</i> - failed to set session context variable.
+ * @sessioncontext <i>(key parameter)</i> - read to get it's old value, and set to it's new value.
+ */
+function PosAppendSessionProperty(key, value, persist, msgGroup) {
+	var cmd = "PosAppendSessionProperty";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [key, value, persist, msgGroup]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckParameter</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckParameter is responsible for check if a parameter (given by its key) in a Section in store-db/pos-db has one of the received values.\n
+ * Returning TRUE if on of the values is the same stored, FALSE otherwise.\n
+ * In java script it should be called:<b>PosCheckParameter(sectionName, paramName, paramValue)</b>
+ * @param sectionName - String - Name of the configuration section to get parameter.
+ * @param paramName - String - Name of the parameter (key) to check.
+ * @param paramValue - String - Pipe-separated set of possible values to match (case sensitive).
+ * @success parameter exists and matchs any of the given values.
+ * @failure <i>Argument Missing</i> - Some argument is missing.
+ * @failure <i>Parameter Missing</i> - parameter does not exist or do not match with the given values.
+ */
+function PosCheckParameter(sectionName, paramName, paramValue) {
+	var cmd = "PosCheckParameter";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [sectionName, paramName, paramValue]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckSessionProperty</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckSessionProperty is responsible for check if a property value (given by a pair key/value) in the session context is that received by parameter.\n
+ * Returning TRUE if value is the same stored, FALSE otherwise.\n
+ * In java script it should be called:<b>PosCheckSessionProperty(key, value)</b>
+ * @param key - String - key in session context against which value will be tested.
+ * @param value - String - value to be tested.
+ * @success Given pair key/value matches with session context.
+ * @failure <i>Argument Missing</i> - key or value parameter is missing.
+ * @failure <i>Value Do not Match</i> - Given pair key/value does not matches with session context.
+ * @sessioncontext <i>(key parameter)</i> - Read to compare with value.
+ */
+function PosCheckSessionProperty(key, value) {
+	var cmd = "PosCheckSessionProperty";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [key, value]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCompareValues</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCompareValues is responsible for compare two strings received as parameters, returning TRUE if they are the same.
+ * In java script it should be called:<b>PosCompareValues(str1, str2)</b>
+ * @param str1 - String - Optional parameter with the success message.
+ * @param str2 - String - Optional parameter with the failure message.
+ * @success Given strings matches.
+ * @failure <i>Argument Missing</i> - str1 or str2 parameter is missing.
+ * @failure <i>Strings do not matches</i> - given strings do not matches.
+ */
+function PosCompareValues(str1, str2) {
+	var cmd = "PosCompareValues";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [str1, str2]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosParameterIsEmpty</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosParameterIsEmpty is responsible for check if the parameter it receives is empty/null.\n
+ * It is used in a workflow sequence that receives parameters to validate the received parameters.\n
+ * If no parameter is received or it is empty/null this BC returns TRUE.\n
+ * In java script it should be called:<b>PosParameterIsEmpty(param)</b>
+ * @param param - String - parameter value to check.
+ * @success parameter was not passed or is empty/null.
+ * @failure <i>Parameter not Empty</i> - given parameter is no empty.
+ */
+function PosParameterIsEmpty(param) {
+	var cmd = "PosParameterIsEmpty";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [param]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRemoveSessionProperty</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRemoveSessionProperty is responsible for clear a property value (given by its key) in the session context.
+ * In java script it should be called:<b>PosRemoveSessionProperty(key, persist, msgGroup)</b>
+ * @param key - String - key in session context which value will be reset.
+ * @param persist - String - Optional, "true" if should persist in TLOG.
+ * @param msgGroup - String - Optional, if supplied and its value is "true" a multicast message is sent.
+ * @success Key successfully removed from session context.
+ * @failure <i>Argument Missing</i> - key parameter is missing.
+ * @failure <i>Remove Fail</i> - Error removing key from session context.
+ * @sessioncontext <i>(key parameter)</i> - key is removed from session context.
+ */
+function PosRemoveSessionProperty(key) {
+	var cmd = "PosRemoveSessionProperty";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [key]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetParameter</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetParameter is responsible for set a parameter (given by its key) in a Section in store-db/pos-db with the received value.\n
+ * Returning TRUE if on of the values is the same stored, FALSE otherwise.\n
+ * In java script it should be called:<b>PosSetParameter(section, parameter, values)</b>
+ * @param section - String - Name of the configuration section to get parameter.
+ * @param parameter - String - Name of the parameter (key) to be set.
+ * @param values - String - Value to be set.
+ * @success Parameter successfully set.
+ * @failure <i>Argument Missing</i> - Some argument is missing.
+ * @failure <i>Parameter Set Error</i> - Error setting parameter.
+ */
+function PosSetParameter(section, parameter, values) {
+	var cmd = "PosSetParameter";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [section, parameter, values]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetSessionProperty</b>.
+ *
+ * Persistence:<b>Persisted (according to parameter)</b>\n
+ * The PosSetSessionProperty is responsible for set a value for a property (given by a key) in the session context.
+ * In java script it should be called:<b>PosSetSessionProperty(key, value, persist, msgGroup)</b>
+ * @param key - String - key in session context which value will be set.
+ * @param value - String - value to be set.
+ * @param persist - String - Optional, "true" if should persist in TLOG.
+ * @param msgGroup - String - Optional, if supplied and its value is "true" a multicast message is sent.
+ * @success Session Context variable successfully set to given value.
+ * @failure <i>Argument Missing</i> - key or value parameter is missing.
+ * @failure <i>Error setting Variable</i> - error setting session context variable.
+ * @sessioncontext <i>(key parameter)</i> - set to the given value.
+ */
+function PosSetSessionProperty(key, value, persist, msgGroup) {
+	var cmd = "PosSetSessionProperty";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [key, value, persist, msgGroup]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetSystemInfoState</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetSystemInfoState is responsible for set system information state for HOT, to be sent to the GUI.
+ * In java script it should be called:<b>PosSetSystemInfoState(batteryStatus, wirelessSignalStrength, conectivityStatus)</b>
+ * @param batteryStatus - String - .
+ * @param wirelessSignalStrength - String - .
+ * @param conectivityStatus - String - .
+ * @success Always return true.
+ */
+function PosSetSystemInfoState(batteryStatus, wirelessSignalStrength, conectivityStatus) {
+	var cmd = "PosSetSystemInfoState";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start - ");
+    return executeBC(cmd, [batteryStatus, wirelessSignalStrength, conectivityStatus]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckConnectivity</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckConnectivity is responsible for check if there is connectivity to a given network element.
+ * In java script it should be called:<b>PosCheckConnectivity(service, timeout)</b>
+ * @param service - String - Service to check.
+ * @param timeout - String - Optional maximum query timeout.
+ * @success Connectivity Ok.
+ * @failure <i>Connectivity Error</i> - Service did not respond.
+ */
+function PosCheckConnectivity(service, timeout) {
+	var cmd = "PosCheckConnectivity";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [service, timeout]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckHOTDate</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosCheckHOTDate is used by the HOT this is responsible for check if a change of date occurred, if so, the log files are swaped.
+ * In java script it should be called:<b>PosCheckHOTDate(maxNbrRegs)</b>
+ * @param maxNbrRegs - String - User id for whom to change password.
+ * @sessioncontext <i>"view"</i> - This value is set to NULL if a change of date occurred.
+ * @success Always.
+ */
+function PosCheckHOTDate(maxNbrRegs) {
+	var cmd = "PosCheckHOTDate";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [maxNbrRegs]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckRunnerBox</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckRunnerBox is responsible for check the runner box state (on/off).
+ * In java script it should be called:<b>PosCheckRunnerBox(state)</b>
+ * @param state - String - "on" or "off".
+ * @success Runner box state matches the value received as parameter.
+ * @failure <i>Argument Missing</i> - state parameter is missing.
+ * @failure <i>Wrong State</i> - Runner box state do not match tha value received as parameter.
+ */
+function PosCheckRunnerBox(state) {
+	var cmd = "PosCheckRunnerBox";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [state]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCommStatusCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCommStatusCOD is responsible for  obtaining the COD serial communication status.
+ * It also allocates a camera and requests a picture.\n
+ * In java script it should be called:<b>PosCommStatusCOD(msg)</b>
+ * @param msg - String - Message (can be a system message) to show in case of communication error.
+ * @success Communication Ok.
+ * @failure <i>Argument Missing</i> - msg parameter is missing.
+ * @failure <i>Communication Error</i> - Communication error with COD.
+ * @sessioncontext <i>"activatedCOD"</i> - Read to check if there is an already configurated COD.
+ */
+function PosCommStatusCOD(msg) {
+	var cmd = "PosCommStatusCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [msg]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCreateCODRoutList</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCreateCODRoutList is responsible for  create a list of CODs for routing. It is a necessary\n
+ * step to perform before activating the CODRouting screen.
+ * In java script it should be called:<b>PosCreateCODRoutList()</b>
+ * @success COD list created.
+ * @failure <i>"CODRouting" Missing</i> - "CODRouting" not found in current context.
+ * @failure <i>Void List</i> - fail if COD list has zero items.
+ * @sessioncontext <i>"CODRouting"</i> - Read to get the current configured COD routing.
+ * @sessioncontext <i>"TmpCODRouting"</i> - Set to the value of "CODRouting".
+ */
+function PosCreateCODRoutList() {
+	var cmd = "PosCreateCODRoutList";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoCrashPoint</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoCrashPoint is responsible for send a Crash Point command to production. 
+ * In java script it should be called:<b>PosDoCrashPoint(action)</b>
+ * @param action - String - Optional, if defined as "Another" a msg window will be displayed to get the tandem booth, otherwise the configured booth will be used.
+ * @success There are files to be updated.
+ * @failure <i>Canceled Calculator</i> - User canceled calculator.
+ * @failure <i>Command Send Error</i> - Cannot send crash point command to production.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_PROMPTBOOTHID: Msg to get booth.\n
+ *	MSG_BC_NOSTOREDORDER: No stored order.\n
+ */
+function PosDoCrashPoint(action) {
+	var cmd = "PosDoCrashPoint";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [action]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoForceTandem</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoForceTandem is responsible for send a Force Tandem command to production. An automatic store (PosDoStore) is also performed.
+ * In java script it should be called:<b>PosDoForceTandem()</b>
+ * @success Force Tandem command successfully sent.
+ * @failure <i>Command Send Error</i> - Error sending Force tandem command.
+ * @remarks
+ *
+ * This BC calls PosDoStore.
+ */
+function PosDoForceTandem() {
+	var cmd = "PosDoForceTandem";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosEnableCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosEnableCOD is responsible for enable or test a COD status.
+ * In java script it should be called:<b>PosEnableCOD(nChange, nCOD)</b>
+ * @param nChange - String - 0: No changes performed, the returned value will be used (test value), not 0: changes the value.
+ * @param nCOD - String - 0: default COD, or COD number (1 or 2).
+ * @success COD status changed.
+ * @success COD status tested, if enabled return true, if disabled return false.
+ * @failure <i>Argument Missing</i> - nChange or nCOD parameter is missing.
+ * @failure <i>COD Disabled</i> - When testing a disabled COD.
+ * @sessioncontext <i>"DefaultCODRouting"</i> - Read to get the default configured COD routing.
+ * @sessioncontext <i>"TmpCODRouting"</i> - Read to get the routing key to change.
+ * @sessioncontext <i>"TmpCODRouting"</i> - Write the changed routing key value.
+ * @sessioncontext <i>"CODRouting"</i> - If "TmpCODRouting" is NULL reads it to get the routing key to change.
+ */
+function PosEnableCOD(nChange, nCOD) {
+	var cmd = "PosEnableCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [nChange, nCOD]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosEnableTandem</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosEnableTandem is responsible for send the command Enable/Disable Tandem to production.
+ * In java script it should be called:<b>PosEnableTandem(enable)</b>
+ * @param enable - String - TRUE to enable tandem, FALSE to disable.
+ * @success Enable/Disable Tandem Command successfully sent to production.
+ * @failure <i>Argument Missing</i> - enable parameter is missing.
+ * @failure <i>Command send Error</i> - Failure sending Enable/Disable Tandem command to production.
+ */
+function PosEnableTandem(enable) {
+	var cmd = "PosEnableTandem";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [enable]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosForcedReleaseCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosForcedReleaseCOD is responsible for release one COD.
+ * In java script it should be called:<b>PosForcedReleaseCOD(COD)</b>
+ * @param COD - String - COD name resource.
+ * @success Forced release COD command successfully sent.
+ * @sessioncontext <i>"COD x"</i> - (where x is the COD number) read to check if COD is configured.
+ */
+function PosForcedReleaseCOD(COD) {
+	var cmd = "PosForcedReleaseCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [COD]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetDataDir</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetDataDir is responsible for get the NewPos data path.
+ * In java script it should be called:<b>PosGetDataDir()</b>
+ * @success Return NewPos data path.
+ */
+function PosGetDataDir() {
+	var cmd = "PosGetDataDir";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetDayPart</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetDayPart is responsible for retrieve the current and configured DayPart from WayStation,
+ * and set it in session context.
+ * In java script it should be called:<b>PosGetDayPart()</b>
+ * @success Current and configured DayPart retrieved from WayStation and set in session context.
+ * @failure <i>Cannot Retrieve Data</i> - DayPart cannot be retrieved from WayStation.
+ * @sessioncontext <i>"CURRENT_DAYPART"</i> - Contains the current DayPart.
+ * @sessioncontext <i>"CONFIGURED_DAYPART"</i> - Contains the configured DayPart.
+ * @todo Create Keys for CURRENT_DAYPART and CONFIGURED_DAYPART.
+ */
+function PosGetDayPart() {
+	var cmd = "PosGetDayPart";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetDefaultCODRouting</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetDefaultCODRouting is used in CODRouting screen it is responsible for recreate
+ * the COD routing list using the configured default values
+ * In java script it should be called:<b>PosGetDefaultCODRouting()</b>
+ * @success Default COD routing list created.
+ * @failure <i>Session Context Variable not set</i> - ROUTING_KEY or "DefaultCODRouting" is not set in session context.
+ * @sessioncontext <i>"CODRouting"</i> - Read just to check if it's set.
+ * @sessioncontext <i>"DefaultCODRouting"</i> - Read to get the default COD routing key.
+ */
+function PosGetDefaultCODRouting() {
+	var cmd = "PosGetDefaultCODRouting";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetFileProperties</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetFileProperties is responsible for get the file properties separated by a pipe char,
+ * as shown: SZ_BYTES|CREATION_TIME|LST_ACCESS_TIME|LST_WRITE_TIME
+ * In java script it should be called:<b>PosGetFileProperties(filename)</b>
+ * @success Return file properties in format: SZ_BYTES|CREATION_TIME|LST_ACCESS_TIME|LST_WRITE_TIME.
+ * @failure <i>File Does Not Exist</i> - Returns NULL.
+ */
+function PosGetFileProperties(filename) {
+	var cmd = "PosGetFileProperties";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd,[filename]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetPosDbName</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetPosDbName is responsible for get the the pos-db file path.
+ * In java script it should be called:<b>PosGetPosDbName()</b>
+ * @success Return pos-db file path.
+ */
+function PosGetPosDbName() {
+	var cmd = "PosGetPosDbName";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetTimePunch</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetTimePunch is responsible for set the user/manager id to get the time punch data that will be used by PosCreateReport.
+ * In java script it should be called:<b>PosGetTimePunch(manager)</b>
+ * @param manager - String - Optional TRUE if it is a manager request, FALSE otherwise (default).
+ * @success User/manager id successfully set.
+ * @failure <i>User Cancelled</i> - User cancelled when calculator was shown.
+ * @failure <i>Ivalid Password</i> - User typed an invalid password.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_PROMPTID: Shown in the main part of the calculator to get operator identification, if manager parameter is TRUE.\n
+ *	MSG_PROMPTUSERID: Shown in the main part of the calculator to get operator identification, if manager parameter is FALSE.\n
+ *	MSG_PROMPTPSWD: Shown in the main part of the calculator to get operator password, if manager parameter is TRUE.\n
+ *	MSG_PROMPTGETPSWD: Shown in the main part of the calculator to get operator password, if manager parameter is FALSE.\n
+ *	MSG_INVPASSWD: Shown when user typed and invalid password.
+ */
+function PosGetTimePunch(manager) {
+	var cmd = "PosGetTimePunch";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [manager]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosIsBreakfastTime</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosIsBreakfastTime is responsible for test if it's in the breakfast period.
+ * In java script it should be called:<b>PosIsBreakfastTime(testSale)</b>
+ * @param testSale - String - Optional, TRUE: test breakfast against begining of a sale, FALSE (default): test against local time.
+ * @success When in the breakfast period.
+ * @failure <i>Not in BreakFast</i> - Not in Breakfast period.
+ */
+function PosIsBreakfastTime(testSale) {
+	var cmd = "PosIsBreakfastTime";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd,[testSale]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosIsSingleCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosIsSingleCOD is responsible for check whether there is only one COD configured.
+ * In java script it should be called:<b>PosIsSingleCOD()</b>
+ * @success When there is only one COD configured.
+ * @failure <i>"PrivousCODRouting" is NULL</i> - The value of "PrivousCODRouting" is NULL.
+ * @failure <i>More than one COD</i> - More than one COD is configured.
+ * @sessioncontext <i>"PrivousCODRouting"</i> - Read it to get the routing key string.
+ */
+function PosIsSingleCOD() {
+	var cmd = "PosIsSingleCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosIsWeekDay</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosIsWeekDay is responsible for test if current week day matches the received.
+ * In java script it should be called:<b>PosIsWeekDay(DayOfWeek)</b>
+ * @param DayOfWeek - String - Day of week to test (0:Sunday...6:Saturday).
+ * @success Current week day matches given week day.
+ * @failure <i>Argument Missing</i> - DayOfWeek argument is missing.
+ * @failure <i>Week day do not Match</i> - Current week day do not match given week day.
+ */
+function PosIsWeekDay(DayOfWeek) {
+	var cmd = "PosIsWeekDay";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [DayOfWeek]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosQueryStsQueueByTandem</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosQueryStsQueueByTandem is responsible for queries the status of a production QUEUE
+ * filtered by a given tandem, waiting for one of a set of given status.
+ * This BC should be called as part of an event handled in a script rather than in a workflow.
+ * In java script it should be called:<b>PosQueryStsQueueByTandem(status, tandem, curOrderId)</b>
+ * @param status - String - sale status to check (might be a combination of several sale status).
+ * @param tandem - String - tandem booth number.
+ * @param curOrderId - String - current order id.
+ * @success If one of the requested status is a match.
+ * @failure <i>Override</i> - Override occurred.
+ * @todo Check rval value when argument is missing.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_TXRXPRD: Shown if an error occurred when querying production.\n
+ *	MSG_BC_WAITPRIMARY: Shown while waiting for production response.\n
+ *	MSG_BC_OVERRIDE: Shown when an override occurrs.\n
+ */
+function PosQueryStsQueueByTandem(status, tandem, curOrderId) {
+	var cmd = "PosQueryStsQueueByTandem";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [status, tandem, curOrderId]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosReadFile</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosReadFile is responsible for read a file content based on the given full qualified file name.
+ * In java script it should be called:<b>PosReadFile(fileName)</b>
+ * @param fileName - String - full qualified name of the file to read
+ * @success Return a buffer with the file content.
+ * @failure <i>Argument Missing</i> - Filename argument is missing.
+ * @failure <i>Error Openning File</i> - Error while trying to open given file.
+ */
+function PosReadFile(fileName) {
+	var cmd = "PosReadFile";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd,[fileName]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosReleaseCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosReleaseCOD is responsible for release the current COD.
+ * In java script it should be called:<b>PosReleaseCOD()</b>
+ * @sessioncontext <i>"activatedCOD"</i> - Read to get the current COD number.
+ * @success Always return true.
+ */
+function PosReleaseCOD() {
+	var cmd = "PosReleaseCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRemoteExecute</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRemoteExecute is responsible for sending a request for another POS to execute, remotely, a business component.
+ * It can accept a resource of destination as parameter or send to all.
+ * For all the resourses MUST be declared as POSs in the used services section of the POS.
+ * In java script it should be called:<b>PosRemoteExecute(resource,cmd,param1,...)</b> 
+ * @param resource - String - Optional : resource of destination. (If defined it MUST be in the form POSNNNN, where NNNN is the resource name with 4 digits).
+ * @param parcmd - String - name of the business component to be remotely executed.
+ * @param param1 - String - Optional first parameter.
+ * @param param... - String - Optional variable parameters.
+ * @success The command was successfully sent to its destination.
+ * @failure <i>Unknown resource</i> - The destination resource was not found.
+ * @failure	<i>Timeout</i> - Comunication timed out.
+ */
+function PosRemoteExecute(parcmd) {
+	var cmd = "PosRemoteExecute";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, Array.prototype.slice.call(arguments));
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRemovePOS</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRemovePOS is responsible for prompt the user to enter a POS number and then sends a command to WayStation to remove the POS.
+ * In java script it should be called:<b>PosRemovePOS()</b> 
+ * @todo rc is never used.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_ENTERPOSTOREMOVE: Shown in the main part of the calculator when asking the POS to remove.\n
+ *	MSG_BC_INVPOS: Shown when an invalid POS number was entered.\n
+ *	MSG_WEB_WAYCOMMERR: Shown when an error communicating with Way Station occurrs.\n
+ */
+function PosRemovePOS() {
+	var cmd = "PosRemovePOS";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosResetTimePunch</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosResetTimePunch is responsible for reset the time punch data.
+ * In java script it should be called:<b>PosResetTimePunch()</b> 
+ * @success Always return true.
+ */
+function PosResetTimePunch() {
+	var cmd = "PosResetTimePunch";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRunOSCommand</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRunOSCommand is responsible for build a command line and executes it thru the OS.
+ * In java script it should be called:<b>PosRunOSCommand(command, waitExecution)</b> 
+ * @param command - String - command line to be executed ("command arg1 arg2 ...").
+ * @param waitExecution - String - Optional, flag indication if should wait for commanf execution (default: FALSE-> no wait).
+ * @success Command Executed.
+ * @failure <i>Missing Argument</i> - cmd parameter is missing.
+ * @failure <i>Command Failed</i> - Failed executing given command.
+ */
+function PosRunOSCommand(command, waitExecution) {
+	var cmd = "PosRunOSCommand";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [command, waitExecution]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSaveCODRouting</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosSaveCODRouting is responsible for save the current COD routing configuration and to spread it to all POS on the network.
+ * In java script it should be called:<b>PosSaveCODRouting(nDefault)</b> 
+ * @param nDefault - String - Optional, 0:saves default configuration, not 0:saves current configuration.
+ * @success COD routing configuration saved and sent to all POS in the network.
+ * @failure <i>Routing Key not found</i> - Could not retrieve routing key because it is not set in session context.
+ * @sessioncontext <i>"DefaultCODRouting"</i> - Read to retrieve COD routing configuration if nDefault is not 0.
+ * @sessioncontext <i>"TmpCODRouting"</i> - Read to retrieve COD routing configuration if nDefault is 0.
+ * @sessioncontext <i>"CODRouting"</i> - Read to retrieve COD routing configuration if nDefault is 0 and "TmpCODRouting" is not set.
+ */
+function PosSaveCODRouting(nDefault) {
+	var cmd = "PosSaveCODRouting";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [nDefault]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSendSoftBump</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSendSoftBump is responsible for send Bump Bar command to a KVS.
+ * In java script it should be called:<b>PosSendSoftBump(selectedKvs, Command)</b> 
+ * @param selectedKvs - String - KVS to send the Bump Bar command.
+ * @param Command - String - The text to indicate the command to be executed.
+ * @success Command sent to selected KVS.
+ * @failure <i>Argument Missing</i> - selectedKvs or Command parameter is missing.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_RESOURCENOTFOUND: Shown when resource is not found.\n
+ *	MSG_BC_TXRXERR: Shown when occurrs a transmition error.\n
+ */
+function PosSendSoftBump(selectedKvs, Command) {
+	var cmd = "PosSendSoftBump";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [selectedKvs, Command]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetCOD</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosSetCOD is responsible for setting one COD.
+ * In java script it should be called:<b>PosSetCOD(saleTp)</b> 
+ * @param saleTp - String - 0:-> new sale, 1:recalled sale.
+ * @success COD successfully set.
+ * @failure <i>COD Allocation Error</i> - Error trying to allocate activated COD.
+ * @sessioncontext <i>"workingMode"</i> - Read if it's a new sale.
+ * @sessioncontext <i>"activatedCOD"</i> - Set activated COD as 1 if the sale is recalled and read to check the current activated COD.
+ * @sessioncontext <i>"COD x"</i> - Read the activated COD key in session context (x is the COD number).
+ * @todo review rval it sometimes return as JSVAL_NULL.
+ */
+function PosSetCOD(saleTp) {
+	var cmd = "PosSetCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [saleTp]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetCODRouting</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosSetCODRouting is responsible for set the COD routing configuration on a Session Context variable.
+ * In java script it should be called:<b>PosSetCODRouting(nDefault, szConfig)</b> 
+ * @param nDefault - String - Optional, 0:saves default configuration, not 0:saves current configuration.
+ * @param szConfig - String - Optional, configuration to set.
+ * @success Always return true.
+ * @sessioncontext <i>"DefaultCODRouting"</i> - Set with the value given by szConfig.
+ * @sessioncontext <i>"NewCODRouting"</i> - Read to check if exists, if not exist set it.
+ * @sessioncontext <i>"CODRouting"</i> - Read if "NewCODRouting" is NULL, if it is not set, it is writen.
+ * @sessioncontext <i>"PrivousCODRouting"</i> - Read and Writen.
+ * @hook <i>onCODRoutingChanged</i> - Called in the end of BC.
+ * @todo review rval it's always true and Check session context variables.
+ */
+function PosSetCODRouting(nDefault, szConfig) {
+	var cmd = "PosSetCODRouting";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [nDefault, szConfig]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetCrewMode</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetCrewMode is responsible for set the learning mode (TRUE/FALSE) for the kiosk duet.
+ * In java script it should be called:<b>PosSetCrewMode(learnMode)</b> 
+ * @param learnMode - String - valid values are "true" to activate learning mode, "false" to deactivate it.
+ * @success Command to set crew mode successfully sent.
+ * @failure <i>Argument Missing</i> - learnMode parameter is missing.
+ */
+function PosSetCrewMode(learnMode) {
+	var cmd = "PosSetCrewMode";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [learnMode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetDayPart</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetDayPart is responsible for send a request to the WayStation to set the current StoreWide DayPart.
+ * In java script it should be called:<b>PosSetDayPart(dayPart)</b> 
+ * @param dayPart - String - The desired DayPart.  -1 it resets the value and start using the timed configuration\n
+ *													0-BREAKFAST_MENU\n
+ *													1-DAY_MENU\n
+ *													2-BREAKFAST_DAY_MENU
+ * @success Command to set day part successfully sent.
+ * @success dayPart is NULL or equal "NONE".
+ * @failure <i>Argument Missing</i> - dayPart parameter is missing.
+ * @failure <I>Command Send Failure</i> - Error while trying to send the command to Waystation.
+ */
+function PosSetDayPart(dayPart) {
+	var cmd = "PosSetDayPart";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [dayPart]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSetLanguage</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSetLanguage is responsible for change the language and country code of this node localization. This BC also
+ * resets the sale products cache.
+ * In java script it should be called:<b>PosSetLanguage(CountryId, Language, Variant)</b> 
+ * @param CountryId - String - Country id , such as: 'BR', 'US' or 'DE'.
+ * @param Language - String - Language, such as: 'pt', 'en' or 'de'.
+ * @param Variant - String - Optional Variant, such as: 'KIOSK'.
+ * @success Language and country code correctly changed, and sales product cache reseted.
+ * @failure <i>Argument Missing</i> - CountryId or Language parameter is missing.
+ * @failure	<i>Wrong Lenght</i> - CountryId or Language lenght is wrong.
+ * @failure <i>names-db parse Error</i> - Error parsing names-db.
+ */
+function PosSetLanguage(CountryId, Language, Variant) {
+	var cmd = "PosSetLanguage";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [CountryId, Language, Variant]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosShowBatteryStatus</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosShowBatteryStatus is responsible for show to the operator a message box, containing the battery status. Used in the HOT.
+ * In java script it should be called:<b>PosShowBatteryStatus()</b> 
+ * @success Always return true.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_PWRCONEX: Shown when connected to power outlet.\n
+ *	MSG_BC_BATTERYSTS: Shown when succeed to get power status.\n
+ *	MSG_BC_PWRFAIL: Shown when failed to get power status.
+ */
+function PosShowBatteryStatus() {
+	var cmd = "PosShowBatteryStatus";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosShowVersion</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosShowVersion is responsible for show to the operator a message box "about", containing the build details,\n 
+ * such as: POS version, build number and date.\n
+ * In java script it should be called:<b>PosShowVersion()</b> 
+ * @success Message was shown to operator, always return true.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_VERSIONPKG: Message to operator with version.\n
+ */
+function PosShowVersion() {
+	var cmd = "PosShowVersion";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSwitchDefaultCOD</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSwitchDefaultCOD is responsible for set and/or test the COD set for a given position.
+ * In java script it should be called:<b>PosSwitchDefaultCOD(nChange, nCOD, nIndex)</b> 
+ * @param nChange - String - 0: No changes performed, the returned value will be used (test value), not 0: changes the value.
+ * @param nCOD - String - 0: default COD, not 0: COD number (1 or 2).
+ * @param nIndex - String - this is the button pressed index.
+ * @success Default COD successfully changed to the one received by nCOD parameter.
+ * @success Default COD number is equal to the given by the nCOD parameter (when testing).
+ * @failure <i>Argument Missing</i> - One or more parameters are missing.
+ * @failure <i>COD number is Different</i> - Given COD number is different of the found (when testing).
+ */
+function PosSwitchDefaultCOD(nChange, nCOD, nIndex) {
+	var cmd = "PosSwitchDefaultCOD";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [nChange, nCOD, nIndex]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSynchDateTime</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSynchDateTime is responsible for send a request to the WayStation to synchonize date/time in all store registers and production.
+ * In java script it should be called:<b>PosSynchDateTime()</b> 
+ * @success Synchronize command successfully sent to Waystation.
+ * @failure <i>Command send Error</i> - Error sending synchronize command to waystation.
+ */
+function PosSynchDateTime() {
+	var cmd = "PosSynchDateTime";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSynchDateTimeGet</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSynchDateTimeGet is responsible for get the date/time from WayStation and sets it locally. Used by HOT.
+ * In java script it should be called:<b>PosSynchDateTimeGet()</b> 
+ * @success Local time successfully synchronized with Waystation.
+ * @failure <i>Waystation Communication Error</i> - Error communication with Waystation while trying to retrieve it's time.
+ * @failure <i>Local time set Error</i> - Error while trying to set local time.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_WAYCOMUNICRETRY: Shown when asking to retry communication with waystation.\n
+ */
+function PosSynchDateTimeGet() {
+	var cmd = "PosSynchDateTimeGet";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSystemMenuClick</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSystemMenuClick is responsible for test scripts. It opens a window that can be edited and the edited test is run as a script.\n
+ * This BC is used for configuring and tests purpouses, and should not be present in release versions!\n
+ * In java script it should be called:<b>PosSystemMenuClick(menuItem)</b> 
+ * @param menuItem - String - type of menu item, currently "test" is the only option accepted.
+ * @success Always return true.
+ * @todo check parameter menuItem, and rval value.
+ */
+function PosSystemMenuClick(menuItem) {
+	var cmd = "PosSystemMenuClick";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [menuItem]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosTakePicture</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosTakePicture is responsible for ask production to take a picture for the current order.
+ * In java script it should be called:<b>PosTakePicture(time)</b> 
+ * @param time - String - Optional, time to wait in milliseconds (default = 2s).
+ * @success Picture taken with success.
+ * @failure <i>Sale not Created</i> - The sale is not created.
+ * @failure <i>Take Picture Error</i> - Error taking picture for current order.
+ */
+function PosTakePicture(time) {
+	var cmd = "PosTakePicture";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [time]);
+}
+
+function PosGetPicture(time) {
+	var cmd = "PosGetPicture";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [time]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosTimePunch</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosTimePunch is responsible for create a new entry in the remote time punch file.
+ * In java script it should be called:<b>PosTimePunch(userId, password)</b>
+ * @param userId - String - user id for Time Punch.
+ * @param password - String - user password.
+ * @success Time punch entry successfully add.
+ * @failure <i>Argument Missing</i> - userId or password parameter is missing or NULL.
+ * @failure <i>onTimePunch Error</i> - onTimePunch hook failed.
+ * @failure <i>Ivalid Information</i> - crew member information is not valid.
+ * @failure <i>User Cancelled</i> - User cancelled when confirmation dialog appears.
+ * @failure <i>Error Adding New Entry</i> - Error while trying to add a new time punch entry.
+ * @hook <i>onTimePunch()</i> - invoked in the start of BC.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_INVRPTTYPE: Shown when an invalid type is entered.\n
+ *	MSG_INVUSERIDERR: Shown when crew member information is not valid.\n
+ *	MSG_BC_CONFTIMEPUNCH: Shown when ask for time punch confirmation.\n
+ *	MSG_BTN_CANCEL: Shown when ask for time punch confirmation in cancell button.\n
+ *	MSG_BC_PROCESSING: Shown when processing.\n
+ *	MSG_BC_SENDTPUNCHERR: Shown when occours a sending time punch error.\n
+ *	MSG_BC_TIMEPUNCHERR: Time punch generic error.\n
+ */
+function PosTimePunch(userId, password) {
+	var cmd = "PosTimePunch";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [userId, password]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosToggleRunnerBox</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosToggleRunnerBox is responsible for create a new entry in the remote time punch file.
+ * In java script it should be called:<b>PosToggleRunnerBox(state)</b>
+ * @param state - String - Optional, if received just update runner box state, it can be "on" or "off".
+ * @success Runner box toggled or updated.
+ * @failure <i>Runner box set failed</i> - Failed to set runner box state.
+ */
+function PosToggleRunnerBox(state) {
+	var cmd = "PosToggleRunnerBox";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [state]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosVerifyOSName</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosVerifyOSName is responsible for test whether the used OS name is the expected one.
+ * In java script it should be called:<b>PosVerifyOSName(OSname)</b>
+ * @param OSname - String - valid names are "WIN_NT", "WIN_2000", "WIN_XP", "WIN_98", "WIN_95", "WIN_ME", "WIN_32S", "WIN_CE".
+ * @success Given OSname matches (substring match is also OK).
+ * @failure <i>Argument Missing</i> - OSname argument is missing.
+ * @failure <I>OS name do not match</i> - Given OS name do not match.
+ */
+function PosVerifyOSName(OSname) {
+	var cmd = "PosVerifyOSName";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [OSname]);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosWriteFile</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosWriteFile is responsible for write a file based on the given full qualified file name and buffer content.
+ * In java script it should be called:<b>PosWriteFile(fileName, bufferContent)</b>
+ * @param fileName - String - File name for the buffer content.
+ * @param bufferContent - String - Content of the file.
+ * @success Buffer content written to the file, according to the full qualified file name.
+ * @failure <i>Argument Missing</i> - fileName or bufferContent argument is missing.
+ * @failure <i>File Openig Error</i> - Error opening file for write.
+ */
+function PosWriteFile(fileName, bufferContent) {
+	var cmd = "PosWriteFile";
+	CSL_dbglog(7, SRC_BC_UTIL, cmd, "Start");
+	return executeBC(cmd, [fileName, bufferContent]);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d373934370022583bfe969dfb9cc401cfaf9b81a7def0c687c326ad01de8ef6a4e5ceac07db8b77615843f987180ac90b307e95668ee24c0010
+ * =============================================================================================================================
+*/

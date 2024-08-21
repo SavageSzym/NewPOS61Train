@@ -1,0 +1,310 @@
+/** 
+ * @file CSL_ApplyUpdate.nps
+ * @brief This NPS file implements BusinessComponents Apply Update.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	ApplyUpdate
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_ApplyUpdate.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_APPLYUPDATE_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable. */
+SRC_BC_APPLY='CSL_ApplyUpdate.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosApplyUpdate</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosApplyUpdate is responsible for check if there is a new configuration/version available for HOT only.\n
+ * If so, it downloads the configuration and reloads the aplication.\n
+ * In java script it should be called:<b>PosApplyUpdate(bAllOrNone)</b>
+ * @param bAllOrNone - String - Optional, if "TRUE" this parameter indicates that it
+ *                               should apply the update only if all files were downloaded 
+ *							     successfully. Default is "FALSE".
+ * @hook <i>onCABFileUpdate()</i> - Called when a .cab is found.
+ * @deprecated - This BC is now deprecated by the 4 new BCs:\n
+ *             - PosCheckApplyUpdateResult\n
+ *             - PosApplyUpdateFiles\n
+ *             - PosDownloadUpdateFiles\n
+ *             - PosCheckForNewUpdates\n
+ * @todo Check failure and success scenarios if needed.
+ * @remarks
+ *
+ * Property Messages:\n
+ *   MSG_BC_SALEPROG: Error message sale in progress.\n
+ *   MSG_BC_COMUNIC: Error message communication error.\n
+ *   MSG_BC_UPDATECHECK: Message check update in progress.\n
+ *   MSG_BC_UPDATEAVAIL: Message with update available.\n
+ *   MSG_BC_UPDATENOTALL: Error message update partial.\n
+ *   MSG_BC_EXECOPY: Message for copy exe.\n
+ *   MSG_BC_UPDATEFAIL: Error message update failed.\n
+ *   MSG_BC_NOUPDATE: Message no update available.\n
+ */
+function PosApplyUpdate(bAllOrNone) {
+	var cmd = "PosApplyUpdate";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd, [bAllOrNone]);
+}
+
+ /**
+ * @brief This function implements the BC,Business Component: <b>PosApplyUpdateFiles</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosApplyUpdateFiles is responsible for update a list of given files, already downloaded and ready to be applied
+ * in HHOT and terminate the application.
+ * In java script it should be called:<b>PosApplyUpdateFiles(arrayList, userMsg, applyPrgm, addParams)</b>
+ * @param arrayList - JavaScript Array Object - List of files to be applyed.
+ * @param userMsg - String - Optional parameter with the message to be displayed to the user during apply process.
+ * @param applyPrgm - String - Optional parameter with the name of the applier program. Default is "npCopy.exe".
+ * @param addParams - String - Optional parameter with additional parameters to be passed to the applier program.
+ * @success Changed files list was applied and current running HHOT application terminated.
+ * @failure <i>Argument missing</i> - First Parameter is missing.
+ * @failure <i>Applier Fail</i> - Failed to start applier program.
+ * @failure <i>Backup Error</i> - Error making a backup of the files.
+ * @remarks
+ * It executes the Applier program with the first parameter as follows:\n
+ *  #[PPID]\@DataDir\@RunDir\@OutputDir\@TmpDir\@CmdLine\@CfgUpdFile\@ImgSrc\@UsrMsg\@FILE1,FILE2,...,FILEn\@\n
+ *  Where: PPID - is this process Process ID used by the applier program to check when the process has terminated.\n
+ *         DataDir - folder used to place the configuration files.\n
+ *         RunDir - folder where the binary files are placed.\n
+ *         TmpDir - folder used for temporally files.\n
+ *         CmdLine - original command line used to restart the HHOT application.\n
+ *         CfgUpdFile - name of the configuration ZIP file recognized by the HHOT kernel.\n
+ *         ImgSrc - name of the configured images repository.\n
+ *         UsrMsg - user defined  message to be displayed during apply process.\n
+ *         FILE1,FILE2,...,FILEn - comma separated list of files to be applyed.\n
+ *
+ * Property Messages:\n
+ * 	MSG_BC_UPDATE: if no userMsg parameter was defined.\n
+ */
+ function PosApplyUpdateFiles(arrayList, userMsg, applyPrgm, addParams) {
+	var cmd = "PosApplyUpdateFiles";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd, [arrayList, userMsg, applyPrgm, addParams]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckApplyUpdateResult</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckApplyUpdateResult is responsible for check the Applier program results, send the whole ApplyUpdate process log file
+ * to the waystation and perform final clean up operations.
+ * In java script it should be called:<b>PosCheckApplyUpdateResult(successMsg, failureMsg, arrayList)</b>
+ * @param successMsg - String - Optional parameter with the success message.
+ * @param failureMsg - String - Optional parameter with the failure message.
+ * @param arrayList - JavaScript Array Object - Optional parameter with the list of files used during update that should be cleaned up.
+ * @success Show user defined success message, sends the whole ApplyUpdate process log file to the waystation and perform a clean up operation with the given list of files.
+ * @failure <i>Apply Update Error</i> - An error occurred during the last apply update.
+ * @hook <i>onCheckFileForRemoteDelete()</i> - invoked before delete the file from the WayStation.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_STORE: Shown before get the Applier program result.\n
+ *	MSG_BC_UPDATE: Shown if last applier program result is available.\n
+ */
+function PosCheckApplyUpdateResult(successMsg, failureMsg, arrayList) {
+	var cmd = "PosCheckApplyUpdateResult";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd, [successMsg, failureMsg, arrayList]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckForNewUpdates</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckForNewUpdates is responsible for query the WayStation and lists the current available files for update.
+ * In java script it should be called:<b>PosCheckForNewUpdates(userMsg, userObj)</b>
+ * @param userMsg - String - Optional parameter with the message to be displayed if there's no update available.
+ * @param userObj - Object - Optional parameter used by the <i>onCheckFileForUpdate</i> event hook.
+ * @success There are files to be updated.
+ * @failure <i>No Files to Update</i> - There are no files to be updated, show userMsg if any.
+ * @hook <i>onCheckFileForUpdate()</i> - check if the file should be updated.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_UPDATECHECK: Shown before query WayStation the list of files for update.\n
+ *	MSG_BC_COMUNIC: If the communication with the WayStation failed.\n
+ */
+function PosCheckForNewUpdates(userMsg, userObj) {
+	var cmd = "PosCheckForNewUpdates";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd, [userMsg, userObj]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDownloadUpdateFiles</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDownloadUpdateFiles is responsible for downloads the files from the WayStation for the Apply Update process.
+ * In java script it should be called:<b>PosDownloadUpdateFiles(arrayList, userMsg)</b>
+ * @param arrayList - Javascript Array Object - List of files to be downloaded.
+ * @param userMsg - Object - Optional parameter with the message to be displayed if a communicatioin error occurs.
+ * @success All files were downloaded.
+ * @failure <i>Comunication Failure</i> - A comunication error occurred during the download of the files.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_UPDATE: Shown during the download of the files.\n
+ *	MSG_BC_COMUNIC: If the communication with the WayStation failed, and no userMsg was defined.\n
+ */
+function PosDownloadUpdateFiles(arrayList, userMsg) {
+	var cmd = "PosDownloadUpdateFiles";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd, [arrayList, userMsg]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGoForwardApplyUpdate</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGoForwardApplyUpdate is responsible for apply an update during an open day.
+ * In java script it should be called:<b>PosGoForwardApplyUpdate()</b>
+ * @success GoForward Apply update was completed successfully.
+ * @failure <i>Comunication Failure</i> - WayStation is Offline.
+ * @failure <i>User Cancelled</i> - GoForward was cancelled by user confirmation.
+ * @failure <i>Exclusion Condition</i> - GoForward exclusion condition met.
+ * @failure <i>No Package</i> - No package available for GoForward Apply Update.
+ * @failure <i>User Canceled by Re-confirmation</i> - GoForward cancelled by the user on re-confirmation.
+ * @failure <i>Cannot ApplyUpdate</i> - ApplyUpdate cannot be applied.
+ * @failure <i>Transaction in Progress</i> - ApplyUpdate failed because there is a transaction in progress.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_GO_FORWARD_WS_OFFLINE: If the communication with the WayStation failed.\n
+ *	MSG_GO_FORWARD_CONFIRM: Message shown when user confirmation is required.\n
+ *	MSG_GO_FORWARD_NOT_ALLOWED: When Waystation returns GFAU_POSCLOSED.\n
+ *	MSG_GO_FORWARD_NODE_OFFLINE: When Waystation returns GFAU_NODEOFFLINE.\n
+ *	MSG_GO_FORWARD_ORDERS_INVALID_TIME: When Waystation returns GFAU_TIMELIMIT.\n
+ *	MSG_GO_FORWARD_FAIL: Default fail message.\n
+ *	MSG_GO_FORWARD_AU_EXECUTING: Message shown when lock POS.\n
+ *	MSG_GO_FORWARD_TIMEOUT: Message shown when a timeout occurs.\n
+ *	MSG_GO_FORWARD_ORDERS_IN_PROGRESS: When trying to lock a POS with an order in progress.\n
+ *	MSG_GO_FORWARD_NO_PACKAGE: When no package for apply is available.\n
+ *	MSG_GO_FORWARD_RECONFIRM: Message shown when user re-confirmation is required.\n
+ */
+function PosGoForwardApplyUpdate() {
+	var cmd = "PosGoForwardApplyUpdate";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRollbackByDate</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRollbackByDate is responsible for start an apply update to restore the store configuration from a given date.
+ * In java script it should be called:<b>PosRollbackByDate()</b>
+ * @success Rollback completed successfully.
+ * @failure <i>RollBack Failure</i> - RollBack failed to restore confinguration for a given date.
+ * @failure <i>Missing Date</i> - Configuration backup for given date is missing.
+ * @sessioncontext <i>""SELECTED_ROLLDATE""</i> - This variable is read to retrieve the date to RollBack.
+ * @todo Create a Key for "SELECTED_ROLLDATE".
+ */
+function PosRollbackByDate() {
+	var cmd = "PosRollbackByDate";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSecurityUpdate</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSecurityUpdate is responsible for retrive security.data file from WayStation available for HOT only.
+ * In java script it should be called:<b>PosSecurityUpdate()</b>
+ * @success security.data successfully updated.
+ * @failure <i>Update Failed</i> - Failed to retrieve security.data from waystation.
+ * @remarks
+ *
+ * Property Messages:\n
+ *   MSG_BC_SALEPROG: Error message sale in progress.\n
+ *   MSG_BC_SECURITYUPDTOK: File Update Ok.\n
+ *   MSG_BC_UPDATECHECK: Message check update in progress.\n
+ *   MSG_BC_SECURITYUPDTFAIL: Error message update failed.\n
+ */
+function PosSecurityUpdate() {
+	var cmd = "PosSecurityUpdate";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosShutdown</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosShutdown is responsible to force the shut down of a POS/HOT/PRD/KVS service.
+ * In java script it should be called:<b>PosShutdown(endCode, level, isForced)</b>
+ * @param endCode - String - type of shut down, that can be:\n
+ *			SHTDN_APPLYUPDATE=88,		Apply Update\n
+ *			SHTDN_BIN_ROLLBACK=89,		Binary Rollback\n
+ *			SHTDN_CONF_ROLLBACK=90,		Configuration rollback\n
+ *			SHTDN_RESTART=91,			Restart\n
+ *			SHTDN_CLOSE=92,				Close and goes to OS\n
+ *			SHTDN_REBOOT=93,			Reboot machine\n
+ *			SHTDN_SHUTOFF=94,			Shut off machine (default)\n
+ *			SHTDN_FORCED=95,			Forced shutdown (no confirmation)\n
+ * @param level - String - optional, valid values: \n
+ *          - "remote" It was kept only for compatibility reason. Don't use it. when commanded by Way Station.\n
+ *          - "all" means all POS \n
+ *          - "normal" means to choose a POS(defaults the POS where the command has been issued)\n
+ *          - "this" (default mode) means the POS where the command has been issued\n
+ *          - "prd" means all PRD\n
+ *          - "kvs" means all KVS\n
+ *          - "prd_all" means all PRD and KVS\n
+ * @param isForced - String - optional, "true" or "false" (default). For Apply Update use only.
+ * @todo Review rval value.
+ * @remarks
+ *
+ * Property Messages:\n
+*	 MSG_BC_ERROR_SHUTDOWN: Shown when unable to shutdown/restart/reboot/close a service.\n
+ *   MSG_BC_REPSRV_INPUT: Shown when asking peer Id.\n
+ *	 MSG_BC_SHUTDOWN_POSOPEN: Shown when POS is not closed.\n
+ *	 MSG_BC_APPLYUPDATE_ALL: Shown when confirming apply update for the whole restaurant.\n
+ *	 MSG_BC_APPLYUPDATE: Shown when confirming apply update for a single service.\n
+ *	 MSG_BC_BIN_ROLLBACK_ALL: Shown when confirming binary rollback for the whole restaurant.\n
+ *	 MSG_BC_BIN_ROLLBACK: Shown when confirming binary rollback for a single service.\n
+ *	 MSG_BC_CONF_ROLLBACK_ALL: Shown when confirming configuration rollback for the whole restaurant.\n
+ *	 MSG_BC_CONF_ROLLBACK: Shown when confirming configuration rollback for a single service.\n
+ *	 MSG_BC_IMG_ROLLBACK_ALL: Shown when confirming image rollback for the whole restaurant.\n
+ *	 MSG_BC_IMG_ROLLBACK: Shown when confirming image rollback for a single service.\n
+ *	 MSG_BC_CONF_GEN_RESTART_ALL: Shown when confirming to restart all services.\n
+ *	 MSG_BC_CONF_RESTART: Shown when confirming to restart a single service.\n
+ *	 MSG_BC_CONF_GEN_CLOSEOS_ALL: Shown when confirming to close all services.\n
+ *	 MSG_BC_CONF_CLOSEOS: Shown when confirming to close a single service.\n
+ *	 MSG_BC_CONF_GEN_REBOOT_ALL: Shown when confirming to reboot all services.\n
+ *	 MSG_BC_CONF_REBOOT: Shown when confirming to reboot a single service.\n
+ *	 MSG_BC_CONF_GEN_SHUTDOWN_ALL: Shown when confirming to shutdown all services.\n
+ *	 MSG_BC_CONF_SHUTDOWN: Shown when confirming to shutdown a single service.\n
+ */
+function PosShutdown(endCode, level, isForced) {
+	var cmd = "PosShutdown";
+	CSL_dbglog(7, SRC_BC_APPLY, cmd, "[Start]" + endCode + level + isForced);
+	return executeBC(cmd, [endCode, level, isForced]);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d37393437003772ba5e02707ec2b269f2273ca094514506686933d1884db5e20fd78ee91d758e201f2692f668051d37c2e850f99ae4e13e0010
+ * =============================================================================================================================
+*/

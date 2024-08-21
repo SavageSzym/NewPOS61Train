@@ -1,0 +1,234 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* GrillScriptC.nps
+* This script file is used to make the grill screen and grill special modifiers 100% unknown by kernell.
+* It will handle the creation of grill lines on the grill screen, the revalidation of these lines.
+* It will also handle all operations with the grill "Special Modifiers", these modifiers are handled
+* by the kernell but it doesn't even know what they mean, this script should know what to do with those
+* modifiers and what to show on screen for those grill items.
+* See the GrillScriptHandler Class for more details on how it is used.
+* 
+* THE PUBLIC FUNCTIONS HERE ARE NEEDED FOR NEWPOS 6.0 TO WORK, DO NOT DELETE THEM
+* THE RULES HERE SHOULD BE MODIFIED FOR EACH COUNTRY NEEDS.
+* Copyright © 2003 McDonalds Corp. All rights reserved.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+//Global consts ----------------------------------------
+var SHOW_DEFAULT	= 1;
+var SHOW_NO_PRICE	= 2;
+var SHOW_SIGNAL_TIP	= 4;
+
+//Prodcuts type
+var TYPE_RECIPE = 0;
+var TYPE_ADD = 1;
+var TYPE_COMMENT = 2;
+var TYPE_CHOICE = 3;
+var TYPE_AUTO_CONDIMENT = 4;
+
+var NO = API.getLocalMsg("LMSG_SL_NO",null);
+var ADD = API.getLocalMsg("LMSG_SL_ADD",null);
+var REMOVE = API.getLocalMsg("LMSG_SL_LESS",null);
+var EXTRA = API.getLocalMsg("LMSG_SL_MORE",null);
+var LIGHT = API.getLocalMsg("LMSG_SL_QUALIFIER01",null);
+var ONLY = API.getLocalMsg("LMSG_SL_QUALIFIER02",null);
+var GRILL1 = "";
+var GRILL2 = "";
+
+ /**************************** P U B L I C   F U N C T I O N S ****************************
+ * These functions are called directly from the kernell, so they cannot be deleted.
+ *****************************************************************************************/
+ 
+/** PUBLIC FUNCTION
+ * Gets the text to be displayed on screen, given an ItemView
+ * 
+ * Grill special modifiers legend:
+ * 1 - Means that the item is marked as "Poco" (Few)
+ * 2 - Means that the item is marked as "Solo" (Just)
+ *
+ * Note that this fuction receives more parameters than it would need,
+ * this is just to ensure enough data for further implementations that
+ * may need them.
+ *
+ * @param xml itemView the item view that will be formatted
+ * @param showDescription true if should show item description too
+ * @return the text to display
+ * @author Thiago
+ */
+function getTextToDisplayXml(itemView, showDescription) {
+	
+	var xItem=new XML(itemView);
+	
+	var specialModifier = Number(xItem.specialModifiers);
+	// Product type "IItemView.TYPE_*"
+	var componentType = Number(xItem.productType);
+	var itemCode = Number(xItem.itemCode);
+	
+	// If it's a comment, we dont show the signal tip
+/*
+	if (componentType == TYPE_COMMENT) {
+		var showLine;
+	
+		showLine = xItem.description;
+		if ((specialModifier == 1) && (showLine)) {
+			showLine = LIGHT + " " + xItem.description;
+		} else if ((specialModifier == 2) && (showLine)) {
+			showLine = ONLY + " " + xItem.description;
+		}
+	
+		results = gsep + results + showDescription ? showLine : "";
+	} 
+*/
+	if (specialModifier == 0) {
+		// If this item was grilled in a normal way (no special modifiers)
+		// we calculate the text from component's quantities
+		results = getTextFromQuantities(xItem, showDescription);
+	} else {
+		// Item's description (name)
+		var description = showDescription ? " " + xItem.description : "";
+		if (specialModifier == 1) {
+			results = LIGHT + " " + description;
+		} else if (specialModifier == 2) {
+			results = ONLY + " " + description;
+		} else {
+			//var buf = hlp.getResMessage("GRILL_TEXT_MODIFIER" + specialModifier);
+			results = "[" + specialModifier + "]" + description;
+			//return I18nMessage.getInstance().getResourceMessage(TextMessageKey.GRILL_TEXT_MODIFIER + specialModifier) + description;
+		}
+	}
+	return results;
+}
+
+/** PRIVATE FUNCTION
+ * Calculates the text to be displayed on screen.
+ * This function will consider conponent quantities to know witch text to display on screen
+ * @param view the view to get item from
+ * @param itemIndex the index of the item we want to get (on the view)
+ * @param showDescription true if should show item description too
+ * @return the text to display
+ * @author Rodrigo
+ */
+function getTextFromQuantities(viewItem, showDescription) {
+	// Default item quantity
+	var defaultQtd = parseInt(viewItem.componentDefaultQtd);
+	// Quantity that the item will have after grill eg.(1 cheese + (-1 cheese) -> zero)
+	var gQtd = parseInt(viewItem.grilledQuantity);
+	if( isNaN(gQtd) ) gQtd = 0;
+	var quantity = defaultQtd + gQtd;
+	// The maximun quantity this item can have
+	var maxQtd = parseInt(viewItem.componentMaxQtd);
+	// Item's description (name)
+//	var description = showDescription ? " " + viewItem.longName : "";
+//	var description = showDescription ? " " + viewItem.description : "";
+	var description = showDescription ? "" + viewItem.description : "";
+	// Quantity that should be shown to user.
+	var quantityToShow = parseInt(viewItem.grilledQuantity);
+	if( isNaN(quantityToShow) ) quantityToShow = 0;
+	var absQuantity = Math.abs(quantityToShow);
+	quantityToShow = absQuantity;
+	var productType = parseInt(viewItem.productType);
+	
+	if( defaultQtd > 0 && gQtd == 0 ) {
+		quantity = 0;
+	}
+	
+	if (quantity == 0) {
+		// If the item will have quantity of zero, we just show the remove sign. eg. "sin queso"
+		return NO + " " + description;
+	}
+
+	if (defaultQtd == quantity) {
+		//LOG.warn("An item arrived with default quantity equals quantity. That should not happen");
+		//return "(ERROR " + defaultQtd + ") " + description;
+		if( quantity == 0 ) quantity=1;
+		return quantity + " " + description;
+	}
+	
+	if( quantityToShow == 0 ) {
+		return quantity + " " + description;
+	}
+	
+	if (defaultQtd == 0) {
+		if (maxQtd == 1) {
+			// If it's a comment, we dont show the ADD
+			if (productType != 6) { 
+				// Isn´t Comment
+				return ADD + " " + description;
+			} else {
+				// Is Comment
+				return description;
+			}
+		} else {
+			if (quantityToShow == 1) {
+				return ADD + " " + description;
+			} else {
+				return ADD + " " + quantityToShow + " " + description;
+			}
+		}
+	} else if (defaultQtd == 1) {
+		if (maxQtd == 2) {
+			return EXTRA + " " + description;
+		} else {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		}
+	} else if (defaultQtd == 2) {
+		if (maxQtd == 3 && quantity == 3) {
+			return EXTRA + " " + description;
+		} else if (maxQtd > 3 && quantity > 2) {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		} else {
+			if (quantityToShow == 1) {
+				return REMOVE + " " + description;
+			} else {
+				return REMOVE + " " + quantityToShow + " " + description;
+			}
+		}
+	} else {
+		if (maxQtd == (defaultQtd + 1) && quantity == maxQtd) {
+			return EXTRA + " " + description;
+		} else if (quantity > defaultQtd) {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		} else {
+			if (quantityToShow == 1) {
+				return REMOVE + " " + description;
+			} else {
+				return REMOVE + " " + quantityToShow + " " + description;
+			}
+		}
+	}
+}
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437005cd0f078e758f091ae1f168a73b45052583ece5422eb3852493375bca1b0b16435971b7d35b6764d3beb13a90c44a014182e0010
+ * =================================================================================================================================
+*/

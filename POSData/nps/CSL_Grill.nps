@@ -1,0 +1,469 @@
+/** 
+ * @file CSL_Grill.nps
+ * @brief This NPS file implements BusinessComponents Grill.
+ * @addtogroup 	CSL
+ * @defgroup 	Grill
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Raphael (of Creation)
+ * @since NPS-4831 / 2009/06/08
+ *
+ * @version $Id: CSL_Grill.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Business Components related to Grill operations.
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_GRILL_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_GRILL='CSL_Grill.nps';
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCanExecFloatGrillOperMulti</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for checking if a grill oper is valid for a product.
+ *
+ * @param type - string - Type of property to check:\n
+				+ or p -> added item -> returns TRUE if current qtty < max allowed qtty;
+ *				\n- or m -> removed item -> returns TRUE if current qtty > min allowed qtty;\n
+ *				? or c -> default quantity -> returns TRUE if current qtty != default qtty;\n
+ *				e      -> returns TRUE componets exist;\n
+ *				0 to 7 -> component qualifier status.
+ * @param components - string - component to be changed.
+ * @success Grill Operation is valid for this product.
+ * @failure <i>Not in a Sale</i> 
+ * @failure <i>No item selected on screen</i>
+ * @failure <i>Not Grillable</i> - Grill Operation is not valid for this product.
+ */
+function PosCanExecFloatGrillOperMulti(type, components) {
+	var cmd = "PosCanExecFloatGrillOperMulti";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type, components]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCanGrill</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC checks if a sale line can be grilled.
+ *
+ * @param index - string - optional - if defined checks the given index.
+ * @success The desired sale line is grillable.
+ * @failure <i>Product is not grillable</i> - Product from current index is not grillable.
+ * @failure <i>Not a valid sale</i> - The sale is not ready for grill.
+ */
+function PosCanGrill(index) {
+	var cmd = "PosCanGrill";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [index]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCanSetGrillQualifier</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC checks if a given component/ingridient of a grill can have a value set in its qualifier.
+ *
+ * @param type - string - type of property to check:
+				0 to 7 -> component qualifier status.
+ * @param value - string - value to check.
+ * @param index - string - optional - if defined checks the selected component/ingridient.
+ * @success Component/ingredient can have its qualifier value set.
+ * @failure <i>Can not set grill qualifier</i> - Component/ingredient can not have its value set.\n
+ * @failure <i>Can not set grill qualifier</i> - Current sale status does not allow component/ingredient to be qualified.\n
+ * @remarks
+ * A qualifier does not change the quantity of a component but further qualifies it,
+ * its meaning is user defined such as 'poco', 'without', etc. There are upt to 8 qualifiers for each component/ingredient.
+ */
+function PosCanSetGrillQualifier(type, value, index) {
+	var cmd = "PosCanSetGrillQualifier";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type, value, index]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCheckGrillProperty</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC checks the status of a grill, that means checking if a component/ingridient has been added,removed, etc.
+ * It is possible to check addition, remotion, default quantity or qualifiers.
+ *
+ * @param type - string - Type of property to check:\n
+				+ or p -> added item -> returns TRUE if current qtty < max allowed qtty;
+ *				\n- or m -> removed item -> returns TRUE if current qtty > min allowed qtty;\n
+ *				? or c -> default quantity -> returns TRUE if current qtty != default qtty;\n
+ *				e      -> returns TRUE componets exist;\n
+ *				0 to 7 -> component qualifier status.
+ * @param bit - string - optional - if defined used with a type from 0 to 7 to get its status.
+ * @param index - string - optional - if defined checks the selected component/ingridient.
+ * @success Selected item (by index parameter or display line) was modified
+ * @failure <i>Item not modified</i> - Selected item (by index parameter or display line) was not modified.
+ * @remarks 
+ * A qualifier does not change the quantity of a component but further qualifies it,
+ * its meaning is user defined such as 'poco', 'without', etc. There are upt to 8 qualifiers for each component/ingredient.
+ */
+function PosCheckGrillProperty(type, bit, index) {
+	var cmd = "PosCheckGrillProperty";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type, bit, index]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCheckGrillPropertyMulti</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * Given a list with codes for components to be checked, this BC checks the status of a grill,
+ * that means checking if a component/ingridient has been added,removed, etc.
+ * It is possible to check addition, remotion, default quantity or qualifiers.
+ *
+ * @param type - string - Type of property to check:\n
+				+ or p -> added item -> returns TRUE if current qtty < max allowed qtty;
+ *				\n- or m -> removed item -> returns TRUE if current qtty > min allowed qtty;\n
+ *				? or c -> default quantity -> returns TRUE if current qtty != default qtty;\n
+ *				e      -> returns TRUE componets exist;\n
+ *				0 to 7 -> component qualifier status.
+ * @param Components - string - list with codes for the components to be checked, pipe '|' separeted.
+ * @param bit - string - optional - if defined used with a type from 0 to 7 to get its status.
+ * @success One or more of the components listed on Components parameter was modified.
+ * @failure <i>No Component to check</i> - The list with codes for the components to be checked is empty.
+ * @failure <i>Item not modified</i> - No component from the Components list was modified.
+ * @remarks
+ * A qualifier does not change the quantity of a component but further qualifies it,
+ * it's meaning is user defined such as 'poco', 'without', etc. There are upt to 8 qualifiers for each component/ingredient.
+ */
+function PosCheckGrillPropertyMulti(type, Components, bit) {
+	var cmd = "PosCheckGrillPropertyMulti";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type, Components, bit]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosCheckShowScrollGrill</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible checking if the grill scrolling buttons should be shown.
+ * It compares the quantity of components in a grill with the max visible components in a grill list
+ *
+ * @success Should hide the scroll buttons. The quantity of components in the grill is minor or equal to the max visible components.
+ * @failure <i> Should show the scroll buttons</i> - Quantity of components in the grill is grater than the max visible components.
+ */
+function PosCheckShowScrollGrill() {
+	var cmd = "PosCheckShowScrollGrill";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosClearGrill</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC cancels all grill operations for the selected line.
+ *
+ * @success All modified components are restored.
+ * @remarks
+ * This BC calls PosRefreshButtons.
+ *
+ * Property Messages:\n
+ *   MSG_BC_GRILLINV,MSG_BC_GRILLINVCSO: when the grill operation is invalid.
+ */
+function PosClearGrill() {
+	var cmd = "PosClearGrill";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoGrillEnd</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC ends a grill operation. There are 2 possible types of ending for a grill operation:
+ * Cancel, for rolling back all changes made and execute for commiting the cahnges made.
+ *
+ * @param type - string - type of end (0->cancel, 1->commit, 2->cancel and end, 3->commit and end).
+ * @success Grill end ok.
+ */
+function PosDoGrillEnd(type) {
+	var cmd = "PosDoGrillEnd";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoGrillOper</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC makes a grill operation such as add or remove a component.
+ * To add a component/ingridient the parameter oper must be '+' or 'p',
+ * to remove a component/ingridient the parameter oper must be '-' or 'm',
+ * to reset the component/ingridient quantity to its default value oper should be '?' or 'c'.
+ * It's also possible to set/reset a qualifier for the component
+ * (a qualifier does not change the quantity of a component but further qualifies it,
+ * it's meaning is user defined such as 'poco', 'without', etc)
+ * There are up to 8 qualifiers for each component/ingridient.
+ * To set a qualifier the parameter oper should be a value between '0' and '7'
+ * Each qualifier can have a value between 0 and 256.
+ * By default the system togles the qualifier value between 0 and 1, but if a second parameter
+ * (bit) is received it is used to togle the qualifier value.
+ * Also by default, the component/ingridient used by this BC is the one selected in the sale
+ * but its possible to change that with a third optional parameter (index) stating the component position.
+ *
+ * @param Oper - string - grill operation:\n
+ *            	 + or p -> add one;
+ *				 \n- or m -> removes one;\n
+ *				 ? or c -> resets component to its default quantity;\n
+ *				 0 to 7 -> sets/resets the component qualifier correspondent to Oper.
+ * @param bit - string - optional - if defined used with a Oper from 0 to 7 to set its value,
+ * @param index - string - optional - if defined changes the selected component/ingridient\n
+ * @success Grill Operation performed successfully.
+ * @failure <i>Item can not be grilled</i> - Current item can not be added or removed.
+ * @failure <i>Invalid operation</i> - The string defined in Oper parameter is not for a valid operation.
+ * @hook <i>onGrillOper()</i>
+ * @hook <i>onGrillOperStart()</i> - When the Grill Oper starts.
+ * @remarks 
+ *
+ * Property Messages:\n
+ *   MSG_BC_GRILLINV/MSG_BC_GRILLINVCSO: when the grill operation is invalid.\n
+ *	 MSG_BC_GRILLEXCEED: when the quantity of a component is exceeded
+ */
+function PosDoGrillOper(Oper, bit, index) {
+	var cmd = "PosDoGrillOper";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [Oper, bit, index]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoGrillOperMulti</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * Given a list of components (by Components parameter), this BC makes a grill operation
+ * such as add or remove a component.
+ * To add a component/ingridient the parameter oper must be '+' or 'p',
+ * to remove a component/ingridient the parameter oper must be '-' or 'm',
+ * to reset the component/ingridient quantity to its default value oper should be '?' or 'c'.
+ * It's also possible to set/reset a qualifier for the component
+ * (a qualifier does not change the quantity of a component but further qualifies it,
+ * it's meaning is user defined such as 'poco', 'without', etc)
+ * There are up to 8 qualifiers for each component/ingridient.
+ * To set a qualifier the parameter oper should be a value between '0' and '7'
+ * Each qualifier can have a value between 0 and 256.
+ * By default the system togles the qualifier value between 0 and 1, but if a second parameter
+ * (bit) is received it is used to togle the qualifier value.
+ * The components/ingridient used by this BC are received as a product code list
+ *
+ * @param Oper - string - grill operation:\n
+ *                + or p -> add one;
+ *				  \n- or m -> removes one;\n
+ *				  ? or c -> resets component to its default quantity;\n
+ *				  0 to 7 -> sets/resets the component qualifier correspondent to Oper.
+ * @param Components - string - list with codes for the components to be changed, pipe '|' separeted.
+ * @param bit - string - optional - if defined used with a Oper from 0 to 7 to set its value,
+ * @success Grill Operation performed successfully.
+ * @failure <i>Missing parameter</i> - The Component parameter is missing.
+ * @hook <i>onGrillOperMulti()</i>
+ */
+function PosDoGrillOperMulti(Oper, Components, bit) {
+	var cmd = "PosDoGrillOperMulti";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [Oper, Components, bit]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoGrillStart</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC starts a grill operation.
+ * The grill operation is started by a validation (such as there is an open sale,
+ * the sale is not already in a grilling state, etc). If the grill operation is valid
+ * the sale enters in a grilling state and the systems loads the grill screen received
+ * as a parameter (if no parameter is received a default grill screen is loaded).
+ *
+ * @param screenNbr - string - optional: number of the screen used to show grill buttons.
+ * @success Screen shown successfully.
+ * @failure <i>Unable to start Grill</i> - The session contex variable has different value from the context data used to show the screen.
+ * @hook <i>onGrillStart()</i> - When the grill is started.
+ * @sessioncontext <i>"showGrillScreen"</i> - This session context variable contains the boolean value
+ * to show or not the screen.
+ * @remarks
+ * This BC calls PosCheckSessionProperty.
+ */
+function PosDoGrillStart(screenNbr) {
+	var cmd = "PosDoGrillStart";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [screenNbr]);
+}
+
+/**  
+ * @brief This function implements the BC,Business Component: <b>PosDoScrollGrill</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for scrolling a grill list.
+ * It receives the scroll type (up or down) and sends a message to the GUI asking for the scrolling.
+ * Also prevents the quantity to be changed.
+ *
+ * @param type - string - "up" or "down".
+ * @success The scroll message was sent to the GUI successfully.
+ */
+function PosDoScrollGrill(type) {
+	var cmd = "PosDoScrollGrill";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoSelGrillIndex</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC handles a click in a Grill Panel TAB!
+ * It is used internally by the kernel.
+ *
+ * @param tabIndex - string - TAB Number
+ * @param prevIndex - integer - optional - if defined forces change even if tabIndex equals previous value
+ * @success The tabIndex is the same as the previous and prevIndex parameter is not used.
+			Grill tab index still the same.
+ * @success Grill tab index was changed successfully, either forced to previous value or to a new value.
+ * @failure <i>Grill tab index was not changed</i> - Roll back to the previous index.
+ */
+function PosDoSelGrillIndex(tabIndex, prevIndex) {
+	var cmd = "PosDoSelGrillIndex";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [tabIndex, prevIndex]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoTryGrillEnd</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC tries to end a grill operation. It uses the PosDoGrillEnd.
+ * If no Grill is in place is just returns true.
+ *
+ * @param type - string - type of end (0->cancel, 1->commit, 2->cancel and end, 3->commit and end)
+ * @success No Grill operation is in place.
+ * @success Grill operation ended successfully.
+ * @failure <i>Grill not ended</i> - Problem returning to previous screen.
+ */
+function PosDoTryGrillEnd(type) {
+	var cmd = "PosDoTryGrillEnd";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [type]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoTryGrillStart</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC tries to start a grill operation.
+ * If grill is already started it does not starts it again.
+ * It uses the PosDoGrillStart to actually start the GRILL.
+ *
+ * @param screenNbr - string - optional: number of the screen used to show grill buttons.
+ * @success Grill operation started successfully, if not yet started.
+ * @failure <i>Grill already in progress</i> - The sale status value is grill in progress.
+ * @remarks
+ * This BC calls: PosCheckSessionProperty and PosDoGrillStart.
+ */
+function PosDoTryGrillStart(screenNbr) {
+	var cmd = "PosDoTryGrillStart";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [screenNbr]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosExecFloatGrillOper</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for executing the grill operation coming from a Grill Float Screen.
+ * It uses the previously set grill operation.
+ *
+ * @param productCode - string - product code of the component to be used within the grill operation.
+ * @param baseCode - <optional> string - a list of product codes to be used as the base product for
+ *                               the grill operation, used to grill a specific component on a Value Meal
+ *                               it can be either a unique product code or a list of product codes separated by |
+ *                               use the list to relate all possible choice products i.e. 10000003|10000001
+ *                               in both cases all possible sizes will be checked.
+ * @success Grill operation coming from a Grill Screen done successfully.
+ * @failure <i>Not in a sale</i>
+ * @failure <i>Invalid selection index</i>
+ */
+function PosExecFloatGrillOper(productCode, baseCode) {
+	var cmd = "PosExecFloatGrillOper";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [productCode, baseCode]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosGrillComponent</b>
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC sets or resets a can add component!
+ *
+ * @param Incr - string - < 0: decrement, 0: clear, >0: increment.
+ * @param Component - string - components to operate over.
+ * @success Component set/reset successfully.
+ * @failure <i>No component selected</i>
+ */
+function PosGrillComponent(Incr, Component) {
+	var cmd = "PosGrillComponent";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [Incr, Component]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosReloadFloatGrillList</b>
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for reloading the product list enabled for the grill operation
+ * for the product selected at the Sale Panel.
+ *
+ * @success Product list reloaded successfully.
+ * @failure <i>Not in a sale</i>
+ * @failure <i>Invalid selection index</i>
+ */
+function PosReloadFloatGrillList() {
+	var cmd = "PosReloadFloatGrillList";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosSetFloatGrillOper</b>
+ 
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC is responsible for setting the grill operation coming from a Grill Float Screen,
+ * it also reloads the product list enabled for the grill operation.
+ *
+ * @param Oper - string - grill operation:\n
+ *                        + or p -> add one;
+ *						  \n- or m -> removes one;\n
+ *						  ? or c -> resets component to its default quantity;\n
+ *						  0 to 7 -> sets/resets the component qualifier correspondent to Oper;\n
+ *						  s		 -> Sub ingredient Oper.\n
+ * @param bit - string - optional - if defined used with a Oper from 0 to 7 to set its value.
+ * @success Grill operation set successfully.
+ * @failure <i>Not in a sale</i>
+ * @failure <i>Invalid selection index</i>
+ * @failure <i>Not grillable product</i>
+ */
+function PosSetFloatGrillOper(Oper, Bit) {
+	var cmd = "PosSetFloatGrillOper";
+	CSL_dbglog(7, SRC_BC_GRILL, cmd, "Start");
+	return executeBC(cmd, [Oper, Bit]);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d373934370032fd61d004edcd7b664e92d930c41dfd7e1331a74fc83c7d550c720ead4abfdc9caf8399b18dbe0ce215159b5ed00c11f0040010
+ * =============================================================================================================================
+*/

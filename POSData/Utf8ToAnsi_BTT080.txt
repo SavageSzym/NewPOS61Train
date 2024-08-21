@@ -1,0 +1,26 @@
+; 
+; NP6majorversion=6.1.17
+; NP6build=B191
+; NP6scriptversion=2.58.00
+; CreationDate=21.06.2011
+;
+; Copyright (c) 2009-2010 McDonald's IT Europe
+;
+; Utf8ToAnsi_BTT080.txt
+;
+; ===========================================================================================================
+
+#ROWS= 13    DefaultChar= c340
+c39f E1;ß
+c3a0 85 ;à
+c3a1 A0 ;á
+c3a2 83 ;â
+c3a4 84 ;ä
+c3a7 87 ;ç
+c3a8 8a ;è
+c3a9 82 ;é
+c3ab 89 ;ë
+c3b9 97 ;ù
+c3ba a3 ;ú
+c3bb 96 ;û
+c3bc 81 ;ü

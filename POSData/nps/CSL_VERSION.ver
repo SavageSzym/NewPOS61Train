@@ -1,0 +1,37 @@
+/** 
+ * @file CSL_VERSION.nps
+ * @brief This NPS file contains information about the CSL version.
+ *
+ * This must be in the NPS installation in order to identify the Core Script Library version
+ *
+ * @addtogroup 	CSL The NewPOS Core Script Lybrary (CSL)
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * $Source: /NewPOS/SRC/np61cvs/cvs/___NewPOS6/src/npCore/npBusComp/scripts/BusinessComponents.nps,v $
+ * $Revision: 776 $
+ * $Date: 2009-08-06 10:46:38 -0300 (qui, 06 ago 2009) $ (of revision)
+ * $Author: rcaram $ (of revision)
+ * @{
+ */
+
+// The CSL version
+csl_version = "https://svn.rdisoftware.com/svn/scm_newpos/global:6829";
+//When it was last committed in the repository
+csl_lastchange = "2011/06/15 14:15:41";
+//When it was included in build
+csl_buildtime = "2011/06/17 09:25:45";
+/**
+ * @} END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:45 2011
+ * certificate = 393735312d37393437001f2cc34353bdd435f81115a2bf93e73c7a2795f37e3a85d2d4f731bad81fc416f1c71f6544a1d9b5c6603cf29dc0b2e9e81e0010
+ * =============================================================================================================================
+*/

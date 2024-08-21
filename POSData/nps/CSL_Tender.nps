@@ -1,0 +1,351 @@
+/**
+ * @file CSL_Tender.nps 
+ * @brief This NPS file implements BusinessComponents Tender.
+ * @addtogroup 	CSL
+ * @defgroup 	Tender
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Raphael (of Creation)
+ * @since NPS-4831 / 2009/06/19
+ *
+ * @version $Id: CSL_Tender.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Business components related to tender operations.
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_TENDER_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_TENDER='CSL_Tender.nps';
+ 
+ /** 
+ * @brief This function implements the BC,Business Component: <b>cPosGetMaxAmount</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC retruns in its Success Session Context the max amount of the current sale.
+ *
+ * @return - rval - True for successful execution or False for failure.
+ */
+function cPosGetMaxAmount() {
+	var cmd = "cPosGetMaxAmount";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd);
+}
+ 
+ /** 
+ * @brief This function implements the BC,Business Component: <b>PosDoDiscount_CSL</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC applies a discount to the sale according to the received parameters.\n
+ * This BC calls one the core Business Components "cPosAddDiscountRate", "cPosAddDiscountAmount" and "cPosAddDiscountTable",\n
+ * depending on type of input paremeter: "cPosAddDiscountRate" for nImputMode "2" and "4";\n
+ *										 "cPosAddDiscountAmount" for nImputMode "1" and "2";\n
+ *										 "cPosAddDiscountTable" for nImputMode "0".
+ * In the discount cannot be applied, an error message is returned through Failure Session Context of these BCs and can be accessed through the APIs:
+ * 		getLastFail("cPosAddDiscountRate") for nImputMode "2" and "4";\n
+ *		getLastFail("cPosAddDiscountAmount") for nImputMode "1" and "2";\n
+ *		getLastFail("cPosAddDiscountTable") for nImputMode "0".
+ * In case of successfully applied discount, the amount applied can be accessed throgh the Success Session Context:
+ * 		getLastSuccess("cPosAddDiscountRate") for nImputMode "2" and "4";\n
+ *		getLastSuccess("cPosAddDiscountAmount") for nImputMode "1" and "2";\n
+ *		getLastSuccess("cPosAddDiscountTable") for nImputMode "0".
+ * Then it calls an event ("onCanDiscount"). If this event reutrns false, the discount is cancelled by calling the core Business Component "cPosRollbackDiscount".
+ * @param nDiscountId - string - (numeric value) discount id as configured in store-db
+ * @param nDiscountType - string - type of discount: 1-normal (default)\n 
+ *													 2-crew meal\n 
+ *													 3-manager meal
+ * @param nInputMode - string - optional - type of input: 0-no input (default)\n
+														  1-amount\n
+														  2-rate\n
+														  3-operator inputs an amount\n
+														  4-operator inputs a rate
+ * @param value - string - optional - it depends of input mode. If input mode is 1 it's a amount. If input mode is 2 it's a rate. Otherwise it's ignored.
+ * @param description - string - optional - discount discription.
+ * @success Discount granted successfully and sale closed.
+ * @failure <i>Discount granted but sale not closed</i> - One of the core BCs added discount successfully, but the sale was not closed in the end.
+ * In this case the discount applied (amount) can be accessed through the API calls:
+ * 		getLastSuccess("cPosAddDiscountRate") for nImputMode "2" and "4";\n
+ *		getLastSuccess("cPosAddDiscountAmount") for nImputMode "1" and "2";\n
+ *		getLastSuccess("cPosAddDiscountTable") for nImputMode "0".
+ * @failure	<i>Amount exceeded</i> - Maximum discount amount allowed was exceeded.\n
+ * @failure	<i>Not valid discount</i> - The discount id is unknown.\n
+ * @failure <i>Too many cupons</i> - Too many coupons applied
+ * @failure	<i>Rate exceeded</i> - Maximum discount rate allowed was exceeded.\n
+ * @failure	<i>Unable to do tender</i> - The income must be equal or greater than the order value.\n
+ * @failure <i>Not in sale operation</i> - The operator is allowed to apply a discount only if the operatation is a sale.\n
+ * @hook <i>onCanDiscount()</i> - called by after the discount is appllied. If this event returns false, the discount is cancelled.
+ * @remarks
+ *
+ * Property Messages:\n
+ *   MSG_BC_NO_ORDER_IN_PROGRESS: 
+ *	 MSG_BC_DISCNOTALLOW: Show a message that the discount is not allowed.\n
+ *   MSG_BC_DISCOUNT_AMOUNT: Show a message that discount amount is invalid.\n
+ *   MSG_BC_DISCOUNT_RATE: Show a message that discount rate is invalid.\n
+ *   MSG_BC_INVDISCOUNT: Show a message that the discount id is unkowning.\n
+ *   MSG_BC_MAX_DISCOUNT: Show a message with maximum discount amount allowed.\n
+ *   MSG_BC_MAX_RATE: Show a message with maximum discount rate allowed.\n
+ *   MSG_BC_DISCNOTALLOW: Show a message that the operator is allowed to apply a discount only if the operation is a sale.\n
+ * 	 MSG_BC_RETPAYMENT: Show a message when an error occured while computing discount.\n
+ */
+function PosDoDiscount_CSL(nDiscountId, nType, nInputMode, value, description) {
+	var hlp = new BusinessObjectHelper;
+	var result;
+	var messageBC;
+	
+	//apply discount
+	API.SLog("LOGLEVL_DEBUG","PosDiscount_CSL started. inputMode: "+nInputMode);
+	switch(nInputMode) {
+		case "0":
+			CSL_dbglog(7, SRC_BC_TENDER, "cPosAddDiscountTable", "Start");
+			result = executeBC("cPosAddDiscountTable", [nDiscountId, nType, value, description]);
+			break;
+		case "1":
+		case "3":
+			CSL_dbglog(7, SRC_BC_TENDER, "cPosAddDiscountAmount", "Start");
+			result = executeBC("cPosAddDiscountAmount", [nDiscountId, nType, value, description]);
+			break;
+		case "2":
+		case "4":
+			CSL_dbglog(7, SRC_BC_TENDER, "cPosAddDiscountRate", "Start");
+			result = executeBC("cPosAddDiscountRate", [nDiscountId, nType, value, description]);
+			break;
+	}
+	// call event (can discount)
+	if(typeof(onCanDiscount) == "function") {
+		if (!onCanDiscount(nDiscountId,nType,value)){
+			//discount not allowed
+			executeBC("cPosRollbackDiscount");
+		}
+	}
+	PosRefreshSalePanel();
+	return result;
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoPrintBankCheck</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC prints a Bank Check.
+ *
+ * @param bankID - string - bank identification.
+ * @param noPrinting - string - TRUE indicates that the bank check will not be printed and this BC will return TRUE!
+ * @param Amount - string - Amount to print in the bank check
+ * @return - rval - True for successful execution or False for failure.
+ * @todo This BC is not implemented yet.
+ */
+function PosDoPrintBankCheck(bankID, noPrinting, Amount) {
+	var cmd = "PosDoPrintBankCheck";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd, [bankID, noPrinting, Amount]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosDoTender</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC adds a tender into the current transaction.
+ * When the tender type is bank check and value is zero, the cashier should inform the tender amount.
+ * This BC returns TRUE only if the received tender is enough to close the transaction.
+ *
+ * @param tenderId - string - tender type/Id  (-1 for native currency);
+ * @param value - string (optional) - value received (-1 for exact amount, NULL if amount entered in calculator).
+ * @success Tender done successfully.
+ * @failure	<i>Not in a sale</i> - To do a tender it is necessary to be in a sale.\n
+ * @failure	<i>Tender type not found</i> - The type specified by tenderId parameter is not configured in store-db.\n
+ * @failure	<i>Error on Cashless Payment/Refund</i> - Error on script functions PosCashlessPayment or PosRefundCashlessPayment.\n
+ * @failure	<i>Invalid amount</i> - The amount has a negative value.\n
+ * @failure	<i>Tender limit exceeded</i> - The tender limit was exceeded. Last added tender canceled.\n
+ * @failure	<i>Change limit exceeded</i> - The change limit was exceeded.\n
+ * @failure	<i>Change not allowed</i> - Exact amount is greater than order value.\n
+ * @failure	<i>operator should return a payment</i> - POS will keep excess, but there is a change.\n
+ * @failure	<i>Discount not allowed</i> - POS will keep excess, but there is a change
+ * @failure	<i>Bank check error</i> - Error with bank check.
+ * @failure	<i>Amount not defined</i> - Amount should be greater than zero.
+ * @failure	<i>Invalid tender type</i> - Tender Type is unknown.
+ * @hook <i>onTender(tenderId,value,nTransactionType)</i> - called at BC start.
+ * @hook <i>onTenderExceeded(tenderId,tenderName,defaultHALOLimit)</i> - called when a tender limit is exceeded.
+ * @hook <i>onTenderAccepted()</i> - called whenever a tender is accepted at the end of this BC.
+ * @hook <i>onChangeExceeded()</i> - called when the change limit is exceeded.
+ * @sessioncontext <i>"CASHLESS_STATUS"</i> - Read to get the cashless sign in order to set this flag. 
+ * @sessioncontext <i>"CASHLESS_VALUE"</i> - Read to set the input value.
+ * @sessioncontext <i>"CASHLESS_TENDERID"</i> - Read to get the tender type.
+ * @sessioncontext <i>"CASHLESS_PROVIDER"</i> - Read to get the identificaion of card provider (visa, amex etc).
+ * @remarks
+ *
+ * Property Messages:\n
+ *   MSG_BC_NOOPENSALE: Show a message that there is no sale created.\n
+ *   MSG_BC_INVTENDERTP: Show a message that the tender received is not configured in store-db.\n
+ *   MSG_BC_INVAMOUNT: Show a message that the amount is invalid.\n
+ *   MSG_BC_CHGNOTALLOW: Show a message that the change is not allowed.\n
+ *   MSG_BC_RETPAYMENT: Show a message that the operator should return a payment.\n
+ *   MSG_BC_INVBKCHECK: Show a message with bank check error.\n
+ *	 MSG_BC_ZERO_VALUE: Show a message that the amount should be greater than zero. If the tender type is native then zero amount is allowed to finish the sale operation.\n
+ *	 MSG_BC_DISCNOTALLOW: Show a message when a discount is not allowed.
+ *	 MSG_BC_OPENDRAWER: Show a message with options Open Drawer(true) and Exit(false).\n
+ *	 MSG_BC_GC_DISCOUNT: Show a message when the category of tender type is gift certificate and should subtrac tender amount from tax basis.
+ *
+ * This BC calls PosGetAuthorization, PosHandleCalculatorButton
+ * @todo Implement BOG (Be Our Guest).
+ */
+function PosDoTender(tenderId, value) {
+	var cmd = "PosDoTender";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd, [tenderId, value]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosSetForeignCurrency</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC changes the default tender id. If the id is a foreign currency the BC returns true and set 
+ * the session property "foreignTenderID" with the received id. If the id is not a foreign currency
+ * the BC returns false and set the session property "foreignTenderID" with "-1"
+ *
+ * @param tenderId - string - tender type/id  (-1 for native currency);
+ * @success Set default tender type to a foreign currency.
+ * @failure	<i>Not a foreign currency</i> - Set the default tender type to "-1".\n
+ * @sessioncontext <i>"foreignTenderID"</i> - the current tender id. It is "-1" when the tender type is native currency
+ * @remarks
+ *
+ * Property Messages:\n
+ *
+ */
+function PosSetForeignCurrency (tenderID) {
+	var cmd = "PosSetForeignCurrency";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd, [tenderID]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosFormatTenderValue</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC formats the value that will be used as tender. Gets this value from the calculator.
+ * When the tender type is bank check and value is zero, the cashier should inform the tender amount.
+ *
+ * @todo This BC is not implemented yet.
+ */
+function PosFormatTenderValue() {
+	var cmd = "PosFormatTenderValue";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosNeedPrintBankCheck</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC verifies if it is necessary to print a bank check.
+ * Note: If there is a bank check in in the section context the workflow must call a print check BC.
+ *
+ * @param noPrinting - boolean - TRUE indicates that the verification is not necessary and this BC will return FALSE.
+ * @param beforeEOS - boolean - TRUE indicates that this BC was called before PosDoEndOfSale, FALSE after it.
+ * @success 
+ * @failure <i>noPrinting parameter is true</i> - noPrint parameter must be false in order to check if it is necessary to print a bank check.
+ * @failure	<i>Parameter not found</i> - This BC checks if condition beforeEOS matches the parameter. Failed because this parameter was not found.
+ * @failure	<i>Parameter does not match</i> - The condition beforeEOS does not match the parameter in section.
+ * @failure	<i>No value to  print</i>  - The bank check value must be bigger than zero in order to be printed.
+ * @remarks
+ */
+function PosNeedPrintBankCheck(noPrinting, beforeEOS) {
+	var cmd = "PosNeedPrintBankCheck";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd, [noPrinting, beforeEOS]);
+}
+
+/** 
+ * @brief This function implements the BC,Business Component: <b>PosRequestBankNumber</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC requests Bank ID from cashier.
+ *
+ * @param noPrinting - string - TRUE indicates to use the configured Bank ID (store-db)
+ * @todo This BC is not implemented yet.
+ */
+function PosRequestBankNumber(noPrinting) {
+	var cmd = "PosRequestBankNumber";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+	return executeBC(cmd, [noPrinting]);
+}
+
+/** PosDoTender_CSL
+ *
+ * @brief - This BC tenders a sale
+ * Return - rval - true if allowed to continue
+ */
+function PosDoTender_CSL(tenderID,amount,flags) {
+	var cmd = "PosDoTender_CSL";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+
+	// Clears info area
+	PosDisplayText("",1);
+	var bEndOfSale=PosDoTender(tenderID,amount);
+	PosHandleCalculatorButton("clear");
+	if(bEndOfSale) {
+		// Last tender -> ends sale
+		if(typeof(PosDoEndOfSale_CSL) == "function") {
+			var noAutoRecall=!(PosIsCashDrawerForced()||!PosCheckSessionProperty("IsCDrawerSetToOpen","true"));
+			PosDoEndOfSale_CSL(noAutoRecall,flags,0);
+		}
+		else {
+			PosDoEndOfSale(true);
+		}
+	}
+	return(true);
+}
+
+/** CanReceiveCoupons_CSL()
+ *
+ * @brief - This function implements the BC,Business Component: <b>CanReceiveCouponsJS</b>\n
+ * This BC checks if it's possible to receive coupons as payment.\n
+ * In a workflow sequence it is called:<b>CanReceiveCouponsJS</b>\n
+ * In java script it should be called:<b>CanReceiveCouponsJS</b>\n
+ * Return - rval - true if possible
+ */
+function CanReceiveCoupons_CSL() {
+	var cmd = "CanReceiveCoupons_CSL";
+	CSL_dbglog(7, SRC_BC_TENDER, cmd, "Start");
+
+	var hlp = new BusinessObjectHelper;
+	
+	var curView = hlp.getCurrentView();
+	if(curView == null) {
+		return(auxShowMessageClearCalc("MSG_BC_NO_ORDER_IN_PROGRESS"));
+	}
+	var view = new XML(curView);
+	var items = view.ItemView;
+	if(items.length() == 0) {
+		return(true);
+	}
+	var giftCard = items.((quantity > 0) && (familyGroup == GIFT_COUPON) && (productType == NON_FOOD_PRODUCT) && (category == PAPER));
+	if(giftCard.length() != 0) {
+		return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_GC"));
+	}
+	var giftOrCoupon = items.((quantity > 0) && (familyGroup == GIFT_COUPON));
+	if(giftOrCoupon.length() != 0) {
+		return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_COUPON"));
+	}
+	var NonProduct = items.((quantity > 0) && (isGrillLine != "true") && (familyGroup == NON_FOOD_PRODUCT));
+	if(NonProduct.length() != 0) {
+		return(auxShowMessageClearCalc("MSG_BC_DISCOUNT_NON_PRODUCT"));
+	}
+	return(true);
+}
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700a641ea73750d948df9eab817775534193bdb831db428a93d0de3513d54a703ed3c53c2295dad42c6d8cb979767615d91523a0010
+ * =============================================================================================================================
+*/

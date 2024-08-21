@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- ********** -->
+<!-- Legacy functions from NewPOS 3.50 into NewPOS 6.1 -->
+<!-- Chris Appleton, 1st August 2008 -->
+<!-- v1.0 ICPS/EurECS parameters -->
+<!-- ********** -->
+<PosDb>
+    <POSOptions>
+        <EFTPOSCashOutLimit>0</EFTPOSCashOutLimit>
+        <HaveEFT>0</HaveEFT>
+    </POSOptions>
+    <EftPOS>
+		<PosV61>1</PosV61>
+		<EurecsLog>1</EurecsLog>
+		<UsePOSCardReader>0</UsePOSCardReader>
+		<UKReportingStyle>1</UKReportingStyle>
+		<WinEPTSHaveEFT>1</WinEPTSHaveEFT>
+		<MerchantID>McDonald's</MerchantID>
+		<TerminalID>0</TerminalID>
+		<AllowCashback>0</AllowCashback>
+		<ECSServerIP>152.141.223.74</ECSServerIP>
+		<ECSServerPort>4444</ECSServerPort>
+		<WinEPTSPrinterStatusCheck>0</WinEPTSPrinterStatusCheck>
+		<TenderType>21</TenderType>
+		<AllowPayment>1</AllowPayment>
+		<WinEPTSPaymentHaloLimit>-1</WinEPTSPaymentHaloLimit>
+		<ManagerToSign></ManagerToSign>
+		<DefaultErrorMessage>Unknown Error - Please Contact Support</DefaultErrorMessage>
+		<PleaseSignMessage>Please Sign Card Receipt</PleaseSignMessage>
+		<AcceptString>Accepted</AcceptString>
+		<RefuseString>Refused</RefuseString>
+		<WinEPTSReceiptAddToFiscal>0</WinEPTSReceiptAddToFiscal>
+		<AllowInitializationByButton>1</AllowInitializationByButton>
+		<AllowInitializationOnStartup>1</AllowInitializationOnStartup>
+		<AllowEOD>1</AllowEOD>
+		<AllowEODByButton>1</AllowEODByButton>
+		<AllowSOD>1</AllowSOD>
+		<AllowSODByButton>1</AllowSODByButton>
+		<WinEPTSAllowReprint>1</WinEPTSAllowReprint>
+		<WinEPTSAllowDiagnose>1</WinEPTSAllowDiagnose>
+		<WinEPTSAllowOverring>1</WinEPTSAllowOverring>
+		<WinEPTSOverringHaloLimit>100</WinEPTSOverringHaloLimit>
+		<WinEPTSAllowRefund>1</WinEPTSAllowRefund>
+		<WinEPTSRefundHaloLimit>100</WinEPTSRefundHaloLimit>
+		<!-- Not in 6.1 documentation, stated as required by SOTEC (WH) -->
+		<HaveEft>1</HaveEft> 
+		<!-- Not in 6.1 documentation, being confirmed with NCR by Susan -->
+		<WinEPTSAllowVoid>1</WinEPTSAllowVoid>
+		<WinEPTSVoidHaloLimit>-1</WinEPTSVoidHaloLimit>
+		<WinEPTSAllowAnyVoid>0</WinEPTSAllowAnyVoid>
+		<WinEPTSTerminalConnectionType>SERIAL</WinEPTSTerminalConnectionType>
+		<WinEPTSTerminalLocation>COM5</WinEPTSTerminalLocation>		
+		<WinEPTSNodeID>20</WinEPTSNodeID> 						
+		<WinEPTSServerPrimaryIP>10.164.251.1</WinEPTSServerPrimaryIP> 			
+		<WinEPTSServerSecondaryIP>999.999.999.999</WinEPTSServerSecondaryIP> 		
+		<WinEPTSPinpadConnectionType>SERIAL</WinEPTSPinpadConnectionType>	
+		<WinEPTSPinpadLocation>COM5</WinEPTSPinpadLocation>		
+   	 </EftPOS>
+   	 <WinEPTS>
+		<SignMessage>1</SignMessage>
+		<PleaseSignMessage>Please Sign Card Receipt</PleaseSignMessage>
+   	 </WinEPTS>
+   	 <WinEPTSMapTender>
+		<WinEPTSResult0>2</WinEPTSResult0>
+		<WinEPTSResult1>0</WinEPTSResult1>
+		<WinEPTSResult2>1</WinEPTSResult2>
+		<WinEPTSResult3>2</WinEPTSResult3>
+		<WinEPTSResult9>2</WinEPTSResult9>
+		<WinEPTSResult4>2</WinEPTSResult4>
+		<WinEPTSResult5>2</WinEPTSResult5>
+		<WinEPTSResult6>2</WinEPTSResult6>
+		<WinEPTSResult7>2</WinEPTSResult7>
+		<WinEPTSResult8>2</WinEPTSResult8>
+      </WinEPTSMapTender>
+	<ScriptValues>
+		<CountryCode>UK</CountryCode>
+	</ScriptValues>
+	<Fiscal>
+		<FiscalDLL>NonFisc.dll</FiscalDLL>
+	</Fiscal>
+</PosDb>

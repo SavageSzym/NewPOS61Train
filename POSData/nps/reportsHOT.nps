@@ -1,0 +1,736 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* reportsHOT.nps
+* This NPS file implements routines for generating reports.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*2.54.08		21.07.2010	Mihai Secareanu 	Add hot receitp format for PT
+*2.55.00		29.07.2010	Mihai Secareanu 	add final hOt receipt format for portugal
+*/
+
+/** Output buffer used to generate report */
+var outputBuffer 	= null;
+
+/* Root node of XMLs */
+var rootConfig		= null;
+var rootCash		= null;
+var rootPmix		= null;
+var rootHourlySales	= null;
+var rootView		= null;
+var rootSOS			= null;
+var rootCustom		= null;
+var rootProduct		= null;
+
+var rootSOSFC		= null;
+var rootSOSDT		= null;
+var rootSOSWT		= null;
+var rootSOSMFY		= null;
+
+var flagTypePos		= "";
+
+var flagTypePodDT	= false;
+var flagTypePodWT	= false;
+var flagTypePodFC	= false;
+
+
+function initGlobalt()
+{
+	/** Output buffer used to generate report */
+	outputBuffer = new StringBuffer();
+
+	/* Root node of XMLs */
+	rootConfig		= null;
+	rootCash		= null;
+	rootPmix		= null;
+	rootHourlySales	= null;
+	rootView		= null;
+	rootSOS			= null;
+	rootCustom		= null;
+	rootProduct		= null;
+
+	rootSOSFC		= null;
+	rootSOSDT		= null;
+	rootSOSWT		= null;
+	rootSOSMFY		= null;
+
+	flagTypePos		= "";
+	flagTypePodDT	= false;
+	flagTypePodWT	= false;
+	flagTypePodFC	= false;
+}
+
+var COLS = 29; // Number of columns
+var SEP_UL = "_______________________________________"; //  under line
+
+/** Convenience method to center a string in the report */
+function center(str) 
+{
+	//addLine("center COLS: " + COLS + " str:" + str);
+	return API.center(str, COLS);
+}
+
+/** Appends a new line in the report. */
+function addLine(line) 
+{
+	if(line != null) {
+	
+		for(var i = line.length; i<Number(COLS); i++)
+		{
+			line = line + " ";
+		}
+		outputBuffer.append(line);
+	}
+	outputBuffer.append("\n");
+}
+
+function addDefaultHeader() 
+{
+	var value = rootConfig.Header;
+	if(value != null && value != "") {
+		var lines = String(value).split("\\n");
+		for(var i = 0; i < lines.length; i++) {
+			addLine(center(lines[i]));
+		}
+	}
+
+	var value = rootConfig.StoreAddress;
+	if(value != null && value != "") {
+		var lines = String(value).split("\\n");
+		for(var i = 0; i < lines.length; i++) {
+				addLine(center(lines[i].substring(0,COLS)));
+		}
+	}
+
+	var value = rootConfig.City;
+	if(value != null && value != "") {
+		var lines = String(value).split("\\n");
+		for(var i = 0; i < lines.length; i++) {
+			addLine(center(lines[i].substring(0,COLS)));
+		}
+	}
+	
+	var value = rootConfig.StoreZipCode;
+	if(value != null && value != "") {
+		var lines = String(value).split("\\n");
+		for(var i = 0; i < lines.length; i++) {
+			addLine(center(lines[i].substring(0,COLS)));
+		}
+	}
+
+//	var value = rootConfig.Country;
+//	if(value != null && value != "") {
+//		var lines = String(value).split("\\n");
+//		for(var i = 0; i < lines.length; i++) {
+//			addLine(center(lines[i].substring(0,COLS)));
+//		}
+//	}
+	
+	//addLine(" ");
+	addLine(center("! ! ! THANK YOU ! ! !"));
+	//addLine(" ");
+}
+
+/**
+ * Initializes global variables.
+ * @param config configuration xml data (StringBuffer)
+ * @param array of data (StringBuffer[])
+ * @param requiredDataTypes if this optional parameter is set, it will break
+ * if any given required data is not present.
+ */
+function init(config, data, requiredDataTypes, functionName) 
+{
+	initGlobalt();
+	rootConfig = new XML(config);
+	
+	var bRequiredXML = Array(false, false, false, false, false, false, false, false, false, false, false);
+	var matched = 0;
+	var requiredDataTypesSize = requiredDataTypes != null ? requiredDataTypes.length : 0;
+	
+	for(var i = 0; i < data.length; i++) {
+		if(data[i] != null) {
+			var xml = new XML(data[i]);
+			var dataType = xml.@requestDataType.toLowerCase();			
+			if("cash" == dataType) {
+				rootCash = xml;
+			}else if("pmix" == dataType) {
+				rootPmix = xml;
+			}else if("view" == dataType) {
+				rootView = xml;
+			}else if("hourlysales" == dataType) {
+				rootHourlySales = xml;
+			}else if("sos" == dataType) {
+				rootSOS = xml;
+				if(rootSOS.StoreTotals.@productionNodeId.length() != 0){
+					//var BOHelper=new BusinessObjectHelper();
+					//var alias=BOHelper.getQueueAlias(rootSOS.StoreTotals.@productionNodeId);
+					if(rootSOSDT==null) {					
+						rootSOSDT = (rootSOS.StoreTotals.@productionNodeId == "DT")?rootSOS:null;
+					}
+					if(rootSOSWT==null) {					
+						rootSOSWT = (rootSOS.StoreTotals.@productionNodeId == "WT")?rootSOS:null;
+					}
+					if(rootSOSFC==null) {
+						rootSOSFC = (rootSOS.StoreTotals.@productionNodeId == "FC")?rootSOS:null;
+					}
+					if(rootSOSMFY==null) {					
+						rootSOSMFY = (rootSOS.StoreTotals.@productionNodeId == "MFY")?rootSOS:null;
+					}
+				}
+			}else if("custom" == dataType) {
+				rootCustom = xml;
+			}else if("prods" == dataType) {
+				rootProduct = xml;
+			}else if("timepunch" == dataType) {
+				rootTimePunch = xml;
+			}
+			for(var j = 0; j < requiredDataTypesSize; j++) {
+				if(requiredDataTypes[j].toLowerCase() == dataType) {
+					matched++;
+					bRequiredXML[j]=true;
+					break;
+				}
+			}
+		}
+	}
+
+	if(matched < requiredDataTypesSize) {
+		var missingTypes="";
+		for(var j = 0; j < requiredDataTypesSize; j++) {
+			if(missingTypes.length != 0) {
+				missingTypes+=" | ";
+			}
+			if(!bRequiredXML[j]) {
+				missingTypes+=requiredDataTypes[j].toLowerCase();
+			}
+		}
+		missingTypes="";
+		for(var j = 0; j < requiredDataTypesSize; j++) {
+			if(!bRequiredXML[j]) {
+				missingTypes+=requiredDataTypes[j].substr(0,1).toUpperCase();
+			}
+		}
+		addLine("ERROR: POS configuration error.\nCall support,  error code = " +  functionName.substr(0,5) + "-" + missingTypes);
+		return -1;
+	}
+	return 0;	
+}
+
+//
+// Helper Functions
+//
+/** Parses 'val' to an integer, returning 0 if null or empty*/
+function toInt(val) 
+{
+	if(!val || String(val) == "") {
+		return 0;
+	}
+	// Must create a Number first because parseInt will resolve "010" as an octal number
+	return parseInt(Number(val));
+}
+
+/**
+ * PUBLIC
+ * Implements fnMountOrderId
+ * Needed data types: VIEW
+ * @author Celso Fernandes
+ * @signature public java.lang.StringBuffer reportCashInDrawer(java.lang.StringBuffer config, java.lang.StringBuffer []data);
+ */
+function fnMountOrderId(OrderId,Order,Major,Minor){
+
+	return(OrderId=="") ? PosMountOrderIdJS("1",Order,Major,Minor) : OrderId;
+}
+
+/** PosMountOrderIdJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosMountOrderIdJS</b>\n
+ * This BC checks if it's possible to void a sale!\n
+ * In a workflow sequence it is called:<b>PosMountOrderIdJS NbrFormat szOrder szMajor szMinor</b>\n
+ * In java script it should be called:<b>PosMountOrderIdJS(NbrFormat,szOrder,szMajor,szMinor)</b>\n
+ * @param - NbrFormat - Number Format
+ * @param - Order - POD + order number
+ * @param - Major - major number
+ * @param - Minor - minor number
+ * Return - rval - OrderId
+ */
+function PosMountOrderIdJS(szNbrFormat,Order,Major,Minor) {
+
+	var OrderId="";
+	switch(Number(szNbrFormat)) {
+	default:
+	case 1:
+		while(Major.length < 2) {
+			Major="0"+Major;
+		}
+		OrderId=Major.substr(Major.length-2,2);
+		if(toInt(Minor) != 0) {
+			OrderId+="/"+Minor;
+		}
+		break;
+	case 2:
+		while(Major.length < 2) {
+			Major="0"+Major;
+		}
+		OrderId=Number(Order.substr(3,4))+Major.substr(Major.length-2,2);
+		if(toInt(Minor) != 0) {
+			OrderId+="/"+Minor;
+		}
+		break;
+	}
+	return(OrderId);
+}
+
+/**
+ * This function returns the resulting report and executes some memory cleanup.
+ * @return the report response to kernel
+ */
+function getResponse() 
+{
+	var response	= outputBuffer;
+	// Make a cleanup so that the garbage collector can free
+	// some memory when the script ends.
+	rootConfig		= null;
+	rootCash		= null;
+	rootPmix		= null;
+	rootHourlySales	= null;
+	rootView		= null;
+	rootSOS			= null;
+	rootCustom		= null;
+	rootProduct		= null;
+	
+	rootSOSFC		= null;
+	rootSOSDT		= null;
+	rootSOSWT		= null;
+	rootSOSMFY		= null;
+	
+	rootTimePunch	= null;
+		
+	outputBuffer	= null;
+	API.dbg(response);
+	return response;
+}
+
+/**
+ * Receipt for HHOT
+ */
+function receiptHHOT(config, data)
+{
+	COLS = 29;
+	if(init(config, data, Array("VIEW"), "RECPT") != 0){
+		return getResponse();
+	}	
+	var view = rootView.View;
+	if(Country !="PT")
+	{
+		//addLine(SEP_UL);
+		addDefaultHeader();
+		addLine(center("TEL# " + rootConfig.StorePhoneNumber + " Store# " + rootConfig.StoreId));
+	}
+	else
+	{
+		var value = rootConfig.Header;
+		if(value != null && value != "") {
+			var lines = String(value).split("\\n");
+			for(var i = 0; i < lines.length; i++) {
+				addLine(center(lines[i]));
+			}
+		}
+	}
+	
+	if(Country =="PT")
+	{
+		addLine();
+		//get the date and time of the order
+		var orderDate =  view.@saleDate;
+		var orderTime = view.@saleTime;
+		var timeLine = orderDate.substring(6,8) + "/"+ orderDate.substring(4,6) +"/"+  orderDate.substring(0,4);
+		timeLine += " - ";
+		timeLine += orderTime.substring(0,2)+":"+orderTime.substring(2,4)+":"+orderTime.substring(4,6);
+		addLine(center(timeLine));
+	}
+	addLine();
+	var majorMinor = fnMountOrderId(String(view.@orderId),String(view.@orderKey),String(view.@major),String(view.@minor));
+	var kvsOrder = "Order #" + majorMinor;
+	if(Country =="PT")
+	{
+		var orderNumberText = API.getLocalMsg("HOT_RECEIPT_ORDER_NO");
+		
+		while((majorMinor+"").length < 4)
+		{
+			majorMinor = "0" + majorMinor;
+		}
+		
+		addLine(orderNumberText + API.setOnRight(majorMinor, COLS-orderNumberText.length));
+	}
+	else
+	{
+		addLine(center(kvsOrder));		
+	}
+	addLine();
+	
+	if(Country == "PT")
+	{
+		var bodyHeader = API.getLocalMsg("HOT_RECEIPT_BODY_HEADER");
+		addLine(API.setOnLeft(bodyHeader, COLS-bodyHeader.length));
+		addLine();
+		//print the product lines
+		var qtyLevelZero=1;
+		var promoLevelZero=false;
+		var qtyViewItem = view.ItemView.length();
+		for(var iItem = 0; iItem < qtyViewItem; iItem++) {
+			var item = view.ItemView[iItem];
+			if (item.level == 0) {
+				qtyLevelZero = item.quantity;
+				promoLevelZero = (toInt(item.quantityPromo) != 0);
+			}
+			if((item.quantity != 0) || (item.specialModifiers == 1) || (item.specialModifiers == 2)) {
+				if((qtyLevelZero != 0) && ((toInt(item.fvmSts) == 0))) {
+					var curLevel=item.level-1;
+					var curQtty=qtyLevelZero;
+					for(var i=iItem-1; i>=0 && view.ItemView[i].level != 0; i--) {
+						if(curLevel == view.ItemView[i].level) {
+							curQtty*=view.ItemView[i].quantity;
+							curLevel--;
+						}
+					}
+					addItemLine(item,curQtty);
+				}
+			}
+		}
+		addLine();
+		
+		var totalText =  API.getLocalMsg("HOT_RECEIPT_TOTAL");
+		addLine(totalText + API.setOnRight(view.@BPTotalAmount, COLS-totalText.length));
+
+		addLine();
+		var saleTypes	= Array(API.getLocalMsg("MSG_RECEIPT_IN"), API.getLocalMsg("MSG_RECEIPT_OUT"), API.getLocalMsg("MSG_RECEIPT_OTHER"));
+		//var saleTypes	= Array("Eat-In", "Take-Out", "Other");
+		var saleType	= toInt(view.@type);
+		addLine(center(saleTypes[saleType]));
+		
+		addLine();
+		//barCode(majorMinor);
+	}
+	else
+	{
+		addLine(SEP_UL);
+	}		
+	return getResponse();
+	
+	
+	function addItemLine(item, qtyLevelZero)
+	{
+
+		if(item.tbdStatus =="2")
+		{
+			return;
+		}
+		
+		var itemClass = item.productType.length();
+		if (itemClass != 0) {
+			if (item.productType == 4) {
+				return;
+			}
+		}
+		
+		if (item.level == 0) {
+			qtyLevelZero = 1;
+		}
+		ident ="";
+		for(var i=0; i<item.level; i++) {
+			ident += " ";
+		}
+		
+		var line = "";
+		
+		var aux = item.quantity  * qtyLevelZero;
+		var qty = API.formatNumber(Number(aux), "00", 2);
+		
+		var storedbPath = "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"Kiosk\").Parameter.(@name==\"receiptDisplayShortName\").@value"; 
+		var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"Kiosk\").Parameter.(@name==\"receiptDisplayShortName\").@value";
+		var displayShort = getConfigValue(storedbPath , posdbPath) == "true";
+		
+		var name = item.longName;
+		if (displayShort==true) {
+			name = item.description; //PLE-94
+		}
+		line= qty +"    "+ident+ name.substring(0,21-ident.length);
+
+		if(item.isGrillLine == "true") {
+			var grillDesc = getGrillDescription(item, true);
+			line = ">>  "+ident + grillDesc.substring(0,21-ident.length);
+		}
+
+		var storedbPath = "Configurations.Configuration.(@type==\"Store.wide\").Section.(@name==\"Receipt\").Parameter.(@name==\"GrillItemsDisabled\").@value"; 
+		var posdbPath = "Configuration.(@imports==\"Store.wide\").Section.(@name==\"Receipt\").Parameter.(@name==\"GrillItemsDisabled\").@value";
+		var GrillItemsDisabled = getConfigValue(storedbPath , posdbPath) == "true";
+		
+		if(GrillItemsDisabled == true)
+		{
+			if(item.isGrillLine == "true")
+			{
+				return;
+			}
+			else // no grill line
+			{
+				//in case of sadwich for the value meal we do not have to display it  because is only added because of the grill instruction
+				//get the first product with the same itemCode
+				if(Number(item.prodAction) == 0 && Number(item.level) !=0 &&  Number(item.productType)  == 2) //is the sandwich of a value meal 
+				{
+					//check all subitems of the current product.
+					//get the value meal
+					var products = view.ItemView.(itemCode == item.itemCode);
+					var foundProduct = false;
+					var showLine = false;
+					for(var t= 0; t < products.length();t++)
+					{
+						if(foundProduct ==true)
+						{
+							//get sub items
+							if(Number(products[t].level) > Number(item.level))
+							{
+								 //if is not a grill line then we should show the current product
+								 if(products[t].isGrillLine !="true")
+								 {
+									showLine = true;
+									break;
+								 }
+							}
+							else
+							{
+								break;
+							}
+						}
+						if(products[t].productCode == item.productCode) //we found the current product
+						{
+							foundProduct =true;
+						}
+					}
+					if(showLine == true)
+					{
+						addLine(API.setOnLeft(line, COLS-line.length));
+						//addLine(line);
+						addLine();
+					}
+					return;
+				}
+				else
+				{
+					addLine(API.setOnLeft(line, COLS-line.length));
+					//addLine(line);
+					addLine();
+				}
+			}
+		}
+		
+	}	
+	
+	function getGrillDescription(nodeItemView, typeDescription) 
+	{
+		var TYPE_COMMENT	= 6;
+		// Item's description (name)
+		
+		
+		var description = nodeItemView.longName;
+		if (typeDescription == false) {
+			var description = nodeItemView.description;
+		}
+		
+		// Item's special modifiers
+		switch (Number(nodeItemView.specialModifiers)) {
+			case 1: return API.getLocalMsg("MSG_RECEIPT_LIGHT") + " " + description;
+			case 2: return API.getLocalMsg("MSG_RECEIPT_ONLY") + " " + description;
+		}
+		// Default item quantity
+		var defaultQtd = Number(nodeItemView.componentDefaultQtd);
+		// Quantity that the item will have after grill eg.(1 cheese + (-1 cheese) -> zero)
+		var quantity = defaultQtd + Number(nodeItemView.grilledQuantity);
+		// The maximun quantity this item can have
+		var maxQtd = Number(nodeItemView.componentMaxQtd);
+		// Quantity that should be shown to user.
+		var quantityToShow = Math.abs(Number(nodeItemView.grilledQuantity));
+		var productType = nodeItemView.productType;
+
+		if(defaultQtd == quantity) {
+			return "(" + API.getLocalMsg("MSG_RECEIPT_ERROR") + " " + defaultQtd + ") " + description;
+		}
+		if(quantity == 0) {
+			// If the item will have quantity of zero, we just show the remove sign. eg. "no cheese"
+			return API.getLocalMsg("MSG_RECEIPT_NO") + " " + description;
+		}
+		if(defaultQtd == 0) {
+			if(maxQtd == 1) {
+				if(productType == TYPE_COMMENT) { // SDO-392
+					return description;	
+				}else {
+					return API.getLocalMsg("MSG_RECEIPT_ADD") + " " + description;
+				}
+			}else {
+				if(productType == TYPE_COMMENT) { // SDO-392
+					if(nodeItemView.grilledQuantity == (defaultQtd+1)) {
+						return description;	
+					}
+					else {
+						if (quantityToShow == 1) {
+							return API.getLocalMsg("MSG_RECEIPT_ADD") + " " + description;						
+						} else {
+							return API.getLocalMsg("MSG_RECEIPT_ADD") + " " + quantityToShow + " " + description;
+						}
+					}
+				}else {
+					if (quantityToShow == 1) {
+						return API.getLocalMsg("MSG_RECEIPT_ADD") + " " + description;						
+					} else {
+						return API.getLocalMsg("MSG_RECEIPT_ADD") + " "+ quantityToShow + " " + description;
+					}
+					
+				}
+			}
+		}else if(defaultQtd == 1) {
+			if(maxQtd == 2) {
+				return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;
+			}else {
+				if(productType == TYPE_COMMENT) { // SDO-392
+					if(nodeItemView.grilledQuantity == (defaultQtd+1)) {
+						return description;	
+					}
+					else {
+						if (quantityToShow == 1) {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+						} else {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+						}
+					}
+				}else {
+					if (quantityToShow == 1) {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+					} else {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+					}
+				}
+			}
+		}else if(defaultQtd == 2) {
+			if(maxQtd == 3 && quantity == 3) {
+				return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;
+			}else if(maxQtd > 3 && quantity > 2) {
+				if(productType == TYPE_COMMENT) {// SDO-392
+					if(nodeItemView.grilledQuantity == (defaultQtd+1)) {
+						return description;	
+					}
+					else {
+						if (quantityToShow == 1) {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+						} else {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+						}
+					}
+				}else {
+					if (quantityToShow == 1) {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+					} else {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+					}
+				}
+			}else {
+				if (quantityToShow == 1) {
+					return API.getLocalMsg("MSG_RECEIPT_REM") + " " + description;						
+				} else {
+					return API.getLocalMsg("MSG_RECEIPT_REM") + " " + quantityToShow + " " + description;
+				}
+			}
+		}else {
+			if(maxQtd == (defaultQtd + 1) && quantity == maxQtd) {
+				return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;
+			}else if(quantity > defaultQtd) { 
+				if(productType == TYPE_COMMENT) { // SDO-392
+					if(nodeItemView.grilledQuantity == (defaultQtd+1)) {
+						return description;	
+					}
+					else {
+						if (quantityToShow == 1) {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+						} else {
+							return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+						}
+					}
+				}else {
+					if (quantityToShow == 1) {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + description;						
+					} else {
+						return API.getLocalMsg("MSG_RECEIPT_XTRA") + " " + quantityToShow + " " + description;
+					}
+				}
+			}else {
+				if(productType == TYPE_COMMENT) { // SDO-392
+					if(nodeItemView.grilledQuantity == (defaultQtd+1)) {
+						return description;	
+					}
+					else {
+						if (quantityToShow == 1) {
+							return API.getLocalMsg("MSG_RECEIPT_REM") + " " + description;						
+						} else {
+							return API.getLocalMsg("MSG_RECEIPT_REM") + " " + quantityToShow + " " + description;
+						}
+					}
+				}else {
+					if (quantityToShow == 1) {
+						return API.getLocalMsg("MSG_RECEIPT_REM") + " " + description;						
+					} else {
+						return API.getLocalMsg("MSG_RECEIPT_REM") + " " + quantityToShow + " " + description;
+					}				}
+			}
+		}
+	}
+
+	function barCode(varBarcode)
+	{
+		var varBarcodeFormat = API.formatNumber(Number(varBarcode), "00", 2);
+
+		outputBuffer.append("<@BarCodeOn>");
+		outputBuffer.append(varBarcodeFormat);
+		outputBuffer.append(code39CheckDigit(varBarcodeFormat));
+		outputBuffer.append("<@BarCodeOff>");
+	}	
+	
+	/**
+	 * PRIVATE
+	 * Calculate mod 43 check digit for bar code
+	 * @author fernando.vicente
+	 */
+	function code39CheckDigit(varBarcode)
+	{
+		var charSet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+		var subtotal = 0;
+		var pos = 0;
+		var str = "" + varBarcode.toString();
+		for(var i = 0; i < str.length; i++) {
+			var ch = "" + str[i];
+			pos = charSet.indexOf(ch);
+			if(pos > -1) {
+				subtotal += pos;
+			}
+		}
+		subtotal = subtotal % 43;
+		return charSet[subtotal];
+	}	
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d37393437009bc57483585a7e874fb0f4872aab92cf4d355f3e6dd59296cbfa4dda8d8a757f413778fa04588d8a41ccf46739b7f1e74b0c0010
+ * =================================================================================================================================
+*/

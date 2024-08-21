@@ -1,0 +1,134 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCBillAcceptor.nps
+* This NPS file implements Bill Acceptor Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+const NPSRVBILL_STARTACCEPT=0;		//!< Start acceptting bills
+const NPSRVBILL_STOPACCEPT=1;		//!< Stop acceptting bills
+const NPSRVBILL_REQUESTRETURN=2;	//!< Request bill acceptor to return a bill
+const NPSRVBILL_QUERYMODEL=3;		//!< Query bill acceptor model
+const NPSRVBILL_QUERYREVIS=4;		//!< Query bill acceptor revision
+const NPSRVBILL_QUERYSTATUS=5;		//!< Query bill acceptor status
+const BILL_STS_ERR=0x807F0400;		//!< When one of these bits are set there is a Bill acceptor error
+const BILL_LRC_BIT=0x0100000;		//!< Used to invert the Lockable Removable Cassette (LRC) status bit so that 1 means no cassette insatlled
+ 
+ 
+/**PosBillAcceptorJS
+ *
+ * @brief - This BC activates the bill acceptor 
+ * iCmd: 0:Start, 1:stop
+ * Return - rval - true 
+ */
+function PosBillAcceptorJS(iCmd) {
+
+	var hlp=new BusinessObjectHelper;
+	var iSrv=hlp.getServiceIndex();
+	if(typeof(npAdpBAc_RequestSrv) == "function") {
+		npAdpBAc_RequestSrv(iSrv,(0 == Number(iCmd))?NPSRVBILL_STARTACCEPT:NPSRVBILL_STOPACCEPT);
+	}
+	return(true);
+}
+
+/**PosBillAcceptorEvt
+ *
+ * @brief - This BC handles a message received from the bill acceptor 
+ * iEvent: Receved event
+ * iStatus: Receved status
+ * iVal: Receved value
+ * Return - rval - true 
+ */
+function PosBillAcceptorEvt(iSrv,iEvent,iStatus,iVal) {
+
+	if(6 == iEvent) {
+		//MARS_EVT_STACKED
+		var amount=0;
+		if(iVal > 0) {
+			amount=(iVal%3);
+			if(0 == amount) {
+				amount=5;
+			}
+		}
+		if(iVal > 3) {
+			amount*=10;
+		}
+		if(iVal > 6) {
+			amount*=10;
+		}
+		if(PosDoTender(0,amount)) {
+			// Last tender -> ends sale
+			// If no change, end of sale otherwise store...
+			var hlp=new BusinessObjectHelper;
+			var view=new XML(hlp.getCurrentView());
+			var tenders=view.ItemTenderView;
+			if(tenders.length() != 0) {
+				var change=tenders.(kind == "4"); // TK_CHANGE
+				if((change.length() == 0) || (Number(change[0].value) == 0)) {
+					// End of sale
+					PosBillAcceptorJS(1);
+					PosDoEndOfSaleJS(false,"NOPREVIEW|SAVE",1);
+					var showNbr=hlp.findParamInSectionConfig("timeoutShowNumber","UserInterface");
+					if(showNbr == null) {
+						showNbr=-1;
+					}
+					if(Number(showNbr) >= 0) {
+						var NumberFormat = hlp.findParamInSectionConfig("orderNbrFormat","UserInterface");
+						if(NumberFormat == null) {
+							NumberFormat = 0;
+						}
+						var ordId=PosMountOrderIdJS(NumberFormat,view.@orderKey,view.@major,view.@minor);
+						var message=(PosCheckSessionProperty("POD","CSO"))?"MSG_BC_STORECSO":"MSG_BC_STOREID";
+						PosShowMessage(message,"FNT_LARGE",ordId);
+					}
+					return(true);
+				}
+			}
+			PosDoStoreDuetJS("1","21");
+		}
+		PosHandleCalculatorButton("clear");
+		PosRefreshButtons();
+		PosExtendScreenTimeOut();
+	}
+	else {
+		PosDoStoreDuetJS("2","21");
+		PosRemoteExecute("PosShowMessage","BILL_ACCEPTOR_ERR");
+	}
+	return(true);
+}
+
+/**PosBillAcceptorStsJS
+ *
+ * @brief - This BC queries the bill acceptor status
+ * iSrv: Service index
+ * Return - rval - status 
+ */
+function PosBillAcceptorStsJS(iSrv) {
+
+	if(typeof(npAdpBAc_RequestSrv) == "function") {
+		return((npAdpBAc_RequestSrv(iSrv,NPSRVBILL_QUERYSTATUS)^BILL_LRC_BIT)&BILL_STS_ERR);
+	}
+	return(0);
+}
+ 
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437009ac51364c6903a1ecc423296ec84725cffc5552130461d5417e4aed87cdcf2fa8a5973b49d2a22853fca32fb5c3a91fbfc3a0010
+ * =================================================================================================================================
+*/

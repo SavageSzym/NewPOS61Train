@@ -1,0 +1,347 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* PTEcash.nps
+ * This NPS file implements Portugal specific Ecash payment functions
+ * Author - Jose Coelho (McDonald's PT)
+ *
+ * SOTEC Version PLT.6.1.3-1.07.00- 2009.10.
+*
+*  SOTEC History 
+*		Version PLT 6.1.3- 1.07.00		2009.10.02 (ms)
+                                            updated
+*/
+
+executeScript("PTTollBooth.nps",true);
+
+//ECASH DIAGNOSTIC FUNCTIONS//
+function PTEcashOpenJS() {
+	return PTEcashGenericJS("O","MSG_PTECASH_OPENED", "0000000000000000000000");
+}
+
+function PTEcashCloseJS() {
+	return PTEcashGenericJS("V","MSG_PTECASH_CLOSED", "0000000000000000000000");
+}
+
+function PTEcashCloseAndOpenJS() {
+	return PTEcashGenericJS("W","MSG_PTECASH_CLOSEDANDREOPENED", "0000000000000000000000");
+}
+
+function PTEcashDownloadOfflineRecordsJS() {
+	return PTEcashGenericJS("U","MSG_PTECASH_DOWNLOADOFFLINERECORDSDONE", "0000000000000000000000");
+}
+
+function PTEcashLastTransactionJS() {
+	return PTEcashGenericJS("I","MSG_PTECASH_LASTTRANSACTIONRECALLDONE", "0000000000000000000000");
+}
+
+function PTEcashPrintLastReciptJS() {
+	return PTEcashGenericJS("Z","MSG_PTECASH_LASTRECIPTPRINTED", "0000000000000000000000");
+}
+
+function PTEcashComunicationTestJS() {
+	return PTEcashGenericJS("C","MSG_PTECASH_COMUNICATIONTESTDONE", "0000000000000000000000");
+}
+
+function PTEcashPinpadTestJS() {
+	return PTEcashGenericJS("N","MSG_PTECASH_PINPADTESTDONE", "0000000000000000000000");
+}
+
+function PTEcashPrintOfflineRecordsJS() {
+	return PTEcashGenericJS("R","MSG_PTECASH_OFFLINERECORDSPRINTED", "0000000000000000000000");
+}
+
+function PTEcashPrintEstornoJS() {
+	return PTEcashGenericJS("G","MSG_PTECASH_ESTORNOPRINTED", "0000000000000000000000");
+}
+
+function PTEcashTerminalComercioJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_TERMINALCOMERCIOPRINTED", "0000000000000000000000");
+																		
+}
+
+function PTEcashDadosComunicacaoJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_DADOSCOMUNICACAOPRINTED", "1000000000000000000000");
+}
+
+function PTEcashChavesJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_CHAVESPRINTED", "2000000000000000000000");
+}
+
+function PTEcashDadosSistemaJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_DADOSSISTEMAPRINTED", "3000000000000000000000");
+}
+
+function PTEcashDadosAplicacaoJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_DADOSAPLICACAOPRINTED", "4000000000000000000000");
+}
+
+function PTEcashProgramaEmissorJS() {
+	return PTEcashGenericJS("L","MSG_PTECASH_PROGRAMAEMISSORPRINTED", "5000000000000000000000");
+}
+
+
+function PTEcashGenericJS (ingelinkFunction,SucessMessage, Id) {
+	var EcashEnabled=npTCLXmlGetINI("Ingelinkp", "Enabled")
+	
+	if (EcashEnabled==1) {
+		var Result = npTCLEvalEx("Ingelink " + ingelinkFunction + " 0 00000000 " + Id)
+		var ArrayReturn=Result.split ("|"); // 0 = Status, 1 = Receipt to print
+		if (ArrayReturn[0]==0) { //O=SUCESS
+			if (ArrayReturn[1]!="") {
+				var CashLessStr = "CASHLESS:" +  ArrayReturn[1] +"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+				
+				PosSetSessionProperty ("CASHLESS",CashLessStr);
+				PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+
+				PosCreateReport ("VIEW", "receiptCashlessPrintout@PTEcash.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+			}
+			PosShowMessage(SucessMessage);
+		}
+		else {
+			PosShowMessage("MSG_PTECASH_ERROR" + ArrayReturn[0]);
+			return false;
+		}
+	} else {
+			PosShowMessage("MSG_PTECASH_NOTCONFIGURED");
+	}
+	return true;
+}
+
+
+/**
+ * PUBLIC
+ * Implements the customer receipt
+ * Needed data types: VIEW
+ * @author Olga Illenseer
+ */
+function receiptCashlessPrintout(config, data) 
+{
+	API.dbg ("receiptCashlessPrintout START");
+	API.dbg ("receiptCashlessPrintout config: " + config);
+	API.dbg ("receiptCashlessPrintout data: " + data);
+
+	if(init(config, data, Array("VIEW"), "RECPT") != 0){
+		return getResponse();
+	}	
+	
+	//here you can add a header or whatever you need
+	
+	addCashlessInfo();
+	
+	//here you can add a footer or whatever you need
+	
+	return getResponse();
+	
+	// here we add all information that we have from our e-cash transaction
+	function addCashlessInfo() 
+	{
+		API.dbg("receiptCashlessPrintout rootConfig.CustomData[0]: " + rootConfig.CustomData[0]);
+		
+		if(rootConfig.CustomData[0] != 0) {
+            var custom = rootConfig.CustomData[0]; 
+		}
+		
+		var lines = String(custom).split("CASHLESS:");
+		
+		var msg="";
+		for(var i = 1; i < lines.length; i++) {
+		
+			API.dbg ("receiptCashlessPrintout i: " + i + " lines[i]" + lines[i]); 
+			var providerSale;
+			var fields = String(lines[i]).split("@");
+			var provider = fields[0].replace("CASHLESS:", ""); // + " SALE";
+			providerSale = provider;
+			var card = " " + fields[1]; // Card #
+			var expires = fields[2];	// Card expiration date
+			var auth = fields[3];		// Authorization code
+			var seq = fields[6];		// Sequence #
+			var mer = fields[7];		// Merchant id
+			var balance = API.formatNumber(Number(fields[8]), NUMBER_FORMAT, 12);	// Balance #
+			var amt = fields[10];		// Operation amount
+			if(fields[12].length!=0) {
+				msg = fields[12];		    // Message
+			}
+            var line = "";		
+            line = providerSale + card;	
+			addLine(line);
+		}
+		addLine(msg);
+	}
+	
+}
+
+
+//END OF ECASH DIAGNOSTIC FUNCTIONS//
+
+function PTEcashDevolucaoJS() {
+	var hlp = new BusinessObjectHelper;
+	var EcashEnabled=npTCLXmlGetINI("Ingelinkp", "Enabled")
+	if (EcashEnabled==1) {
+		var paymentValue = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO1","1");
+		while (paymentValue==";"){
+			var paymentValue = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO1","1");
+		}	
+		if (paymentValue=="") {
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO8");
+			return false;
+		}
+		var TerminalNumber = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO2","1");
+		if (TerminalNumber.length !=8 && TerminalNumber !=""){		//has pressed less numbers then required and has not canceled
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+			TerminalNumber=";";
+		}
+		while (TerminalNumber==";"){
+			var TerminalNumber = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO2","1");
+			if (TerminalNumber.length !=8 && TerminalNumber !=""){		//has pressed less numbers then required and has not canceled
+				PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+				TerminalNumber=";";
+			}
+		}	
+		if (TerminalNumber=="") {
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO8");	
+			return false;
+		}
+		//";"=Empty when press enter
+		//""=Empty when press cancel
+		var Date = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO3","1");
+		if (Date.length !=8 && Date !=""){		//has pressed less numbers then required and has not canceled
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+			Date=";";
+		}
+		while (Date==";"){
+			var Date = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO3","1");
+			if (Date.length !=8 && Date !=""){
+				PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+				Date=";";
+			}
+		}	
+		if (Date=="") {
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO8");	
+			return false;
+		}
+		
+		var Time = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO4","1");
+		if (Time.length !=6 && Time !=""){		//has pressed less numbers then required and has not canceled
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+			Time=";";
+		}
+		while (Time==";"){
+			var Time = hlp.showCalculator ("MSG_PTECASH_DEVOLUCAO4","1");
+			if (Time.length !=6 && Time !=""){
+				PosShowMessage("MSG_PTECASH_DEVOLUCAO7");
+				Time=";";
+			}
+		}	
+		if (Time=="") {
+			PosShowMessage("MSG_PTECASH_DEVOLUCAO8");	
+			return false;
+		}
+	
+		PosDisplayText("MSG_PTECASH_WAIT",1)
+		paymentValue = API.formatNumber(paymentValue, "00000000", 8);
+		var Result = npTCLEvalEx("Ingelink D 0 "+ paymentValue +" "+ TerminalNumber + Date + Time);
+		PosDisplayText("",1)
+		var ArrayReturn=Result.split ("|"); // 0 = Status, 1 = Receipt to print
+		if (ArrayReturn[0]==0) { //O=SUCESS
+			var CashLessStr = "CASHLESS:" +  ArrayReturn[1] +"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+			PosSetSessionProperty ("CASHLESS",CashLessStr);
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+			PosShowMessage("MSG_PTECASH_DEVOLUCAOPRINTED");
+			return true
+		}
+		else {
+			PosShowMessage("MSG_PTECASH_ERROR" + ArrayReturn[0]);
+			return false;
+		}
+	} else {
+		PosShowMessage("MSG_PTECASH_NOTCONFIGURED");
+		return false;
+	}
+}
+
+function PosCashlessPayment(tenderId,tenderValue) {
+	var EcashEnabled=npTCLXmlGetINI("Ingelinkp", "Enabled")
+	if (EcashEnabled==1) {
+		PosDisplayText("MSG_PTECASH_WAIT",1)
+		tenderCents = API.formatNumber(Number(tenderValue * 100), "00000000", 8);
+		var Result = npTCLEvalEx("Ingelink S 0 " + tenderCents + " 0000000000000000000000")
+		PosDisplayText("",1)
+			
+		var ArrayReturn=Result.split ("|"); // 0 = Status, 1 = Receipt to print
+		if (ArrayReturn[0]==0) {
+			var CashLessStr = "CASHLESS:" + "@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+			PosSetSessionProperty ("CASHLESS",CashLessStr);
+			PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+
+			var hlp = new BusinessObjectHelper;
+			var currView = hlp.getCurrentView();
+
+			var ctx=new SessionContext;
+			ctx.set(KEY_VIEW,currView.toString(),true);
+
+			PosSetSessionProperty("CASHLESS",CashLessStr);
+			PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+			
+			var CashLessStr = "CASHLESS:" +  ArrayReturn[1] +"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+			PosSetSessionProperty ("CASHLESS",CashLessStr);
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+			PosSetSessionProperty("CASHLESS_STATUS",0);		// do not open cash drawer
+			PosSetSessionProperty("CASHLESS_TENDERID",tenderId);
+			PosSetSessionProperty("CASHLESS_VALUE",tenderValue);
+			PosSetSessionProperty("CASHLESS_PROVIDER","");	// not applicable
+					
+			return true;
+		} else {
+		
+			PosShowMessage("MSG_PTECASH_ERROR" + ArrayReturn[0]);
+			return false
+		}
+	} else {
+			PosShowMessage("MSG_PTECASH_NOTCONFIGURED");
+			return false;
+	}
+}
+
+
+
+//COPIED FUNCTIONS REQUIRED TO BE ON THE SAME FILE
+function PosCashlessEndOfSale() {
+	var EcashEnabled=npTCLXmlGetINI("Ingelinkp", "Enabled")
+	if (EcashEnabled==1) {
+		// any tidy up code here
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function PosResetPinpad() {
+	PosSetSessionProperty("CASHLESS_STATUS","");
+   	PosSetSessionProperty("CASHLESS_VALUE","");
+   	PosSetSessionProperty("CASHLESS_PROVIDER","");
+	var EcashEnabled=npTCLXmlGetINI("Ingelinkp", "Enabled")
+	if (EcashEnabled!=1) {
+	    return false;
+	}
+	// initialization if needed here
+	return true;
+}
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d373934370079b8424d3c4386f808caaace4bd90f92a2c7c0a651a939123fe8ce4eb98487c5b26b9e4227d9db729c77b4eace58cd9deb0b0010
+ * =================================================================================================================================
+*/

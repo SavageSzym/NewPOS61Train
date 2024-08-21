@@ -1,0 +1,66 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* telequiptEMU.nps
+* This NPS file implements coin dispenser (everest).
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+var TelequiptEnabled=true;
+
+/*
+    SetupTelequipt - start or restart coin dispenser (FM: 21.Aug.2001)
+*/
+function EnableTelequipt(state) 
+{
+	TelequiptEnabled=state;
+}
+
+/*
+    prc_StartCoinDispenser - start or restart coin dispenser (FM: 21.Aug.2001)
+*/
+function SetupTelequipt() {
+	PosSetParameter("TCLExtension","telequipt","true");
+	return(true);
+}
+
+/*
+    PosDispenseCoins - call coin dispenser driver entry point (FM: 21.Aug.2001)
+*/
+function PosDispenseCoins(amount) 
+{
+	if(!TelequiptEnabled) {
+		return("00");
+	}
+	if(amount != "00") {
+		PosShowMessage("telequipt has dispensed " + amount + " cents");
+	}
+	return(amount);
+}
+
+function PosCheckCoinDispenser() {
+	return(true);
+}
+
+SetupTelequipt();
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d373934370007d91bb049dae25d1e5c9b430605d1041dce0081c147425e5a1023ded4784ceeda6688d650e9c1e557d3e5e4461f5ef33c020010
+ * =================================================================================================================================
+*/

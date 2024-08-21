@@ -1,0 +1,230 @@
+ /** 
+ * @file CSL_CashOperation.nps
+ * @brief This NPS file implements BusinessComponents Cash.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	CashOperation
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_CashOperation.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_CASHOPERATION_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+SRC_BC_CASH='CSL_CashOperation.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCashOut</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCashOut is responsible for perform cashout operation.\n
+ * In java script it should be called:<b>PosCashOut()</b>
+ * @success Cashout operation terminated correctly.
+ * @failure <i>Drawer Amount Error</i> - Error getting the drawer amount of a specific tender.
+ * @failure <i>GCCashOutJS Error</i> - GCCashOutJS returned false.
+ * @failure <i>CASHLESS_VALUE not found</i> - CASHLESS_VALUE value was not found.
+ * @failure <i>CASHLESS_TENDERID</i> - CASHLESS_TENDERID value was not found.
+ * @failure <i>New taxation Descriptor error</i> - error creating a new accounting taxation descriptor.
+ * @failure <i>Delete taxation Descriptor error</i> -  error deleting taxation descriptor.
+ * @failure <i>Get POS state error</i> - error getting POS state.
+ * @sessioncontext <i>"CASHLESS_VALUE"</i> - Read to retrieve the Sale value.
+ * @sessioncontext <i>"CASHLESS_TENDERID"</i> - Read to retrieve the tender id.
+ * @todo Create a key for the session context variables.
+ */
+function PosCashOut() {
+	var cmd = "PosCashOut";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosChangeSkimLimit</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosChangeSkimLimit is responsible for change the skim limit for a tender id. The new limit is read from the calculator.\n
+ * In java script it should be called:<b>PosChangeSkimLimit(TenderId)</b>
+ * @param TenderId - String - Tender type Id.
+ * @success Skim limit successfully changed.
+ * @failure <i>Argument Missing</i> - TenderId parameter is missing.
+ * @failure <i>Invalid Tender Id</i> - received tender id is invalid.
+ * @failure <i>Skim not allowed</i> - skim is not allowed.
+ * @failure <i>Ivalid Value typed</i> - User entered an invalid skim value in the calculator.
+ * @failure <i>User Cancelled</i> - User cancelled new skim value confirmation.
+ * @sessioncontext <i>"SKIM_LIMIT_x"</i> - (where x is the TenderId value) Read to check if the value exists, set with the new skim limit entered.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_INVTENDERTP: Shown when received tender id is invalid.\n
+ *	MSG_BC_INV_SKIM: Shown when skim is not allowed.\n
+ *	MSG_BC_SKIM_LIMIT: Message shown when asking for the new skim limit.\n
+ *	MSG_BC_NO_SKIM: Shown when user enter 0 (zero) as new skim limit.\n
+ *	MSG_BC_SKIM_LIMIT_CONF: Shown when confirmating the new skim value.\n
+ */
+function PosChangeSkimLimit(TenderId) {
+	var cmd = "PosChangeSkimLimit";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd, [TenderId]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoSkim</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoSkim is responsible for the skim of specific tenders\n
+ * or for a full skim in the current cash drawer. There are two ways of performing a skim:\n
+ *    1) By tender id, which is passed by the workflow (as a paramater) where the operator\n
+ *       will be asked to inform the desired amount for it.\n
+ *    2) Full skim (brazilian configuration), where the BC does not receive any parameter,\n
+ *       and the operator will be able to see all the tender amounts and decide to confirm it or not.
+ * In java script it should be called:<b>PosDoSkim(NPSFileName, TenderId, SkimOthers, SaveReport, OpName, WayStation, SkimLimitMode)</b>
+ * @param NPSFileName - String - Deprecated, required but not used.
+ * @param TenderId - String - Optional, Tender type ID or NULL (nothing) for full skim.
+ * @param SkimOthers - String - Optional, skim others can be "true" or "false".
+ * @param SaveReport - String - Optional, deprecated.
+ * @param OpName - String - Identification name when the skim is for other payments, such as: PETTY-CASH.
+ * @param WayStation - String - Optional, deprecated.
+ * @param SkimLimitMode - String - Optional, if it's zero it allows skim for any amount (without checking). Otherwise it checks
+ * the parameter "allowExcessSkim" in section "cash" of configuration "store.wide": if it's TRUE then then it allows skim for the total amount,
+ * if it's FALSE allows skim only for the partial amount (excluding the initial float).
+ * @success Skim operation completed successfully.
+ * @failure <i>Argument Missing</i> - NPSFileName parameter is missing.
+ * @failure <i>User not logged</i> - There is no user logged in.
+ * @failure <i>User Cancelled</i> - User cancelled skim confirmation.
+ * @failure <i>Amount not Allowed</i> - Skim ammount not allowed.
+ * @failure <i>Skim error</i> - Error performing skim operation.
+ * @todo Clean up the unused parameters.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_NOTSALEMODE: Shown when there is no user logged.\n
+ */
+function PosDoSkim(NPSFileName, TenderId, SkimOthers, SaveReport, OpName, WayStation, SkimLimitMode) {
+	var cmd = "PosDoSkim";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd, [NPSFileName, TenderId, SkimOthers, SaveReport, OpName, WayStation, SkimLimitMode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoSkimWarning</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoSkimWarning shows the skim warning, if necessary. 
+ * It checks the parameter "allowExcessSkim", section "Cash" in pos-db.xml or store-db.xml. 
+ * If it is set to true, the inital float is not subtracted from the value in cash. The default value is "true".
+ * If the Skim is needed, POS shows a warning message requesting a skim.
+ * In java script it should be called:<b>PosDoSkimWarning()</b>
+ * @success There is no need to do a skim. No warning message is shown.
+ * @failure <i>A Skim is necessary</i> - An error message is shown when it is necessary to do a skim.
+ *
+ * Property Messages:\n
+ * 	MSG_BC_NEED_SKIM: Shown when need to skim.\n
+ */
+function PosDoSkimWarning() {
+	var cmd = "PosDoSkimWarning";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosTransfer</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosTransfer is responsible for perform a cash transfer operation.\n
+ * In java script it should be called:<b>PosTransfer(mode, tenderId, taxId, Qty)</b>
+ * @param mode - String - 11 = Transfer In (when cash came from another register)\n
+ *			              12 = Additional float (when inject more cash in register)\n
+ *          			  13 = Other Receipt\n
+ *          			  14 = Special Receipt\n
+ *         				  21 = Transfer Out (when cash is tranfered from this register to another)
+ * @param tenderId - String - tender type identification.
+ * @param taxId - String - Optional, if it's defined then BC computes tax, otherwise tax value is zero.
+ * @param Qty - String - Optional, if it's -1 then BC asks the operator.
+ * @param Drawer - String - Optional, inform the Coin Dispenser name to the Kernel.
+ * @success Transfer operation completed successfully and cash drawer opened.
+ * @failure <i>Argument Missing</i> - mode or tenderId parameter is missing.
+ * @failure <i>Operator not logged</i> - There is no logged operator.
+ * @failure <i>Undefined sale status</i> - Sale is in an undefined state.
+ * @failure <i>Ivalid Tender type</i> - given tender id points to an invalid tender type.
+ * @failure <i>Invalid mode</i> - given transfer mode is invalid.
+ * @failure <i>Invalid taxId</i> - given taxId is invalid.
+ * @failure <i>User cancelled</i> - user cancelled transfer confirmation.
+ * @failure <i>Failed to get POS state</i> - Error while trying to get POS state or POS is closed.
+ * @todo check return codes.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_NOTSALEMODE: Shown when there is no logged operator.\n
+ *	MSG_BC_SALEPROG: Shown when the sale is in an undefined state.\n
+ *	MSG_BC_INVTENDERTP: Shown when entered an invalid tender type.\n
+ *	MSG_BC_TRANSFER_IN: Shown in the calculator when mode is 11.\n
+ *	MSG_BC_ADDITIONAL_FLOAT: Shown in the calculator when mode is 12.\n
+ *	MSG_BC_OTHER_RECEIPT: Shown in the calculator when mode is 13.\n
+ *	MSG_BC_SPECIAL_RECEIPT: Shown in the calculator when mode is 14.\n
+ *	MSG_BC_TRANSFER_OUT: Shown in the calculator when mode is 21.\n
+ *	MSG_BC_INVTRANFMODE: Shown when mode is invalid.\n
+ *	MSG_BC_ZERO_VALUE: Shown when entered value in the calculator is zero.\n
+ *	MSG_BC_MAX_OTHERREC: The other receipt amount is grater than the maximum allowed.\n
+ *	MSG_BC_INVTAXID: Shown when entered an invalid tax id (only for mode 13 and 14).\n
+ *	MSG_BC_QUANTITY: Shown in the calculator when asking for the quantity, if the parameter is missing (only for mode 13 and 14).\n
+ *	MSG_BC_ZERO_QUANTITY: Shown when quantity is not grater than zero (only for mode 13 and 14).\n
+ *	MSG_BC_SOURCE: Shown in the calculator if mode is 11 to ask for the source register (only for mode 11 and 21).\n
+ *	MSG_BC_DESTINATION: Shown in the calculator if mode is 21 to ask for the destination register (only for mode 11 and 21).\n
+ *	MSG_BC_INVPOS: Shown when entered an invalid register identification (only for mode 11 and 21).\n
+ *	MSG_BC_CONF_TRANSF_IN: Shown when confirmation is required for mode 11.\n
+ *	MSG_BC_CONF_ADD_FLOAT: Shown when confirmation is required for mode 12.\n
+ *	MSG_BC_CONF_OTHER_REC2: Shown when confirmation is required for mode 13, if have the quantity value.\n
+ *	MSG_BC_CONF_OTHER_REC1: Shown when confirmation is required for mode 13, if does not have the quantity value.\n
+ *	MSG_BC_CONF_SPEC_REC2: Shown when confirmation is required for mode 14, if have the quantity value.\n
+ *	MSG_BC_CONF_SPEC_REC1: Shown when confirmation is required for mode 14, if does not have the quantity value.\n
+ *	MSG_BC_CONF_TRANSF_OUT: Shown when confirmation is required for mode 21.\n
+ */
+function PosTransfer(mode, tenderId, taxId, Qty, Drawer) {
+	var cmd = "PosTransfer";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd, [mode, tenderId, taxId, Qty, Drawer]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosAddChange</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosAddChange is responsible for inform the Kernel about the change from Coin Dispenser\n
+ * In java script it should be called:<b>PosAddChange("Telequip", value)</b>
+ * @param type - String - Drawer Name (sample: Telequip).
+ * @param value - String - Amount (sample: 170 and 70).
+ * @success The change from Coin Dispenser was accept by the Kernel.
+ * @failure <i>The change was not accept by the Kernel</i>
+ * @remarks
+ *
+ */
+function PosAddChange(type, value) {
+	var cmd = "PosAddChange";
+	CSL_dbglog(7, SRC_BC_CASH, cmd, "Start");
+	return executeBC(cmd, [type, value]);
+}
+
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d3739343700da0604dc5b7ce5f9813f725a44b5dfecf2cf82b780172c75e484630d27c6324788209ef1aae749757cd4177e5cc9d1eb5f450010
+ * =============================================================================================================================
+*/

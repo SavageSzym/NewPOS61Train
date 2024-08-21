@@ -1,0 +1,2665 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* Eurecs.nps
+* This NPS file implements cashless (everest).
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+* 2.50.01		02.02.2010	Olga Illenseer		Add a toString Method to GetGlobalInfo after suggestion from VSI
+* 2.50.03		19.02.2010	Mihai Secareanu	Print refused receipt for France
+* 2.51.00		10.03.2010  	Mihai Secareanu	Add FR fix for duplicate e-cash receipt ( not included in a release version yet)
+* 2.52.00		07.04.2010  	Mihai Secareanu	Correct two conditions for IE; Read parameter from printOnnetwork section to see what should be printed on normal registers
+*
+* 2.53.01		10.05.2010	Mihai Secareanu	disable printing of merchant receipt  if a parameter is configured, correct printECash function  for reading printReceiptfirst parameter
+* 2.54.00		28.05.2010	Mihai Secareanu	remove PosCreateReport calls from SetupEurecs and LoadEurecs ( these calls are not usefull and generate error logs because poscreatereport is not available at pos startup).
+*										remove call for GetGlobalInfo this is not required, we get the business day from GetConfigInfo
+*										optimise the call for poscretereport for getting the businesdate, storeid and operator id
+* 2.55.01		12.08.2010 	Mihai Secareanu
+*			06.08.2010 	Mihai Secareanu	add new cashless support for IE and UK (IMB dll) 	this will be activated by isNewCashless
+*			23.08.2010	Markus Ziegler	German SecPOS added.
+*			25.08.2010	Markus Ziegler	Changes for UK new Cashless
+			27.08.2010	Markus Ziegler	Changes for UK new Cashless print one (and only one) receipt after successful confirmation.
+			07.09.2010	Markus Ziegler	Read NP6 Eurecs Config from NP6 configuration files.
+*					
+* 2.56.02		07.10.2010	Mihai Secareanu	correct e-cash cashless call for FR add a check for offlien initialisation in cashlessPayment to not run again the initialisation if the e-cash is offline
+* 2.56.05     	28.10.2010   	HB (SOTEC)           For German SECPos check receipts - if only one receipt is returned then assume it is a customer receipt - copy to correct 'resprint' index
+* 2.56.05		05.11.2010	Markus Ziegler	Changed German SECPos receipt copy to only copy for Germany and only for CSO.
+* 2.56.06		15.11.2010	Mihai Secareanu	test if Respirnt[2+PayFr] is null
+* 2.56.13		10.02.2011	Mihai Secareanu	add offset read from a  store-db for e-cash tender
+* 2.56.14		28.02.2011	Mihai Secareanu	take the tender offset for IBM confirmation transcation just after the second response
+* 2.56.15		03.03.2011	Mihai Secareanu	correct read for SecPOS parameter, remove & < >  from the cashless string because is not suported by newpos 
+* 2.56.16		18.03.2011 	Mihai Secareanu	add KioskInitEurecs that will test the reader status and reboot e-cash terminal in case of failure (FR kiosk)
+*										call Eurecs_WaitCardFR in KioskInitEurecs 
+* 2.56.18		11.04.2011	Mihai Secareanu
+*			30.03.2011 					combine customer e-cash receipt and order receipt
+*										RFM parameter for NL eftpos
+* 2.56.19		28.04.2011	Mihai Secareanu	always call once GetConfigInfo to set up the bussiness date							show printer error status on kiosk (supported just for version 2.1 or above)
+* 2.56.19		16.05.2011	Olga Illenseer		Removed second declaration of noPrintMerchantReceipt.
+*2.56.21		30.05.2011	Mihai Secareanu		add final 6.1.16 impementation for nl e-cash RFM parameter
+*2.58.00		21.06.2011	Mihai Secareanu 		add DE e cash modification
+*
+*/
+ 
+/*
+ *  PosV 6.1 with WinEPTS
+ * 
+ *  Eurecs.dll
+ *  VSS
+ *  WinPos\NewPos6.1\NewPos-6.1-Eurecs
+ * 
+ * int Eurecs_Init(Tcl_Interp *tclInterp)
+ * void Eurecs_Exit(ClientData clientData)
+ * 
+ * int Eurecs_Pay(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * (int Eurecs_Refund(ClientData clientData, Tcl_Interp *interp, int argc, char * *argv[]);)
+ * (int Eurecs_Overring(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);)
+ * 
+ * // V 3.00.00
+ * int Eurecs_Reprint(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * int Eurecs_Diag(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * int Eurecs_EndOfDay(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]); 
+ * int Eurecs_StartOfDay(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * int Eurecs_Initialization(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * 
+ *
+ *  PosV 6.1 France
+ *
+ *	mk 15.12.2008: 	Added support for France 
+ *					Changed 'cashlessPayment' (look for 'todo's)
+ *	
+ *	Eurecs functions:
+ * 
+ * 	Eurecs_PayFR(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+ * 	Eurecs_OfflineFR(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+*	Eurecs_C3InitFR(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]); 
+*	Eurecs_C3PingFR(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]); 
+*	Eurecs_C3DuplicateLastFR(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]); 
+ *
+*/
+
+var CalcTypeDecimalNumber = 0;
+var CalcTypeIntegerNumber = 1;
+var CalcTypeDate          = 2;
+var CalcTypeTime			= 3;
+var CalcTypePassword      = 4;
+var CalcTypePercent       = 5;
+var CalcTypeHour          = 6;
+ 
+var CASHLESS_GC = "CASHLESS_GC";
+ 
+var EURECS_OK =				  0;	/* OK */
+var	EURECS_PARTIAL=			  1;	/* partial paid - gift card */
+var EURECS_BALANCE=			  2;	// cashout cancelled by the operator
+var	EURECS_ERROR=				 -1;	/* fatal error */
+
+var EURECS_USERCANCEL=			 -4;	// cancelled by the user 
+var EURECS_OPRCANCEL=			 -5;	// cancelled by the operator
+var EURECS_OUTOFBALANCE=		-10;	// this card is active but out of balance 
+
+var	EURECS_ONEMOREGC=			-21;	// One more Gift Card to Redeem 
+var	EURECS_NOMOREGC=			-22;	// No more Gift Card to Redeem 
+var EURECS_NOT_GC=			   	-23;	// It isn't a gift card
+var	EURECS_NOCASHOUT=			-24;	// No cash on card to cash out 
+var EURECS_MAXCASHOUT1=      	-25;	// Cash Out balance exceeds max amount 
+var EURECS_MAXCASHOUT2=      	-26;	// Cash Out balance exceeds max amount 
+var EURECS_FINALIZE_ERROR=		-27;	// Finalization failed - Canceling operation
+var EURECS_SUPVPRIV=			-28;
+
+var EURECS_PINPAD_ERROR=		-100;
+var EURECS_PIN_TIMEOUT=		-101;	// operation timed out 
+var EURECS_REFUND2GC=			-102;	// Refund to a Gift Card
+
+var RET_TCP_ERROR=				-200;
+var RET_SRV_TIMEOUT=			-201;	// operation timed out 
+var RET_NOSERVER=   	   	  	-202;	// Server unavailable
+var RET_CONN_RESET=				-203;	// connection reset
+var RET_AUTH_NOT_AVAILABLE=		-204;	// Authorization not available
+var RET_PIN_ERROR=				-205;	// PIN not accepted, please try again
+var RET_DECLINED=				-206;	// error connecting to server
+var RET_NOT_ACCCEPT=			-207;	// Card type not accepted, use another card or cash
+var RET_ALREADY_ACTIVE=			-208;	// Gift card is already activated
+var RET_NOT_ACTIVATED=			-209;	// Gift card isn't activated
+
+var EurecsLoaded=false;
+var glo_GiftCard_Footer="";
+var glo_MerchantID="";
+var glo_CashlessSignLimit=25.;
+var glo_CashlessRefundInfo=-1;
+
+var StoreID = 0;
+//var Country  = "xx"; this is defined in businessCompoentsLocal
+var outputBuffer 	= null;
+var PosId = "";
+var EftPosInitialized = false;
+
+var PrintQuestion         = "IS BON (EUR %8.2f) CORRECT GEPRINT ?"
+var PrintInfo             = "BON WORDT GEPRINT...";
+var AskSign               = "VRAAG HANDTEKENING";
+var AskIdent              = "VRAAG IDENTIFICATIE";
+var RePrintQuestion       = "IS BON CORRECT GEPRINT ?";
+var GeneralPrintQuestion  = "WIL GAST EEN PINBON ?";
+var EnterTransNumMsg      = "Please enter number of the Ecash Transaction to be refunded";
+
+var OperatorID = "0";               //no user logged
+var OfflineTranzaction = "0";     //no offline tranzaction
+var PayFr = 0;
+var businessDate_Eurecs = "20080110"; 
+var runGetConfig_Eurecs = true; //poscreate report for getting the storeID, posID and operator ID should be run just at start up or after the operatior is changed
+
+var isNewCashless = null;
+
+var CashlessDLL = "";
+var fUseEftPos  = false;
+
+var CashlessServerIP = "127.0.0.1";
+var CashlessClientIP = "127.0.0.1";
+var WorkstationID = "";
+var CashlessServerPort = "20007";
+var CashlessClientPort = "20002";
+var CashlessKioskMode = "0";
+var CashlessAbortScreen = "0"; // 0 = No abort screen
+var CashlessPaymentTimeout = "45"; // in seconds
+var CashlessCardCheckIntervall = "500"; // in milliseconds
+var SupportedCardTypes = "";
+var WaystationURL = "127.0.0.1";
+var LanguageSupport= "1";
+
+//MS  10.02.2011 start of e-cash tender
+var startTenderValue = "21"; //default value
+//mz 02.09.2010: Cashless Configuration for RFM
+
+//Eurecs Settings
+var eurecsTenderType;
+var eurecsSignMessage;
+var eurecsDefaultErrorMessage;
+var eurecsCustomerSignatureMessage;
+var eurecsManagerSignatureMessage;
+var eurecsAcceptString;
+var eurecsRefuseString;
+var eurecsPrintReceiptHeader;
+var eurecsTransNumberMessage;
+var eurecsWinEPTSCurrency;
+var eurecsClientGUIMode;
+
+var eurecsMapTender;
+
+//NCR settings
+var eurecsMerchantID;
+var eurecsTerminalID;
+var eurecsTerminalConnectionType;
+var eurecsTerminalLocation;
+var eurecsNodeID;
+var eurecsServerPrimaryIP;
+var eurecsServerSecondaryIP;
+var eurecsPinPadConnectionType;
+var eurecsPinPadLocation;
+var eurecsClientIP;
+var eurecsMaster;
+var eurecsECSServerIP;
+var eurecsECSServerPort;
+var eurecsAllowCashback;
+
+//FR
+var frLogPath;
+
+
+
+//--------------------------
+// OI SOTEC
+// reprint of the Chipknip in Netherlands
+//------------------------------------
+function JSReprintChipknipEC() {
+	var ResPrint = "";
+
+	var frompin;
+	if(runGetConfig_Eurecs ==true)
+	{
+		PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+	}
+	if (Country == "NL") {
+		frompin = npTCLEvalEx("Eft_Operation 7 " + PosId.substring (3)); // POS ID
+		API.dbg ("Eft_Operation 7 result " + frompin);
+		frompin = ReplaceDouble(frompin);
+	} 
+	if( frompin == null || frompin == "")
+	{
+		PosShowMessage("MSG_BC_NOREPORT");
+		return false;
+	}
+    	frompin = UmlautReplace (frompin);
+    	ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+
+	var CashLessStr = "CASHLESS:" + ResPrint [1] +
+		"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+
+	PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+
+	if (ResPrint [2] != null) {
+		var CashLessStr = "CASHLESS:" + ResPrint [2] +
+			"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+		PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+		}
+		
+	return true;
+}
+
+function JSReprintEC() {
+
+	var ResPrint = "";
+	var hlp = new BusinessObjectHelper;
+	var frompin;
+	//20.01.2009 OI insert NL section
+	if(runGetConfig_Eurecs ==true)
+	{
+		PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+	}
+	if (Country == "NL") {
+		frompin = npTCLEvalEx("Eft_Operation 5 " + PosId.substring (3)); // POS ID
+		API.dbg ("Eft_Operation 5 result " + frompin);
+		frompin = ReplaceDouble(frompin);
+	} else if (Country == "FR") {
+		//get the operator ID 
+	   	if(Number(OperatorID)==0) //we do not have a valid number id
+	  	 {
+			var sale = hlp.getCurrentView();
+			var xmlView = new XML(sale);
+			OperatorID = xmlView.@operatorId;	
+	   	}
+
+	   	//var businessDate = "20080110";
+		//businessDate = GetGlobalInfo ("BDATE");
+			
+		frompin = npTCLEvalEx("Eurecs_C3DuplicateLastFR " + businessDate_Eurecs + " " + StoreID + " " + PosId.substring (3) + " " + OperatorID);
+		API.dbg ("Eurecs_C3DuplicateLastFR result " + frompin);
+	} else {
+		 frompin = npTCLEvalEx("Eurecs_Reprint 1");
+		 API.dbg ("Eurecs_Reprint 1 result " + frompin);
+	}
+//    API.dbg ("EV_DE EftOp5 result " + frompin);
+	//20.01.2009 OI if it's null we must break up
+	if( frompin == null || frompin == "")
+	{
+		PosShowMessage("MSG_BC_NOREPORT");
+		return false;
+	}
+
+	//frompin = ReplaceDouble(frompin);
+	//API.dbg("frompin after replacedouble" +frompin);
+    frompin = UmlautReplace (frompin);
+	//API.dbg("frompin after umlauts" +frompin);
+    ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+	var CashLessStr;
+    if (Country == "NL")
+	{
+	 CashLessStr = "CASHLESS:" + ResPrint [1] +
+		"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+	}
+	else if (Country == "FR")
+	{
+		// we have only one receipt in FR
+		 CashLessStr = "CASHLESS:" + ResPrint [2] +
+		"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+	}
+	else
+	{
+	   CashLessStr = "CASHLESS:" + ResPrint [1] + ResPrint [2] + ResPrint [3] +
+	   "@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+	}
+	
+    //PosSetSessionProperty("CASHLESS",CashLessStr);
+	//PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	
+	PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+	if (Country == "NL")
+	{
+		if (ResPrint [2] != null) {
+			var CashLessStr = "CASHLESS:" + ResPrint [2] +
+				"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+			}
+	}
+return true;
+}
+
+/*
+#
+# JSReconWithClose - Print out EndOfDay Receipt 
+# Up to two receipts seperated by | supported
+#
+*/
+function JSReconWithClose() 
+{
+	//mz 02.07.09: for 6.1.3 the old view with the old cashless transaction is still there...
+	//need to delete it.
+	var hlp = new BusinessObjectHelper; 
+	var currView = hlp.getCurrentView(); 
+	var ctx=new SessionContext; 
+	ctx.set(KEY_VIEW,null,true); 
+	
+	if(Country == "AT" || Country == "CH")
+	{
+		var ResPrint;
+		
+		var result=npTCLEvalEx("Eurecs_EndOfDay 1");	
+		if( result == null || result == "")
+		{
+			API.dbg("Nothing to print");
+			return false;
+		}
+		result = UmlautReplace (result);
+			API.dbg ("EV_DE Eurecs_EndOfDay result " + result);		
+		ResPrint = result.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+		
+		API.dbg("JSReconWithClose ResPrint [0] = [" + ResPrint [0] + "]");        
+		var retcode;
+		retcode = Number (result.charAt (1));
+
+		if (result.charAt (0) == "-") 
+		{  // negative return code
+				var errcode = Number (ResPrint [0]);
+		} 
+		else 
+		{
+			var errcode = retcode;
+		}
+
+		API.dbg ("  errcode " + errcode + " ret: " + retcode);	
+		if(errcode != "0") 
+		{
+				// error
+				API.dbg ("  errcode != OK");
+			return false;
+		}
+
+		// first receipt
+		var EndOfDayStr = "CASHLESS:" + ResPrint [1] +
+			" " + "@" + 
+			" " + "@" +
+			" " + "@" +
+			" " + "@0@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" + 
+			" " + "@" +
+			" " + "@#";
+			
+		PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', EndOfDayStr);
+
+			// next receipt
+			if (ResPrint [2] != null) 
+			{ 
+				var EndOfDayStr = "CASHLESS:" + ResPrint [2] +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@" +
+				" " + "@0@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@#";
+				PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', EndOfDayStr);
+			}
+	}
+	else
+	{
+		var result=npTCLEvalEx("Eurecs_EndOfDay 1");
+		API.dbg ("EV_DE Eurecs_EndOfDay result " + result);		
+	}
+	return true;
+}
+
+function JSStartDiagnose() {
+
+	var result=npTCLEvalEx("Eurecs_Diag 1");
+	API.dbg ("EV_DE StartDiagnose result " + result);	
+	return true;
+}
+
+function LoadEurecs() {
+
+	var result = 0;
+	var i = 0;
+    API.dbg ("EV_DE LoadEurecs");	
+	if(EurecsLoaded) {
+		return true;
+	}
+	
+	var hlp = new BusinessObjectHelper; 
+	if(isNewCashless == null)
+	{
+		isNewCashless = hlp.findParamInSectionWide("IBMCashless","Cashless") == "true";
+	}
+
+	//10.02.2011  MS read tender start value from store-db parameter
+	startTenderValue = hlp.findParamInSectionWide("StartECASHTenderValue","Cashless");
+	API.dbg("startTenderValue "+ startTenderValue);
+	if(startTenderValue+"" == "" ||  startTenderValue == null)  //if not defined then the default value will be 21 
+	{
+		if(Country == "AT" || Country == "CH")
+		{
+			startTenderValue =20;
+		}
+		else
+		{
+			startTenderValue =21;
+		}
+	}
+	
+	//mz 23.08.2010: Added german SecPOS cashless integration.
+	PosId = GetPosDbPosId ();
+	if (CashlessDLL.toLowerCase() == "eftpos.dll" && Country == "DE" ) // 091208A - SECPos for Germany
+	{    
+		fUseEftPos = true;
+		result = npTCLEvalEx("Eft_Setup 4 " + LanguageSupport);
+		if (result == "0")
+		{
+			//SERVER-IP, CLIENT-IP, SERVER-PORT, CLIENT-PORT, WAYSTATION IP - optionally the cashless mode can be defined, defaults to SECPOS
+			result = npTCLEvalEx("Eft_Setup 1 " + CashlessServerIP + " " + CashlessClientIP + " " + CashlessServerPort + " " + CashlessClientPort + " " + WaystationURL); // always have to be 4 parameters 
+			//  KIOSK, PAY-TIMEOUT, ABORT, ABORT-SCREEN, REGISTER-ID, COUNTRY-CODE
+			if (result == "0")
+			{
+				result = npTCLEvalEx("Eft_Setup 2 " + CashlessKioskMode + " " + CashlessPaymentTimeout + " - " + CashlessAbortScreen + " " + PosId + " " + Country ); // always have to be 6 parameters 		
+				if (result == "0")
+				{
+					result = npTCLEvalEx("Eft_Setup 3 " + CashlessCardCheckIntervall);
+					if (result == "0")
+					{
+						result = npTCLEvalEx("Eft_Setup 100"); // run the initialization after parameters have been specified
+					}
+				}
+			}
+		}	
+	        API.dbg ("EV_DE EftPOS Initialization result " + result);				
+	}
+	else if(Country =="NL")
+	{
+		
+		result = npTCLEvalEx("Eft_Setup 2 " + CashlessKioskMode + " " + CashlessPaymentTimeout + " - " + CashlessAbortScreen + " " + WorkstationID + " " + Country ); // always have to be 6 parameters 		
+		//  KIOSK, PAY-TIMEOUT, ABORT, ABORT-SCREEN, REGISTER-ID, COUNTRY-CODE
+		if (result == "0")
+		{
+			result = npTCLEvalEx("Eft_Setup 1 " + CashlessServerIP + " " + CashlessClientIP + " " + CashlessServerPort + " " + CashlessClientPort + " " + WaystationURL); // always have to be 4 parameters 
+			if (result == "0")
+			{
+				result = npTCLEvalEx("Eft_Setup 3 " + CashlessCardCheckIntervall + " -");
+				if(PosCheckSessionProperty("POD","CSO") == true && result == "0")
+				{
+					result = npTCLEvalEx("Eft_Setup 4 " + SupportedCardTypes);
+				}
+				if (result == "0")
+				{
+					result = npTCLEvalEx("Eft_Setup 100"); // run the initialization after parameters have been specified
+				}
+			}
+		}
+	}
+	else
+	{
+		if(Country == "DE" || Country == "AT" || Country == "CH" || Country == "UK" || Country == "IE") 
+		{
+			//MS 04.08.2010 - add new cashless for UK and IE
+			if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+			{
+				API.dbg("IBM cashless Mcpos_INIT not called");
+			}
+			else
+			{
+				//mz 02.09.2010: Eurecs_Setup. Do not read parameters from Posdb.xml
+				//start with eurecs settings
+				var eurecsSetup1Call = "Eurecs_Setup 1 "+Country+" "+eurecsTenderType+" "+eurecsSignMessage+" \""+eurecsDefaultErrorMessage+"\" \""+eurecsCustomerSignatureMessage+ "\"";
+				eurecsSetup1Call = eurecsSetup1Call + " \""+eurecsManagerSignatureMessage+"\" \""+eurecsAcceptString+"\" \""+eurecsRefuseString+"\"";
+				eurecsSetup1Call = eurecsSetup1Call + 	" "+eurecsPrintReceiptHeader+" \""+eurecsTransNumberMessage+"\" \""+eurecsWinEPTSCurrency+"\"";
+				result = npTCLEvalEx(eurecsSetup1Call);
+				API.dbg("EurecsCall1 result "+result);
+				if(result == "00")
+				{//first call success next send the MapTender entries.
+					var eurecsSetup2Call = "Eurecs_Setup 2";
+					var valuePairs = eurecsMapTender.split("|");//split to value pairs!
+					while(valuePairs[i] != null)
+					{
+						API.dbg("Start working on "+valuePairs[i]);//TODO remove later just for debugging
+						var indexValuePair = valuePairs[i].split(",");
+						if(indexValuePair[0] != null && indexValuePair[1] != null)
+						{//send pair to Eurecs_Setup
+							eurecsSetup2Call = eurecsSetup2Call +" "+indexValuePair[0]+" "+indexValuePair[1];
+							API.dbg("Valuepair: "+indexValuePair[0]+" "+indexValuePair[1]+" added");//TODO remove later just for debugging
+						}
+						i++;
+					}
+					//if we have no parameters we not need to call
+					if(eurecsSetup2Call.length > 14)
+					{
+						result = npTCLEvalEx(eurecsSetup2Call);
+						API.dbg("EurecsCall2 result "+result);
+					}
+					
+					if(result == "00")
+					{//now set NCR parameters
+						var eurecsSetup3Call = "Eurecs_Setup 3";
+						var posIdNumber = Number(PosId);
+						eurecsSetup3Call = eurecsSetup3Call +" \""+eurecsMerchantID+"\" \""+eurecsTerminalID+"\" "+eurecsTerminalConnectionType;
+						eurecsSetup3Call = eurecsSetup3Call +" "+eurecsTerminalLocation+" "+eurecsNodeID+" "+eurecsServerPrimaryIP;
+						eurecsSetup3Call = eurecsSetup3Call +" "+eurecsServerSecondaryIP+" "+eurecsPinPadConnectionType+" "+eurecsPinPadLocation;
+						eurecsSetup3Call = eurecsSetup3Call +" "+eurecsClientIP+" "+eurecsMaster+ " "+eurecsClientGUIMode;
+						eurecsSetup3Call = eurecsSetup3Call +" "+eurecsECSServerIP+ " "+	eurecsECSServerPort + " "+	eurecsAllowCashback;
+						eurecsSetup3Call = eurecsSetup3Call +" "+posIdNumber;
+
+						result = npTCLEvalEx(eurecsSetup3Call);	
+						API.dbg("EurecsCall3 result "+result);
+
+						if(result == "00")
+						{
+							result = npTCLEvalEx("Eurecs_Setup 4");//eurecs initialization 
+							API.dbg("Eurecs_Setup 4 returned "+result);							
+						}
+					}
+				}
+
+				if(result == "00")
+				{
+					result = 1;
+				}
+				else
+				{
+					result = -1;
+				}
+			}
+		}
+		else if(Country == "FR")
+		{//mz 02.09.2010 give parameter to Eurecs for FR Cashless
+			npTCLEvalEx("Eurecs_Setup 5 \""+frLogPath+"\"");			
+		}
+        	API.dbg ("EV_DE Eurecs_Initialization result " + result);				
+	}
+
+	// Query pinpad
+//	result=npTCLEvalEx("Eft_Operation 20 0 0");
+//    API.dbg ("EV_DE EftOp20 result " + result);			
+	if(result == "-1") {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+		return false;
+	}
+	
+    StoreID = npTCLXmlGetINI("StoreDetails","StoreId");	
+    API.dbg ("  SToreID " + StoreID + "  Country: " + Country);
+	EurecsLoaded=true;
+	return true;
+}
+
+function SetUpEurecs() 
+{
+    API.dbg ("EV_DE SetupEurecs - Script Release 11.01.2008 for EURECS.dll 3.10.00 11.01.2008");	
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+	    API.dbg ("  Parameter TCLExtension everest NOT set");
+		return;
+	}
+	
+	//PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration	
+	glo_GiftCard_Footer=npTCLXmlGetINI("AdditionalGiftCard","contact");
+	if (glo_GiftCard_Footer == null) {
+        	glo_GiftCard_Footer="For gift card balance call 1-877-443-8623";
+	}
+	glo_MerchantID=npTCLXmlGetINI("Eurecs","MerchantID");
+	var CashlessSignLimit=npTCLXmlGetINI("POSOptions","CashlessSignLimit");
+    API.dbg ("EV_DE SetupEurecs - CashlessSignLimit" + CashlessSignLimit);	
+	if ((CashlessSignLimit != null) && (CashlessSignLimit != "")) {
+		glo_CashlessSignLimit=Number(CashlessSignLimit);
+    }	
+
+	CashlessDLL        = GetStoreDbAdaptorParameter       ("npCLayer",   "Everest",  "extname");
+	API.dbg ("EV_DE SetupEurecs - CashlessDLL" + CashlessDLL);
+	
+	if(Country == "NL")
+	{
+		CashlessServerIP   = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Server_IP", null);   //should be in <POSDB>.xml
+		WorkstationID	   = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "WorkstationID", "-"); //24.05.2011 OI	set to "-" insead of null
+		CashlessClientIP   = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Client_IP", "127.0.0.1");   //should be in <POSDB>.xml
+		CashlessServerPort = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Server_Port", "4102"); //should be in store-db.xml
+		CashlessClientPort = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Client_Port", "4100"); //should be in store-db.xml		
+		CashlessKioskMode  = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "KioskMode", "0");   //should be in <POSDB>.xml		
+		CashlessPaymentTimeout     = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "PaymentTimeout", "45"); //should be in store-db.xml - value is in seconds
+		CashlessAbortScreen        = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "AbortScreen", "0");    //should be in store-db.xml - 0 = No abort screen
+		CashlessCardCheckIntervall = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "CardStatusCheckIntervall", "10"); //should be in store-db.xml - value is in milliseconds
+		var listofCards = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "SupportedCardTypes",null); 
+		
+		if((listofCards+"").length > 0) //weird if i do not convert it to string it will not take the correct length
+		{
+			var arrListOfCards = (listofCards+"").split(";");
+			SupportedCardTypes="";
+			for(var i=0; i<arrListOfCards.length; i++)
+			{
+				if(arrListOfCards[i].length > 0)
+				{
+					SupportedCardTypes += "\""+ arrListOfCards[i] +"\" ";
+				}
+			}
+		}
+		API.dbg("SupportedCardTypes "+ SupportedCardTypes);
+	}
+	
+	if(Country == "DE")
+	{
+		CashlessServerIP   = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Server_IP", null);   //should be in <POSDB>.xml
+		CashlessClientIP   = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Client_IP", null);   //should be in <POSDB>.xml
+		CashlessServerPort = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Server_Port", "20007"); //should be in store-db.xml
+		CashlessClientPort = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "Client_Port", "20002"); //should be in store-db.xml	
+		
+		CashlessKioskMode  = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "KioskMode","0");   //should be in <POSDB>.xml		
+		CashlessPaymentTimeout     = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "PaymentTimeout", "45"); //should be in store-db.xml - value is in seconds
+		CashlessAbortScreen        = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "AbortScreen","0");    //should be in store-db.xml - 0 = No abort screen
+		CashlessCardCheckIntervall = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "CardStatusCheckIntervall","500"); //should be in store-db.xml - value is in milliseconds
+		LanguageSupport = GetStoreDbConfigurationParameter("Store.wide", "Cashless", "LanguageSupport","1"); //should be in pos-db.xml - value can be 1/0 or true/false or yes/no
+
+	}
+	API.dbg ("EV_DE SetupEurecs - Read Comm settings Srv:"  + CashlessServerIP + " " + CashlessServerPort + " Cl:" + CashlessClientIP + " " + CashlessClientPort);	
+	API.dbg ("EV_DE SetupEurecs - Read Other settings - Kiosk: "  + CashlessKioskMode + "  PayTimeout: " + CashlessPaymentTimeout + "  CardCheck: " + CashlessCardCheckIntervall);
+		
+    API.dbg ("EV_DE SetupEurecs - Set  Other settings - Kiosk: "  + CashlessKioskMode + "  PayTimeout: " + CashlessPaymentTimeout + "  CardCheck: " + CashlessCardCheckIntervall);
+
+	WaystationURL = GetStoreDbAdaptorParameter ("xmlrpccli", "main", "url");	
+	WaystationURL = IPAddressFromUrl (WaystationURL);
+
+	//mz 02.09.2010: Read Eurecs Parameters from NP6 config files
+	ReadEurecsParameters();
+	
+	LoadEurecs();
+}
+
+/**KioskInitEurecs
+ *Author: Mihai Secareanu
+ *Date: 10.03.2011
+ * @brief - This function handles the special e-cash terminal initialization for kiosks in France
+ * Is called in BCEvents: onEndInitialize
+ * Return - rval - True
+ */
+function KioskInitEurecs()
+{
+	if(runGetConfig_Eurecs ==true)
+	{
+		PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+	}
+	if (PosId.substr (0, 3) != "POS") // depending on where the info is coming from the value might miss the leading "POS", then the following extracts go wrong
+	{
+		PosId = "POS" + PosId;
+	}
+
+	var ret = npTCLEvalEx("Eurecs_KioskFR"); //setup eurecs.dll in kiosk mode
+	API.dbg("KioskInitEurecs: Eurecs_KioskFR return " +ret)
+	ret = npTCLEvalEx("Eurecs_C3ReaderStatusFR " + businessDate_Eurecs + " " + StoreID + " " + PosId.substring (3) + " " + OperatorID);
+	if(ret != "00")  //get reader status failed reboot e-cash terminal
+	{
+		API.dbg("KioskInitEurecs: Eurecs_C3ReaderStatusFR return "+ ret);
+		ret = npTCLEvalEx("Eurecs_C3RebootFR " + businessDate_Eurecs + " " + StoreID + " " + PosId.substring (3) + " " + OperatorID);
+		if(ret != "00")  //reboot failed
+		{
+			API.dbg("KioskInitEurecs: Eurecs_C3RebootFR return "+ ret);
+			return true;
+		}
+	}
+	 //MS 14.03.2011 according to MZ  instruction call WaitCardFR for FR kiosk at the begining fo each sale
+	ret = npTCLEvalEx("Eurecs_WaitCardFR");
+	API.dbg("KioskInitEurecs: Eurecs_WaitCardFR return " +ret);
+	return true;
+}
+
+/*mz:
+	Reads all parameters for Eurecs.dll from the NP6 configuration files
+*/
+function ReadEurecsParameters()
+{
+	//11 settings for Eurecs DLL directly
+
+	//1. country code nothing to do.
+
+	//2. default tender type xmlGetINIInt("EftPOS", "TenderType", 21);
+	eurecsTenderType = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "TenderType", "-");
+
+	//3. receipt has to be signed xmlGetINIInt("WinEPTS","SignMessage", 0);
+	eurecsSignMessage = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "SignMessage", "-");
+	
+	//4. default error message xmlGetINIDefault("WinEPTS", "DefaultErrorMessage", "Error in WinEPTS client", szDefaultErrorMessage);
+	eurecsDefaultErrorMessage = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "DefaultErrorMessage", "-");
+	
+	//5. customer signature message xmlGetINIDefault("WinEPTS", "PleaseSignMessage", "Please ask customer for signature", szCustomerSignatureMessage);
+	eurecsCustomerSignatureMessage = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "PleaseSignMessage", "-");
+
+	//6. manager (refund) signature message xmlGetINIDefault("WinEPTS", "ManagerToSign", "Manager to sign Refund Receipts", szManagerSignatureMessage);
+	eurecsManagerSignatureMessage = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "ManagerToSign", "-");
+
+	//7. Accept String xmlGetINIDefault("WinEPTS", "AcceptString", "ACCEPT", szYes);
+	eurecsAcceptString = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "AcceptString", "-");
+
+	//8. Refuse String xmlGetINIDefault("WinEPTS", "RefuseString", "REFUSE", szNo);
+	eurecsRefuseString = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "RefuseString", "-");
+
+	//9. print receipt header xmlGetINIDefault ("EftPOS", "PrintReceiptHeader", "1", szPrintReceiptHeader);
+	eurecsPrintReceiptHeader = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "PrintReceiptHeader", "-");
+
+	//10. select transaction number xmlGetINIDefault("WinEPTS", "SelectTransactionNumberString", "Select Transaction Number", szSelectTransactionNumber);
+	eurecsTransNumberMessage = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "SelectTransactionNumberString", "-");
+
+	//11. Currency xmlGetINIDefault ("EftPOS", "WinEPTSCurrency", "0", szWinEPTSCurrency);
+	eurecsWinEPTSCurrency = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "Eurecs", "WinEPTSCurrency", "-");
+
+	//MapTender Values
+	eurecsMapTender = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSMapTender", "-");
+	
+
+	//16 settings for the WinEPTS Client
+
+	//1. MerchantID EurecsReadXMLParameter ("EftPOS", "MerchantID", "", szTemp);
+	eurecsMerchantID = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "MerchantID", "-");
+
+	//2. TerminalID EurecsReadXMLParameter ("EftPOS", "TerminalID", "", szTemp);
+	eurecsTerminalID = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "TerminalID", "-");
+
+	//3. WinEPTSTerminalConnectionType EurecsReadXMLParameter ("EftPOS", "WinEPTSTerminalConnectionType", "", szTemp);
+	eurecsTerminalConnectionType = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSTerminalConnectionType", "-");
+
+	//4. WinEPTSTerminalLocation EurecsReadXMLParameter ("EftPOS", "WinEPTSTerminalLocation", "", szTemp);
+	eurecsTerminalLocation = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSTerminalLocation", "-");
+	
+	//5. WinEPTSNodeID EurecsReadXMLParameter ("EftPOS", "WinEPTSNodeID", "", szTemp);
+	eurecsNodeID = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSNodeID", "-");
+	
+	//6. WinEPTSServerPrimaryIP EurecsReadXMLParameter ("EftPOS", "WinEPTSServerPrimaryIP", "", szTemp);
+	eurecsServerPrimaryIP = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSServerPrimaryIP", "-");
+
+	//7. WinEPTSServerSecondaryIP EurecsReadXMLParameter ("EftPOS", "WinEPTSServerSecondaryIP", "", szTemp);
+	eurecsServerSecondaryIP = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSServerSecondaryIP", "-");
+
+	//8. WinEPTSPinpadConnectionType EurecsReadXMLParameter ("EftPOS", "WinEPTSPinpadConnectionType", "", szTemp);
+	eurecsPinPadConnectionType = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSPinpadConnectionType", "-");
+
+	//9. WinEPTSPinpadLocation EurecsReadXMLParameter ("EftPOS", "WinEPTSPinpadLocation", "", szTemp);
+	eurecsPinPadLocation = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSPinpadLocation", "-");
+
+	//10. WinEPTSClientIP EurecsReadXMLParameter ("EftPOS", "WinEPTSClientIP", "", szTemp);
+	eurecsClientIP = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSClientIP", "-");
+
+	//11. WinEPTSMaster EurecsReadXMLParameter ("EftPOS", "WinEPTSMaster", "", szTemp);
+	eurecsMaster = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSMaster", "-");
+
+	//12. WinEPTSClientGUIMode25.03.2008 EurecsReadXMLParameter ("EftPOS", "WinEPTSClientGUIMode", "0", szTemp); isCSO
+	//should be same as cso. But I am not sure. Could be a CSO register that does not want to use ClientGUIMode = 1
+	eurecsClientGUIMode = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "WinEPTSClientGUIMode", "-");
+
+	//13. ECSServerIP EurecsReadXMLParameter ("EftPOS", "ECSServerIP", "", szTemp);
+	eurecsECSServerIP = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "ECSServerIP", "-");
+
+	//14. ECSServerPort EurecsReadXMLParameter ("EftPOS", "ECSServerPort", "", szTemp);
+	eurecsECSServerPort = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "ECSServerPort", "-");
+
+	//15. AllowCashback EurecsReadXMLParameter ("EftPOS", "AllowCashback", "0", szTemp);
+	eurecsAllowCashback = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "WinEPTS", "AllowCashback", "-");
+
+	//16. RegisterID EurecsReadXMLParameter ("POSOptions", "RegisterID", "", szTemp); getting other way
+
+
+	//FR cashless one parameter log path xmlGetINIDefault("ScriptValues", "LogPath", "sc3Log.csv", szC3LogFileName);
+	frLogPath = GetStoreDbConfigurationParameterOrDefault("Store.wide", "Cashless", "FR", "LogPath", "-");
+	
+	
+
+
+	
+	
+
+}
+
+/*
+#
+# ParseTrackInfo - Parse read track info
+# Returns a string delimited with pipe (|) containing the following information:
+# CardType|Athorization|ProviderName|CardNum|ExpirationDate|SequenceNumber
+#
+*/
+function ParseTrackInfo(retcode,cardType) {
+	
+	var ret="";
+
+	//# get the track information
+	var infocard=retcode[1].split("@");
+
+	//# get the oldCardType
+	var oldCardType="";
+	var a=infocard[0];
+	if (a.length > 41) {
+		oldCardType=a.substr(41,1);
+	}
+	ret += oldCardType + "|";
+
+	//# get auth number
+	var serverresp=retcode[2];
+	if(serverresp.length > 22) {
+		var auth=serverresp.substr(16,6);
+		if(auth.substr(0,2) == "LA") {
+			auth=Number(Math.round(Math.random()*999999)).toString();
+			if(auth.length < 6) {
+				auth="000000".substr(0,6-auth.length)+auth;
+			}
+		}
+		ret += auth;
+	}
+	ret += "|";
+
+	//# get sequence number
+	var seqno="";
+	if (serverresp.length > 13) {
+		seqno=serverresp.substr(10,4);
+	}
+	var providername="Invalid card type";
+	var cardnum="";
+	var tracks=infocard[1].split("=");
+	if ((cardType == "CR") || (cardType == "CC")) {
+		var provider=tracks[0].substr(1,1);
+		switch (provider) {
+		case '3':
+			provider=tracks[0].substr(2,1);
+			if(6 == provider || /* old prefix */ 8 == provider) {
+				providername="Master"; // Diners
+			} else { // 4 and 7
+				providername="Amex";
+			}
+			break;
+		case '4':
+			providername="Visa";
+			break;
+		case '5': // 51, 52, 53, 54, 55
+			providername="Master";
+			break;
+		case '6': // 6011
+			providername="Dscvr";
+			break;
+		default:
+			providername="Credit";
+			break;
+		}
+		cardnum=tracks[0].substr(1);
+	} else if (cardType == "DB") {
+		providername="Debit";
+		cardnum=tracks[0].substr(1);
+	} else if (cardType == "GC") {
+		providername="Gift Card";
+		var t0=tracks[0];
+		var t1=tracks[1];
+		cardnum=t1.substr(12,1)+t1.substr(14,2)+t0.substr(7,9)+t1.substr(16,4);
+	}
+	//PosShowMessage(cardnum);
+	ret += providername + "|" + cardnum + "|";
+	var e=tracks[1];
+	if (e.length > 4) {
+		var expire=e.substr(2,2);
+		expire += "/";
+		expire += e.substr(0,2);
+		ret += expire;
+	}
+	ret += "|" + seqno + "|";
+	return ret;
+}
+
+
+/**
+Description:	read the EFTPOS messages from properties
+Author:		Olga Illenseer
+Date: 		14.11.2008
+**/
+function getEftposParameter()
+{
+	var hlp = new BusinessObjectHelper;
+
+	PrintQuestion        = hlp.getSysMessage("MSG_EC_PRINT_QUESTION");
+	PrintInfo            = hlp.getSysMessage("MSG_EC_PRINT_INFO");
+	AskSign              = hlp.getSysMessage("MSG_EC_ASK_SIGN");
+	AskIdent             = hlp.getSysMessage("MSG_EC_ASK_IDENT");
+	RePrintQuestion      = hlp.getSysMessage("MSG_EC_REPRINT_QUESTION");
+	GeneralPrintQuestion = hlp.getSysMessage("MSG_EC_GENERAL_PRINT_QUESTION");
+	EnterTransNumMsg     = hlp.getSysMessage("MSG_EC_ENTER_TRANS_NUM");	
+}
+
+function cashlessPayment(tenderId,tenderValue,refund) 
+{
+   	 API.dbg("cashlessPayment Eurecs");
+	/*if we must print first the receipt and just after that the cashless receipt*/
+	var hlp = new BusinessObjectHelper; 
+	var PrintReceiptFirst = hlp.findParamInSectionWide("PrintReceiptFirst","Cashless") == "true";
+	var PrintRemoteReceiptFirst = hlp.findParamInSectionWide("PrintRemoteReceiptFirst","Cashless") == "true";
+
+	if(isNewCashless == null)
+	{
+		isNewCashless = hlp.findParamInSectionWide("IBMCashless","Cashless") == "true";
+	}
+	if(isNewCashless == true)
+	{
+		API.dbg("UK new Cashless enabled.");
+	}
+	var result;
+	var bCont=false;
+	var ResPrint;
+
+	var InitResult = -1;
+	var hlp = new BusinessObjectHelper;
+	var ECTransNum = 0;
+	var PrintQType = 0;
+	var DebugTxt = "";
+	
+    	var SaleType = 0;
+	var PrinterStatus = 0;//only used for nl cso
+	var LanguageCode = "nl";//only used for nl cso
+	//mz 12.06.2009: Until the printer status check is workign reliable: PrinterStatutsCheck disabled!!
+	var printerStatusCheckOff = "1"; // 1 = printer status check disabled
+
+   	//get the operator ID 
+   	if(Number(OperatorID)==0) //we do not have a valid number id
+  	 {
+		var sale = hlp.getCurrentView();
+		var xmlView = new XML(sale);
+		OperatorID = xmlView.@operatorId;	
+   	}
+   
+	//22.01.2009 OI check EftPosInitialized
+   	if(PosCheckSessionProperty("EftPosInitialized", "true"))
+  	{
+   		EftPosInitialized = true;
+   	}else
+   	{
+   		EftPosInitialized = false;
+   	}
+
+	//mz 11.05.2009 nl needs initialization every pos start not only day open
+	if(Country == "NL")
+	{
+		if(PosCheckSessionProperty("EftPosNLInitialized", "true"))
+	  	{
+	   		EftPosInitialized = true;
+	   	}
+		else
+	   	{
+	   		EftPosInitialized = false;
+	   	}
+	}
+	
+	var isCSO = PosCheckSessionProperty("POD","CSO");
+	
+	
+    API.dbg("EV_DE JS cashlessPayment tenderId = [" + tenderId + "] tenderValue [" + tenderValue + "] refund [" + refund + "]");
+
+    //businessDate = GetGlobalInfo ("BDATE");
+
+    if(Country == "FR")
+	{
+		if(runGetConfig_Eurecs == true)
+		{
+			PosCreateReport ("CASH|VIEW","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+		}
+	}
+	else
+	{
+		if(runGetConfig_Eurecs ==true)
+		{
+			PosCreateReport ("CASH","GetConfigInfo@eurecs.nps", "", ""); // This is to get the configuration
+		}
+		PayFr=0;
+	}
+
+	API.dbg ("EV_DE   Bus.Date: " + businessDate_Eurecs + "  Country: " + Country);
+    
+   	PosSetSessionProperty("CASHLESS_STATUS","");
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+	    return false;
+	}
+
+	//read the eftpos parameter
+	getEftposParameter();
+
+	if (PosId.substr (0, 3) != "POS") // depending on where the info is coming from the value might miss the leading "POS", then the following extracts go wrong
+	{
+		PosId = "POS" + PosId;
+	}
+
+	// Cannot initialize during startup, because country info cannot be loaded
+//	npTCLEvalEx("Eft_Operation 16 0 " + '"' + hlp.getSysMessage("MSG_EC_PRINT_QUEST") + '"');
+	//API.dbg("DEBUG Test: "+EftPosInitialized+ " iscso: "+isCSO);
+	if ((CashlessDLL.toLowerCase() == "eftpos.dll" && Country == "DE" ) || Country == "NL")
+	{// 091208A - SECPos for Germany
+		npTCLEvalEx ("Eft_BusinessDay " + businessDate_Eurecs + " " + PosId.substring (3))	
+	}
+	if (!EftPosInitialized && Country!= "AT" && Country != "UK" && Country != "CH" && Country != "IE") 
+	{		
+		if ((Country == "NL" && isCSO) || ((Country == "DE") && fUseEftPos == true))
+		{//for cso send the login to ccv. But only do that once
+			API.dbg(" Sending Login to CCV.");
+			InitResult = npTCLEvalEx("Eft_Operation 10 " + PosId.substring (3));
+			InitResult = 0;
+		}
+		else if(Country == "FR"  && !PosCheckSessionProperty("PosInitializedOffline", "true")) //we need to try the initialisation again
+		{
+			// todo...???
+			InitResult = npTCLEvalEx("Eurecs_C3InitFR " + businessDate_Eurecs + " " + StoreID + " " + PosId.substring (3) + " " + OperatorID);
+			var  ParseInitResult = InitResult.split(" ");
+			API.dbg("eurecs InitResult "+InitResult);
+			if(Number(ParseInitResult[0]) == 0) 
+			{
+				if(Number(ParseInitResult[2]) == 1) //other errors 
+				{
+					PosShowMessage("MSG_CASHLESS_OFFLINE");
+					PosSetSessionProperty("PosInitializedOffline", "true", "true");	
+					//return false;
+				}
+			}
+			else //initialization fails
+			{
+				InitResult= "-1";
+			}
+		}
+		else {
+			//MS 04.08.2010 - add new cashless for UK and IE
+			if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+			{
+				API.dbg("IBM cashless Mcpos_INIT not called");
+			}
+			else
+			{
+				//mz 23.08.2010: Eurecs_Initialization does nothing else than return true. Complete waste of time.
+				//InitResult = npTCLEvalEx("Eurecs_Initialization 1");
+				InitResult = 1;
+			}
+		}
+		if (InitResult == "-1") {
+			PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+			return false;
+		} 
+		else 
+		{
+			EftPosInitialized = true;
+			if(Country == "FR" )
+			{
+				PosSetSessionProperty("EftPosInitialized", "true", true);
+			}
+			else if(Country == "NL" && isCSO)
+			{
+				PosSetSessionProperty("EftPosNLInitialized", "true", true);
+			}
+
+		}
+	}	
+	
+	/*kiosk set language */
+	var setLanguage = hlp.findParamInSectionWide("SetLanguageForEachTransaction","Kiosk") == "true";
+	if(isCSO == true && (setLanguage == true || (Country=="CH" && hlp.findParamInSectionWide("SetLanguageForEachTransaction","Kiosk") != "false")))
+	{
+		var ctx=new SessionContext;
+		npTCLEvalEx("Eurecs_LanguageChange "+ctx.get("KioskLanguage"));	
+	}	
+	
+	var iSrv = hlp.getServiceIndex();
+	SaleType = hlp.getSaleType();
+
+	//mz 17.06.2009: printer status check for NL CSO
+	if(isCSO)
+	{
+		API.dbg("PrinterStatusCheck for Kiosk.");
+		PrinterStatus = PosCheckPrinterStatusJS(true);
+		API.dbg("PrinterStatus is: " +PrinterStatus);
+	}
+
+	printerStatusCheckOff = hlp.findParamInSectionWide("PrinterStatusCheckOff","Kiosk");
+	if(printerStatusCheckOff != "1")
+	{
+		if(Country =="UK" && !isCSO) //uk want the check for all registers
+		{
+			API.dbg("PrinterStatusCheck for UK.");
+			PrinterStatus = PosCheckPrinterStatusJS(true);
+			API.dbg("PrinterStatus is: " +PrinterStatus);
+		}
+		//OI 02.07.2009 deprecated
+		//var rc=npAdpPrn_RequestSrv(iSrv,NPSRVPRN_STATUS,"*");
+		API.dbg("PrinterStatus: "+PrinterStatus+ " Country: "+Country+" CSO: "+isCSO+" Refund: "+refund );
+		if(0 != Number(PrinterStatus)) 
+		{
+			/*if (Country == "NL" && isCSO && !refund) 
+			{
+				PrinterStatus = Number(rc);
+				API.dbg("PrinterStatus set to: "+PrinterStatus);
+			}*/
+		
+			if (Country != "NL" )
+			{
+				const STATUS_OK=0;
+				const STATUS_NOT_AVAILABLE=1;
+				const STATUS_PAPER_NEAR_END=0x02000000;
+				const STATUS_PAPER_OUT=0x00000010;
+				const STATUS_DOOR_OPEN=4;
+				const STATUS_PAPER_JAM=5;
+				const STATUS_USER_INTERVENTION=6;
+				const STATUS_ERROR_UNKNOWN=7;
+				const STATUS_API_UNAVAILABLE=8;
+
+				const PRINTER_STATUS_PAUSED            = 0x00000001;
+				const PRINTER_STATUS_ERROR             = 0x00000002;
+				const PRINTER_STATUS_PENDING_DELETION  = 0x00000004;
+				const PRINTER_STATUS_PAPER_JAM         = 0x00000008;
+				const PRINTER_STATUS_PAPER_OUT         = 0x00000010;
+				const PRINTER_STATUS_MANUAL_FEED       = 0x00000020;
+				const PRINTER_STATUS_PAPER_PROBLEM     = 0x00000040;
+				const PRINTER_STATUS_OFFLINE           = 0x00000080;
+				const PRINTER_STATUS_IO_ACTIVE         = 0x00000100;
+				const PRINTER_STATUS_BUSY              = 0x00000200;
+				const PRINTER_STATUS_PRINTING          = 0x00000400;
+				const PRINTER_STATUS_OUTPUT_BIN_FULL   = 0x00000800;
+				const PRINTER_STATUS_NOT_AVAILABLE     = 0x00001000;
+				const PRINTER_STATUS_WAITING           = 0x00002000;
+				const PRINTER_STATUS_PROCESSING        = 0x00004000;
+				const PRINTER_STATUS_INITIALIZING      = 0x00008000;
+				const PRINTER_STATUS_WARMING_UP        = 0x00010000;
+				const PRINTER_STATUS_TONER_LOW         = 0x00020000;
+				const PRINTER_STATUS_NO_TONER          = 0x00040000;
+				const PRINTER_STATUS_PAGE_PUNT         = 0x00080000;
+				const PRINTER_STATUS_USER_INTERVENTION = 0x00100000;
+				const PRINTER_STATUS_OUT_OF_MEMORY     = 0x00200000;
+				const PRINTER_STATUS_DOOR_OPEN         = 0x00400000;
+				const PRINTER_STATUS_SERVER_UNKNOWN    = 0x00800000;
+				const PRINTER_STATUS_POWER_SAVE        = 0x01000000;
+				const PRINTER_STATUS_PAPER_NEAR_END    = 0x02000000;
+				const PRINTER_STATUS_PAPER_WEEKEND     = 0x04000000;
+				const PRINTER_STATUS_PAPER_PRESENTER   = 0x08000000;
+				const PRINTER_STATUS_EXTERNAL_ERROR    = 0x10000000;
+				
+				var rc = 0;
+				if (STATUS_OK==PrinterStatus) 
+				{
+					rc = 0;
+					//return null;
+				} 
+				else if (STATUS_NOT_AVAILABLE==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_SERVER_UNKNOWN;
+					//return "Printer is offline or not available in the network.";
+				} 
+				else if (STATUS_PAPER_NEAR_END==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_PAPER_NEAR_END;
+					//return "Paper is near end in the printer.";
+				} 
+				else if (STATUS_PAPER_OUT==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_PAPER_OUT;
+					//return "Printer is out of paper.";
+				} 
+				else if (STATUS_DOOR_OPEN==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_DOOR_OPEN;
+					//return "Printer cover is opened.";
+				} 
+				else if (STATUS_PAPER_JAM==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_PAPER_JAM;
+					//return "Paper is jammed in the printer.";
+				} 
+				else if (STATUS_USER_INTERVENTION==PrinterStatus)
+				{
+					rc = PRINTER_STATUS_USER_INTERVENTION;
+					//return "Printer error, human intervention is required.";
+				} 
+				else if (STATUS_API_UNAVAILABLE==PrinterStatus) 
+				{
+					rc = PRINTER_STATUS_NOT_AVAILABLE;
+					//return "This feature is not available for the configured printer driver.";
+				}
+
+				// Printer error
+				API.dbg ("  Printer error " + rc);
+				if(typeof(PosGetPrinterErrorJS) == "function") 
+				{
+					//printer error different for cso and other pod types
+					var isCSO = PosCheckSessionProperty("POD","CSO");
+					if(isCSO)
+					{
+						PosShowMessage("PRINTER_ERR",PosGetPrinterErrorJS(rc));
+					}
+					else
+					{
+						if(Country =="UK" || Country == "IE")
+						{
+							//Default message
+							PosShowMessage("There is a problem with the printer. Please check that:\n   - the printer has power \n   - the printer has paper \n   - the red error light is not showing \n If you have checked all the above and the issue remains, please contact the iTSC helpdesk.");
+						}
+						else
+						{
+							//Message from BCPrinterStatus.nps
+							PosShowMessage(PosGetPrinterErrorJS(rc));
+						}
+					}
+				}
+				return false;	
+			}
+		}
+	}
+	else
+	{
+		API.dbg("PrinterStatusCheck is OFF");
+	}	
+	var CashlessAmount="0.00";
+	//var Value=tenderValue.replace(/\./,"");
+	var Value=tenderValue;
+	var tenderType="10";
+	
+	var frompin;
+	if(refund == null) {
+		refund=false;
+	}
+	do {
+		if(!refund) {
+			// Amount operation
+			// HB 15.11.2007 DES-105 - Use converted value - else there are rounding issues
+			var tendVal=tenderValue.replace(/\./,"");
+			if ((Country == "NL") || ((Country == "DE") && fUseEftPos == true))
+			{
+				if(PosCheckSessionProperty("KioskLanguage","en"))
+				{
+					API.dbg("setting language code to en for this transaction");
+					LanguageCode = "en";
+				}
+				else if(PosCheckSessionProperty("KioskLanguage","de"))
+				{
+					API.dbg("setting language code to de for this transaction");
+					LanguageCode = "de";
+				}
+				else //we default to nl
+				{
+					if (Country == "NL")
+					{
+						API.dbg("default setting language code to nl");
+						LanguageCode = "nl";
+					}
+					if (Country == "DE")
+					{
+						API.dbg("default setting language code to de");
+						LanguageCode = "de";
+					}
+				}
+				frompin = npTCLEvalEx("Eft_Operation 1 " + tendVal + " 0 " + PosId.substring (3) + " FC " + "Receipttext " + StoreID + " " + PrinterStatus + " " +LanguageCode);
+				API.dbg("flat frompin " +frompin);
+				frompin = ReplaceDouble(frompin);
+				API.dbg("frompin after replacedouble " +frompin);
+			}
+			else if(Country == "FR")
+			{
+				// special call for France
+				API.dbg("call Eurecs_PayFR...");
+
+	            // mk todo: 
+	            //			- operator name
+	            //		  	- sale type (0=EatIn, 1=TakeOut)
+	            // 7 params:         0                1             	     2               3    		   4 operator    5 amount  6 sale type
+	            frompin = npTCLEvalEx("Eurecs_PayFR " + businessDate_Eurecs + " " + StoreID + " " + PosId.substring (3) + " " + OperatorID + " " + tendVal + " " + SaleType);
+				//we need a flag to know that we enter on here this is because the frompin for this function is different then the default frompin format
+				PayFr = 1; //set the flag for the different frompin format (this will be add  to each ResPrint item greater then 1)
+			}
+			else {
+				
+				//MS 04.08.2010 - add new cashless for UK and IE
+				if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+				{					
+					API.dbg ("Call sale  for Mpcpos_Pay 6 "+ PosId.substring(2));
+					frompin = npTCLEvalEx("Mpcpos_Pay 6 " +PosId.substring(2)+ " "+ businessDate_Eurecs + " 1 " + tendVal);
+					API.dbg ("Results for Mpcpos_Pay 6 "+ frompin);
+				}
+				else
+				{
+					frompin = npTCLEvalEx("Eurecs_Pay " + businessDate_Eurecs + " 1 " + tendVal);	
+				}				
+			}
+            	// DO NOT STORE the RETURN text before UMLAUT CONVERSION - THIS corrupts the LOG and causes that NO EC sales are saved		//09.02.2009 OI if the result is null we must return with false
+            if(frompin == null || frompin == "")
+			{
+				//09.02.2009 OI if the result is null we must return with false
+				PosShowMessage("MSG_BC_NOREPORT");
+				return false;
+			}
+			API.dbg ("  Eurecs_pay Return length " + frompin.length + " first 5 chars >" + frompin.substring (0, 5));
+			
+            frompin = UmlautReplace (frompin);
+		} 
+		else {
+		    
+			if(Country !="UK"  && Country != "IE") // untill newposversion 2.51.00 inclusivly we had Country == "IE"
+			{ //now this code will be executed
+				//# get the total cashless amount sold
+				var hlp = new BusinessObjectHelper();
+				if(Country == "DE" || Country == "AT" || Country == "CH") {
+					var XMLArray = hlp.getReportXML("CASH","CONSOLIDATED","","","");
+				} else {
+					var XMLArray = hlp.getReportXML("CASH");
+				}
+				if((XMLArray != null) && (XMLArray.length > 0)) {
+					var CashRoot = new XML(XMLArray[1].toString());
+					if(CashRoot != null) {
+						//PosShowMessage(CashRoot.@requestDataType);
+						if(Country == "DE" || Country == "AT" || Country == "CH") {
+							var tender=CashRoot.CashDetails.Tenders.Tender.(@id == "10");
+						} else {
+							var tender = CashRoot.CashDetails.Tenders.Tender.(@id == tenderId);
+						}
+						if(tender.length() > 0) {
+							//PosShowMessage(tender[0].@drawerAmount);
+							CashlessAmount=tender[0].@drawerAmount;
+						}
+					}
+				}
+				//PosShowMessage(tender[0].@drawerAmount);
+				if (Number(tenderValue) > Number(CashlessAmount)) {
+					PosShowMessage("MSG_BC_GC_NOT_ENOUGH");
+					return false;
+				}
+			 }	
+			var tendVal=tenderValue.replace(/\./,"");
+			if (Country == "NL") {
+				//set valor [prc_CallPromptNumEx $RefundQuest "0"]				
+				ECTransNum = hlp.showCalculator (EnterTransNumMsg, CalcTypeIntegerNumber);				
+				//TODO: call refund
+				//set eftret [Eft_Operation 3 $valor $EftAmount [pos_getposvar _POSNUMBER] [getPODType] "" [pos_getposvar _STORENUMBER] ]				
+				frompin = npTCLEvalEx("Eft_Operation 3 " + ECTransNum + CashlessAmount + PosId + " FC " + " - Refund - " + StoreID+ " " + PrinterStatus + " " +LanguageCode);
+			}
+			else
+			{
+				//MS 04.08.2010 - add new cashless for UK and IE
+				if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+				{
+					API.dbg ("Call refund for Mpcpos_Pay 6 ");
+					frompin = npTCLEvalEx("Mpcpos_Pay 6 " +PosId.substring(2)+ " "+ businessDate_Eurecs + " 2 " + tendVal);
+					API.dbg ("Results for Mpcpos_Pay 6 "+ frompin);
+				}
+				else
+				{
+					frompin = npTCLEvalEx("Eurecs_Refund " + businessDate_Eurecs + " 2 " + tendVal);	
+				}					
+           	}
+			frompin = UmlautReplace (frompin);
+			
+		}
+		if(frompin == null) {
+			PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+			return false;
+		}
+
+		ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print       
+		
+	    if(Country == "FR")
+		{
+		    //test if the current tranzaction was offline or not
+			if(Number(PayFr) == 1)
+			{
+				API.dbg("Eurecs offline code: "+ResPrint[1]);
+
+				//we must test to see if there is an offline tranzaction
+				if(Number(ResPrint[1]) == 1)  //to do  change all the indexex greater or equal to 1
+				{
+					PosSetSessionProperty ("OfflineTransactions", "1", "true");
+					OfflineTranzaction="1";
+					API.dbg("Eurecs: At least one offline tranzaction");
+				}
+			}
+		}
+
+		API.dbg("JS cashlessPayment ResPrint [0] = [" + ResPrint [0] + "]");        
+		var retcode= [0, "A", "A", 0];
+		retcode [0] = Number (frompin.charAt (1));
+		var reNum = Number (ResPrint[0].substring(5, ResPrint[0].length-1));
+		//mz 23.08.2010: I do not understand that condition. So i removed it.
+		//if ((reNum > 0) && (Country != "NL" || Country =="UK"  || Country == "IE"))
+		if ((reNum > 0) && (Country != "NL") && (Country != "DE"))
+		{
+		    DebugTxt = " before Addition " + Value + " - " + reNum; 
+			Value = Number(Value) + (reNum/100);
+		    DebugTxt = DebugTxt + " AFTER Addition " + Value + " - " + reNum; 			
+			API.dbg ("JS cashlessPayment " + DebugTxt);
+		}
+		// example > 03 600< first char is blank, 2nd is '0' - TCL_OK, 3rd is '3' - credit card, 4th should be Printquestion type
+		if ((Country == "NL") || (Country == "DE"))
+		{
+			retcode [3] = Number (frompin.charAt (2));					
+			PrintQType = Number (frompin.charAt (3));					
+		}
+		else if(Country == "FR")
+		{
+			// FR return: rr_tt_cccccccc (return, tender type, cashback)
+			retcode[3] = Number(frompin.substring(3, 5));
+		}	
+		else{	
+			retcode [3] = Number (frompin.charAt (4));		
+		}
+		
+		
+		tenderType = "" + (Number(startTenderValue) + retcode [3]); //MS  10.02.2011 changed to take the selected tender start from store-db
+		
+		
+		if (frompin.charAt (0) == "-") {  // negative return code
+     		var errcode = Number (ResPrint [0]);
+		} else {
+			var errcode = retcode[0];
+		}
+		if(errcode == EURECS_SUPVPRIV) {
+			bCont=PosGetAuthorization("manager");
+			PosLogDuplicateSwipe();
+		}
+	} while(bCont && errcode == EURECS_SUPVPRIV);
+	var cardType=retcode[3];
+    API.dbg ("  errcode " + errcode + " ret: " + retcode [0] + " - " + retcode [1] + " - " + retcode [2] + " - " + retcode [3]);	
+	if(Country =="UK"  || Country == "IE")
+	{
+		if(errcode != "0" && errcode != "3") //declined or cancel receipt
+		{
+			// declined
+			API.dbg ("  errcode != OK");
+
+			//if a cancellation receipt is available, print it. 
+			if(ResPrint[1] != null && ResPrint[1].length > 0)
+			{
+				API.dbg(" Cancellation receipt found. Print it: "+ResPrint [1]);
+
+				//we MUST set the current view, otherwise the receipt printed will 
+				//have an incorrect refund setting. Not sure why atm. mz.
+				var hlp = new BusinessObjectHelper; 
+				var currView = hlp.getCurrentView(); 
+				var ctx=new SessionContext; 
+				ctx.set(KEY_VIEW,currView.toString(),true); 
+
+				//mz 25.08.2010: UK new cashless
+				if(isNewCashless == true)
+				{
+					PosSetSessionProperty("SignatureConfirmationCancelled","true");
+				}
+							
+				var CancellReceiptStr = "CASHLESS:" + ResPrint [1] +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@" +
+				" " + "@0@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@#";
+				//if PrintReceiptFirst store result in session
+				if(PrintReceiptFirst == true)
+				{
+					ctx.set("CashlessReceiptSession","currentPos",true);
+					
+				}
+				PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CancellReceiptStr);
+			}
+			return false;
+		}	
+	}
+	else
+	{
+		if(errcode != "0") 
+		{
+			
+			//mz 02.06.09: NL CSO print cancellation receipt.
+			//if a cancellation receipt is available, print it. 
+			if(Country == "NL" && isCSO && ResPrint[1] != null && ResPrint[1].length > 0)
+			{
+				API.dbg(" Cancellation receipt found. Print it: "+ResPrint [1]);
+
+				//we MUST set the current view, otherwise the receipt printed will 
+				//have an incorrect refund setting. Not sure why atm. mz.
+				var hlp = new BusinessObjectHelper; 
+				var currView = hlp.getCurrentView(); 
+				var ctx=new SessionContext; 
+				ctx.set(KEY_VIEW,currView.toString(),true); 
+							
+				var CancellReceiptStr = "CASHLESS:" + ResPrint [1] +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@" +
+				" " + "@0@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" +
+				" " + "@" + 
+				" " + "@" +
+				" " + "@#";
+				//if PrintReceiptFirst store result in session
+				if(PrintReceiptFirst == true)
+				{
+					ctx.set("CashlessReceiptSession","currentPos",true);
+				}
+				PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CancellReceiptStr);
+			}
+			if(Country =="FR" && errcode == "2")   //refused receipt 
+			{
+				API.dbg("SOTEC resprint "+ ResPrint[2] + " | "+ResPrint[3]);
+				if(ResPrint[2] != null && ResPrint[2].length > 0) //delear receipt
+				{
+					API.dbg(" Cancellation receipt found. Print it: "+ResPrint [2]);
+
+					//we MUST set the current view, otherwise the receipt printed will 
+					//have an incorrect refund setting. Not sure why atm. mz.
+					var hlp = new BusinessObjectHelper; 
+					var currView = hlp.getCurrentView(); 
+					var ctx=new SessionContext; 
+					ctx.set(KEY_VIEW,currView.toString(),true); 
+								
+					var CancellReceiptStr = "CASHLESS:" + ResPrint [2] +
+					" " + "@" + 
+					" " + "@" +
+					" " + "@" +
+					" " + "@0@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" + 
+					" " + "@" +
+					" " + "@#";
+					//if PrintReceiptFirst store result in session
+					if(PrintReceiptFirst == true)
+					{
+						ctx.set("CashlessReceiptSession","currentPos",true);
+					}
+					PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CancellReceiptStr);
+				}
+				
+				if(ResPrint[3] != null && ResPrint[3].length > 0) //customer receipt
+				{
+					API.dbg(" Cancellation customer receipt found. Print it: "+ResPrint [3]);
+					// customer's receipt
+					var CancellReceiptStr = "CASHLESS:" + ResPrint [3] +
+					" " + "@" + 
+					" " + "@" +
+					" " + "@" +
+					" " + "@0@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" +
+					" " + "@" + 
+					" " + "@" +
+					" " + "@#";
+						//if PrintReceiptFirst store result in session
+					if(PrintReceiptFirst == true)
+					{
+						ctx.set("CashlessReceiptSession","currentPos",true);
+					}
+					PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CancellReceiptStr);
+				}
+			}
+			// declined
+			API.dbg ("  errcode != OK");
+			return false;
+		}
+	}
+	if((retcode[1] == "") && (retcode[2] == "")) {
+        API.dbg ("  errcode " + retcode [0] + retcode [1] + retcode [2]);
+        // we have some problem on the Eurecs
+       	PosShowMessage("Can not complete transaction\nCheck device for hardware fault!");
+		// Reset Pinpad
+		if (Country == "NL") {
+			InitResult = npTCLEvalEx("Eft_Operation 10 " + PosId.substring (3));
+		}
+		/*** todo???
+		else if(Country == "FR")
+		{
+	        InitResult = npTCLEvalEx("Eurecs_C3InitFR " + businessDate + " " + StoreID + " " + PosId.substring (3) + " operator ");
+		}
+		***/
+		else{
+			//MS 04.08.2010 - add new cashless for UK and IE
+			if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+			{
+				API.dbg("IBM cashless Mcpos_INIT not called");
+			}
+			else
+			{
+				//mz 23.08.2010: Eurecs_Initialization does nothing else than return true. Complete waste of time.
+				//npTCLEvalEx("Eurecs_Initialization 1");
+			}
+		}
+        return false;
+	}
+	
+	var auth="******";
+	var providername="";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer = glo_GiftCard_Footer;
+
+	if(retcode.length > 20) {
+		var info=ParseTrackInfo(retcode,cardType);
+        //PosShowMessage("info = " + info);
+	    var trackinfo=info.split("|");
+ 		// now cardType come from everest.dll as in "CR" "DB" and "GC"
+		//  =trackinfo[0];
+		auth=trackinfo[1];
+		providername=trackinfo[2];
+		cardnum=trackinfo[3];
+		expire=trackinfo[4];
+		seqno=trackinfo[5];
+	}
+
+	var GCBalance="0.00";
+	var Account=0; 
+	
+	//var Value=tenderValue;
+	if(cardType == "GC") {
+		tenderType="11";
+		if(errcode != EURECS_OK) {
+			var v=Number(retcode[4])/100;
+			if(v < 0) {
+	        	PosShowMessage("Gift Card value is less than zero!");
+				// Reset Pinpad
+				if (Country == "NL") {
+					//TODO: call initialization
+				}
+								/*** todo???
+				else if(Country == "FR")
+				{
+			        npTCLEvalEx("Eurecs_C3InitFR " + businessDate + " " + StoreID + " " + PosId.substring (3) + " operator ");
+				}
+				***/
+				else{
+					//MS 04.08.2010 - add new cashless for UK and IE
+					if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+					{
+						API.dbg("IBM cashless Mcpos_INIT not called");
+					}
+					else
+					{
+						//mz 23.08.2010: Eurecs_Initialization does nothing else than return true. Complete waste of time.
+						//npTCLEvalEx("Eurecs_Initialization 1");
+					}
+				}
+				return false;
+			}
+			Value=v.toFixed(2);
+		}
+		var balance=Number(retcode[5])/100;
+		GCBalance=balance.toFixed(2);
+		var ini=frompin.indexOf("50.VER15");
+		if(ini >= 0) {
+	    	Account=frompin.substr(ini+94,4); 
+		}
+	}
+	else{
+		local_GiftCard_Footer = ""; 
+	}
+	
+	var printFlag="0";
+	if(!refund) {
+		if((cardType == "CR") && (Number(Value) >= glo_CashlessSignLimit)) {
+			printFlag="1";
+		}
+    } else {
+    	if ((Number(Value) >= glo_CashlessRefundInfo) && (glo_CashlessRefundInfo != -1)) {
+        	printFlag="1";
+	    }
+	}
+
+	//# STORE NUMBER
+	var StoreNumber=frompin.substr(23,4);
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+	
+	//MS 30.03.2011  change the way we set customer receitp always on the second possition in the array
+	var noPrintMerchantReceipt = false;
+	if(isCSO)
+	{
+		noPrintMerchantReceipt = hlp.findParamInSectionWide("NoPrintMerchantReceipt", "PrintFromKioskOnCounter") == "true";
+	} 
+	else
+	{
+		noPrintMerchantReceipt = hlp.findParamInSectionWide("NoPrintMerchantReceipt", "PrintOnNetworkPrinter") == "true";
+	}
+	
+	
+	if(ResPrint [2 + Number(PayFr)] == null)
+	{
+		//there is just one receipt, the client e-cash receipt
+		//in this case we must copy it to iecond index and nor print it twice ( enable not print merchante receipt variable)
+		ResPrint[2+ Number(PayFr)] = ResPrint[1+ Number(PayFr)]; // copy the receipt to have correct indexes and the printing parameters working
+		noPrintMerchantReceipt =true;  //always true in this case because we do not want to print twice the same receipt
+	}
+	else
+	{
+		if((ResPrint[2+ Number(PayFr)]).length < 2) //Hermann says that we can have this case also
+		{
+			//there is just one receipt, the client e-cash receipt
+			//in this case we must copy it to iecond index and nor print it twice ( enable not print merchante receipt variable)
+			ResPrint[2+ Number(PayFr)] = ResPrint[1+ Number(PayFr)]; // copy the receipt to have correct indexes and the printing parameters working
+			noPrintMerchantReceipt =true; //always true in this case because we do not want to print twice the same receipt
+		}
+	}
+	
+	
+	/*DE workaround but not in used any more	kept here untill they will confirm that is working with the above code
+	if(ResPrint [2 + Number(PayFr)] == null) //germany is not having this null !!!
+	{
+		if((Country == "DE") && (fUseEftPos == true) && isCSO) //MZ apply this just for DE kiosk that uses EFTPOS
+		{
+			ResPrint[2+ Number(PayFr)] = ResPrint[1+ Number(PayFr)]; // copy the receipt to have correct indexes and the printing parameters working
+		}
+	}
+	else 
+	{
+		if ( ((ResPrint[2+ Number(PayFr)]).length < 2) && (Country == "DE") && (fUseEftPos == true) && isCSO) // (unbelievable - but length is 1) if no merchant receipt is available then the customer receipt is in the first index
+		{
+			ResPrint[2+ Number(PayFr)] = ResPrint[1+ Number(PayFr)]; // copy the receipt to have correct indexes and the printing parameters working
+	//    	API.dbg(" RESPRINT 2 (COPY) >>>" + ResPrint [2+ Number(PayFr)]);
+		}
+	}
+	*/
+    // dealer's receipt
+	var CashLessStr = "CASHLESS:" + ResPrint [1+ Number(PayFr)] +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+		
+    PosSetSessionProperty ("CASHLESS",CashLessStr);
+	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	
+    var hlp = new BusinessObjectHelper; 
+    var currView = hlp.getCurrentView(); 
+
+    var ctx=new SessionContext; 
+    ctx.set(KEY_VIEW,currView.toString(),true); 
+    
+    PosSetSessionProperty("CASHLESS",CashLessStr);	
+	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	
+	
+	var PrinterList = "";
+	var PrinterAliases = "";
+	var CashlessMerchantOnSecondPrinter = "0";
+
+	if(isCSO)
+	{
+		PrinterList = hlp.findParamInSectionWide("PrinterList", "PrintFromKioskOnCounter");
+		PrinterAliases = hlp.findParamInSectionWide("PrinterAliases", "PrintFromKioskOnCounter");
+		CashlessMerchantOnSecondPrinter = hlp.findParamInSectionWide("CashlessMerchantOnSecondPrinter", "PrintFromKioskOnCounter");
+	} 
+	else
+	{
+		PrinterList = hlp.findParamInSectionWide("PrinterList", "PrintOnNetworkPrinter");
+		PrinterAliases = hlp.findParamInSectionWide("PrinterAliases", "PrintOnNetworkPrinter");
+		CashlessMerchantOnSecondPrinter = hlp.findParamInSectionWide("CashlessMerchantOnSecondPrinter", "PrintOnNetworkPrinter");
+	}
+	
+	//printing the receipt
+	if (Country == "NL" && !isCSO) 
+	{//NL normal register
+		printEcash (CashLessStr, tenderType, PrintQType);
+	}
+	else
+	{//all countries and NL cso
+		if(noPrintMerchantReceipt == false)
+		{	
+			if(CashlessMerchantOnSecondPrinter == "1")
+			{
+				//f Print Receipt First on remote printer we store result in session
+				if(PrintRemoteReceiptFirst == true)
+				{
+					ctx.set("CashlessReceiptSession","remote",true);
+				}
+				PosCreateReport ("VIEW", "receiptCashless@reports.nps", "NOPREVIEW|MANDATORY|ALIAS", CashLessStr, PrinterAliases, PrinterList);
+			}else
+			{
+				//if PrintReceiptFirst store result in session
+				if(PrintReceiptFirst == true)
+				{
+					ctx.set("CashlessReceiptSession","currentPos",true);
+				}
+				PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+			}
+		}
+	}
+	
+	
+	// customer's receipt
+	if(ResPrint [2 + Number(PayFr)] != null) 
+	{
+		if ((ResPrint [2 + Number(PayFr)]).length > 1) {  
+				var CashLessStr = "CASHLESS:" + ResPrint [2 + Number(PayFr)] +
+					providername + "@" + 
+					cardnum + "@" +
+					expire + "@" +
+					auth + "@0@" +
+					printFlag + "@" +
+					seqno + "@" +
+					glo_MerchantID + "@" +
+					GCBalance + "@" +
+					Account + "@" +
+					Value + "@" + 
+					StoreNumber + "@" +
+					local_GiftCard_Footer + "@#";
+
+			if (Country == "NL" && !isCSO)
+			{
+				//MS 30.03.2011 add the client cashless receipt if required
+				ctx.set("IsClientEcashReceipt","true",true);
+				printEcash (CashLessStr, tenderType, PrintQType);
+			}else
+			{
+				if(CashlessMerchantOnSecondPrinter == "2")
+				{
+					//if print normal receipt first on the remote printer we store result in session
+					if(PrintRemoteReceiptFirst == true)
+					{
+						ctx.set("CashlessReceiptSession","remote",true);
+					}
+					PosCreateReport ("VIEW", "receiptCashless@reports.nps", "NOPREVIEW|MANDATORY|ALIAS", CashLessStr, PrinterAliases, PrinterList);
+				}else
+				{
+					//MS 30.03.2011 add the client cashless receipt if required
+					ctx.set("IsClientEcashReceipt","true",true);
+					//if PrintReceiptFirst store result in session
+					if(PrintReceiptFirst == true)
+					{
+						ctx.set("CashlessReceiptSession","currentPos",true);
+					}
+					PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+				}
+			}
+		}
+	}
+	
+	if(errcode == "3" && (Country =="UK"  || Country == "IE")) // untill 2.51.00 it was without paranthesis for the countries
+	{//ask for confirmation
+		
+		if(isNewCashless == true)
+		{
+			//MS 04.08.2010 - add new cashless for UK and IE
+			//mz 25.08.2010 - the signature confirmation is done within Mpcpos.
+			API.dbg("ECash after receipt print - Confirmed");
+			API.dbg ("Call  confirmation signature for Mpcpos_Pay 6 ");
+			frompin = npTCLEvalEx("Mpcpos_Pay 6 " +PosId.substring(2)+ " "+ businessDate_Eurecs + " 10 " + tendVal);
+			API.dbg ("Mpcpos_Pay confirm Return length " + frompin.length + " first 5 chars >" + frompin.substring (0, 5));
+			API.dbg ("Results for Mpcpos_Pay 6 "+ frompin);
+			if(frompin != null)  //MS 28.02.2011  in case of IBM cashless the first response for transaction with confirmation is not having the correct tender offset set. Need to take it here.
+			{
+				tenderType = Number(startTenderValue) + Number (frompin.charAt (4));	
+			}
+			/*var hlp = new BusinessObjectHelper;
+			//hlp.stopResumeScreenTimeOut();
+			if(PosShowConfirmationMessage("MSG_EC_CONFIRMATIONDIALOG","MSG_YES","MSG_NO")) 
+			{
+				//hlp.stopResumeScreenTimeOut();//enable timeout again
+				API.dbg("ECash after receipt print - Confirmed");
+				API.dbg ("Call  confirmation signature for Mpcpos_Pay 6 ");
+				frompin = npTCLEvalEx("Mpcpos_Pay 6 " +PosId.substring(2)+ " "+ businessDate_Eurecs + " 10 " + tendVal);
+				API.dbg ("Mpcpos_Pay confirm Return length " + frompin.length + " first 5 chars >" + frompin.substring (0, 5));
+				API.dbg ("Results for Mpcpos_Pay 6 "+ frompin);
+			}
+			else
+			{
+				//hlp.stopResumeScreenTimeOut();//enable timeout again
+				API.dbg("ECash after receipt print - rejected");
+				API.dbg ("Call  confirmation signature for Mpcpos_Pay 6 not printed ");
+				frompin = npTCLEvalEx("Mpcpos_Pay 6 " +PosId.substring(2)+ " "+ businessDate_Eurecs + " 11 " + tendVal);
+				API.dbg ("Mpcpos_Pay confirm (declined) Return length " + frompin.length + " first 5 chars >" + frompin.substring (0, 5));
+				API.dbg ("Results for Mpcpos_Pay 6 "+ frompin);
+			}*/
+		}
+		else
+		{
+			if(!refund)
+			{//differences for payment and refund. Because of message shown on signature dialog.
+				frompin = npTCLEvalEx("Eurecs_Confirm " + "1 " +"0 "+ "0");//remove if above solution should be used
+				
+			}
+			else
+			{
+				frompin = npTCLEvalEx("Eurecs_Confirm " + "1 " +"0 "+ "1");//remove if above solution should be used
+			}
+		}
+		if(frompin == null) 
+		{
+			PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+			return false;
+		}
+		frompin = UmlautReplace (frompin);
+	
+		ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+		API.dbg("JS cashlessPayment confirm ResPrint [0] = [" + ResPrint [0] + "]");        
+		var retcode= [0, "A", "A", 0];
+		retcode [0] = Number (frompin.charAt (1));
+			
+		if (frompin.charAt (0) == "-") 
+		{  // negative return code
+     			var errcode = Number (ResPrint [0]);
+		} else 
+		{
+			var errcode = retcode[0];
+		}
+		if(errcode != "0") 
+		{
+        	// declined
+	        API.dbg ("  errcode != OK");
+			if(ResPrint[1] != null && ResPrint[1].length > 0)
+			{
+			API.dbg(" Cancellation receipt found. Print it: "+ResPrint [1]);
+
+			//we MUST set the current view, otherwise the receipt printed will 
+			//have an incorrect refund setting. Not sure why atm. mz.
+			var hlp = new BusinessObjectHelper; 
+			var currView = hlp.getCurrentView(); 
+			var ctx=new SessionContext; 
+			ctx.set(KEY_VIEW,currView.toString(),true); 
+			PosSetSessionProperty("SignatureConfirmationCancelled","true");			
+			var CancellReceiptStr = "CASHLESS:" + ResPrint [1] +
+			" " + "@" + 
+			" " + "@" +
+			" " + "@" +
+			" " + "@0@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" +
+			" " + "@" + 
+			" " + "@" +
+			" " + "@#";
+			//if PrintReceiptFirst store result in session
+			if(PrintReceiptFirst == true)
+			{
+				ctx.set("CashlessReceiptSession","currentPos",true);
+			}
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CancellReceiptStr);
+			}
+			return false;
+		}
+		else
+		{//mz 27.08.2010: New Cashless UK. Print receipt returned after signature confirmation.
+			if(isNewCashless == true)
+			{
+				if(ResPrint[1] != null && ResPrint[1].length > 0)
+				{
+					API.dbg(" UK new cashless found receipt to print after signature confirmation: "+ResPrint [1]);
+
+					//we MUST set the current view, otherwise the receipt printed will 
+					//have an incorrect refund setting. Not sure why atm. mz.
+					var hlp = new BusinessObjectHelper; 
+					var currView = hlp.getCurrentView(); 
+					var ctx=new SessionContext; 
+					ctx.set(KEY_VIEW,currView.toString(),true); 
+
+					var CashLessStr = "CASHLESS:" + ResPrint [1] +
+						" " + "@" + 
+						" " + "@" +
+						" " + "@" +
+						" " + "@0@" +
+						" " + "@" +
+						" " + "@" +
+						" " + "@" +
+						" " + "@" +
+						" " + "@" +
+						" " + "@" + 
+						" " + "@" +
+						" " + "@#";
+
+					if(CashlessMerchantOnSecondPrinter == "2")
+					{
+						//if print normal receipt first on the remote printer we store result in session
+						if(PrintRemoteReceiptFirst == true)
+						{
+							ctx.set("CashlessReceiptSession","remote",true);
+						}
+						PosCreateReport ("VIEW", "receiptCashless@reports.nps", "NOPREVIEW|MANDATORY|ALIAS", CashLessStr, PrinterAliases, PrinterList);
+					}
+					else
+					{
+						//if PrintReceiptFirst store result in session
+						if(PrintReceiptFirst == true)
+						{
+							ctx.set("CashlessReceiptSession","currentPos",true);
+						}
+						PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+					}					
+				}
+				else
+				{//no receipt found. Log it.
+					API.dbg(" UK new cashless found no receipt to print.");
+				}	
+			}
+		}
+		API.dbg("cashless confirmation ok");
+	}//if(errcode == "3" && (Country =="UK"  || Country == "IE"))
+	
+	
+	
+	var bOpenDrawer=(refund) ? "0" : printFlag;
+	// 0 - do not open drawer
+	// 1 - open drawer to receive the signed receipt
+	//This has no influence on cashless refunds.
+   	PosSetSessionProperty("CASHLESS_STATUS",bOpenDrawer);
+
+	API.dbg("JS cashlessPayment set CASHLESS_TENDERID to: >" + tenderType + "<"); 
+	API.dbg("JS cashlessPayment set CASHLESS_VALUE to: >" + Value + "<");
+	API.dbg("JS cashlessPayment set CASHLESS_PROVIDER to: >" + providername + "<");
+	tenderType = "" +tenderType;
+   	PosSetSessionProperty("CASHLESS_TENDERID",tenderType);
+   	PosSetSessionProperty("CASHLESS_VALUE",Value);
+   	PosSetSessionProperty("CASHLESS_PROVIDER",providername);
+   	
+	// Reset Pinpad
+	if (Country == "NL") {
+			//TODO: call initialization
+	}
+	/*** todo???
+	else if(Country == "FR")
+	{
+        npTCLEvalEx("Eurecs_C3InitFR " + businessDate + " " + StoreID + " " + PosId.substring (3) + " operator ");
+	}
+	***/
+	else{
+		//MS 04.08.2010 - add new cashless for UK and IE
+		if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+		{
+			API.dbg("IBM cashless Mcpos_INIT not called");
+		}
+		else
+		{
+			//mz 23.08.2010: Eurecs_Initialization does nothing else than return true. Complete waste of time.
+			//npTCLEvalEx("Eurecs_Initialization 1");
+		}
+	}
+	return true;
+}
+
+/**
+TODO: add header
+this function will change its behavior starting with nps version 2.52.00, the parameter will be readed by defautl from PrinOnNetworkPrinter section
+**/
+function printEcash (CashLessStr, CardType, PrintQuestionType)
+{
+	var hlp = new BusinessObjectHelper; 
+	var PrintReceiptFirst = hlp.findParamInSectionWide("PrintReceiptFirst","Cashless") == "true";
+	var PrintRemoteReceiptFirst = hlp.findParamInSectionWide("PrintRemoteReceiptFirst","Cashless") == "true";
+	var ctx=new SessionContext; 
+	
+	var isCSO = PosCheckSessionProperty("POD","CSO");
+	
+	API.dbg("Sotec printEcash");
+	//TODO: implement it
+	var doPrint = true;
+	var hlp = new BusinessObjectHelper;
+	
+	// no receipts for debit cards 
+	if (CardType == 0) {
+	   doPrint = false;
+       }
+
+	// ask for receipt AskSignQuest "VRAAG HANDTEKENING"
+	if (PrintQuestionType == 1) {
+	   doPrint = true;
+	   }
+		
+	// ask for receipt AskSignQuest "VRAAG IDENTIFICATIE"
+	if (PrintQuestionType == 2) {
+       doPrint = true;
+       AskSign = AskIdent;
+	   }
+	
+	if (PrintQuestionType > 0) {
+		PosShowMessage (PrintInfo + "\r\n" + AskSign);
+		}
+	
+	var PrinterList = hlp.findParamInSectionWide("PrinterList", "PrintOnNetworkPrinter");
+	var PrinterAliases = hlp.findParamInSectionWide("PrinterAliases", "PrintOnNetworkPrinter");
+	var CashlessMerchantOnSecondPrinter = hlp.findParamInSectionWide("CashlessMerchantOnSecondPrinter", "PrintOnNetworkPrinter");
+	
+	if(isCSO) //: untill now this function is not called for CSO orders. Even so I did the test in case the function will be call also for CSO orders in future.
+	{
+		PrinterList = hlp.findParamInSectionWide("PrinterList", "PrintFromKioskOnCounter");
+		PrinterAliases = hlp.findParamInSectionWide("PrinterAliases", "PrintFromKioskOnCounter");
+		CashlessMerchantOnSecondPrinter = hlp.findParamInSectionWide("CashlessMerchantOnSecondPrinter", "PrintFromKioskOnCounter");
+	}
+	
+	while (doPrint) {
+		// ad second print on a further printer.
+		if(CashlessMerchantOnSecondPrinter == "1")
+		{
+			//Print first the receipt on the remote printer then the cashless receipt
+			if(PrintRemoteReceiptFirst == true)
+			{
+				ctx.set("CashlessReceiptSession","remote",true);
+			}	
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", "NOPREVIEW|MANDATORY|ALIAS", CashLessStr, PrinterAliases, PrinterList);
+		}else
+		{
+			//if PrintReceiptFirst store result in session
+			if(PrintReceiptFirst == true)
+			{
+				ctx.set("CashlessReceiptSession","currentPos",true);
+			}
+			PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+		}
+		if(combineOrderEcashReceipt == false)
+		{
+		   if (PosShowConfirmationMessage (RePrintQuestion, "MSG_YES","MSG_NO" )) {
+			  doPrint = false;
+			  }
+		}
+		else //if combine receipt is enable we cannot confirm if the receipt is printed ok, in this case we skip this
+		{
+			doPrint = false;
+		}
+	}
+	   
+}
+
+/**
+TODO: add header
+**/
+function PosPrintLastCashlessReceipt()
+{
+	//TODO: implement it
+}
+
+function PosCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,false);
+}
+
+function PosRefundCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,true);
+}
+
+function PosCashlessEndOfSale() {
+
+    API.dbg ("EV_DE PosCashlessEndOfSale");
+	if (!PosCheckParameter("TCLExtension","everest","true")) {
+		//PosShowMessage("Eurecs device not available");
+	    return false;
+	}
+//    result=npTCLEvalEx("Eurecs_Operation 15 0 0");
+	return true;
+}
+
+function PosResetPinpad() {
+
+	var hlp = new BusinessObjectHelper; 
+	if(isNewCashless == null)
+	{
+		isNewCashless = hlp.findParamInSectionWide("IBMCashless","Cashless") == "true";
+	}
+
+	//PosShowMessage("JS PosResetPinpad");
+	API.dbg("EV_DE JS PosResetPinpad");
+	PosSetSessionProperty("CASHLESS_STATUS","");
+   	PosSetSessionProperty("CASHLESS_VALUE","");
+   	PosSetSessionProperty("CASHLESS_PROVIDER","");
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		//PosShowMessage("Eurecs device not available");
+	    return false;
+	}
+	// Reset Pinpad
+	if(Country != "NL")
+	{//mz 19.06.09: no idea why that is used at all... but surely no good idea for eftpos
+		//MS 04.08.2010 - add new cashless for UK and IE
+		if((Country == "UK" || Country == "IE" ) && isNewCashless == true)
+		{
+			API.dbg("IBM cashless Mcpos_INIT not called");
+		}
+		else
+		{
+			//mz 23.08.2010: Eurecs_Initialization does nothing else than return true. Complete waste of time.
+			//result=npTCLEvalEx("Eurecs_Initialization 1");
+			restult = 1;
+		}
+	}
+	return true;
+}
+
+/** PosActivateGCJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosActivateGCJS</b>\n
+ * This BC activates GC!\n
+ * In a workflow sequence it is called:<b>PosActivateGCJS $Amount</b>\n
+ * In java script it should be called:<b>PosActivateGCJS(Amount)</b>\n
+ * Where: nAmount - string - (numeric value) Amount of gift card
+ * Return - rval - True if possible
+ */
+function PosActivateGCJS(GCValue,reload) {
+
+	API.dbg("EV_DE PosActivateGCJS GCValue [" + GCValue + "]");
+    API.dbg("   NOT IMPLEMENTED WITH EURECS !!!!");
+
+	return(false);
+}
+
+/*
+#
+# GCBalanceJS - Shows the Gift Card Balance
+#
+*/
+function GCBalanceJS () 
+{
+    API.dbg ("EV_DE GCBalanceJS");	
+    API.dbg("   NOT IMPLEMENTED WITH EURECS !!!!");
+
+	return ("");
+}
+
+/*
+#
+# GCBalanceJS - Cash out a gift card
+#
+*/
+function GCCashOutJS(maxCashOut) 
+{
+    API.dbg ("EV_DE GCCashOutJS");	
+    API.dbg("   NOT IMPLEMENTED WITH EURECS !!!!");
+
+	return(false);
+}
+
+//SetUpEurecs();
+
+//--------------------------
+// HB SOTEC
+// Replace the Non UTF-8 (german character) 
+//--------------------------
+function UmlautReplace (sString)
+{
+var sNoUml = "";
+var nreplace = 0;
+var asUml = new Array ("ä", "Ä", "ö", "Ö", "ü", "Ü", "ß", "<", ">", "&");
+var asUmlRepl = new Array ("ae", "AE", "oe", "OE", "ue", "UE", "ss", " ", " "," ");
+
+	//20.01.2009 OI if the string is null we must return.
+	if(sString == null)
+	{
+		return null;
+	}
+	sNoUml = sString;
+	// need to know the position where the umlaut was replaced, because the replacemnt would shift the formatting
+	// so for every replaced character double spaces "  " have to be replaced by a one space " " 
+	for(var i = 0; i < sNoUml.length; i++) {
+		for(var nUml = 0; nUml < 10; nUml++) {
+			if (sNoUml.charAt (i) == asUml [nUml]) {
+	      		sNoUml = sNoUml.substring (0, i) + asUmlRepl [nUml] + sNoUml.substring (i + 1);
+				nreplace++;
+			}
+		}
+		if ((sNoUml.substr (i, 2) == "  ") && (nreplace > 0)) {
+			sNoUml = sNoUml.substring (0, i) + sNoUml.substring (i + 1);
+			nreplace--;
+		}
+		if ((sNoUml.charAt (i) == "\n" ) || (sNoUml.charAt (i) == "\r" )){
+			nreplace = 0;
+		}
+	}
+return sNoUml;    
+}
+
+//--------------------------
+// HB SOTEC
+// retreive global configuration
+//------------------------------------
+function GetConfigInfo (config, data)
+{
+   API.dbg("getEurecsInfo");
+   var rootCash;
+   var rootPmix;   
+   var rootView;   
+   var rootHourlySales;
+   var rootSOS;   
+   var rootCustom;   
+   var rootProduct;   
+   var rootTimePunch;   
+	runGetConfig_Eurecs =false;
+	initGlobalt();
+	//API.dbg ("  getConfigInfo  " + config);
+	rootConfig = new XML(config);
+	API.dbg ("  GETConfigInfo" + rootConfig);
+	API.dbg("eurecs config "+config + "  ");
+	API.dbg("eurecs data "+data);
+	Country = rootConfig.Country.toUpperCase();
+    
+    PosSetSessionProperty ("CountryID", Country, "true");   
+
+	PosId   = rootConfig.PosId;
+	StoreID = rootConfig.StoreId;
+	
+	
+	for(var i = 0; i < data.length; i++) {
+	   if(data[i] != null) {
+   		var xml = new XML(data[i]);
+   		var dataType = xml.@requestDataType.toLowerCase();			
+       	API.dbg ("Reports init - dataType XML" + dataType);			
+   		if("cash" == dataType) {
+   			rootCash = xml;
+   		}else if("pmix" == dataType) {
+   			rootPmix = xml;
+   		}else if("view" == dataType) {
+   			rootView = xml;
+   		}else if("hourlysales" == dataType) {
+   			rootHourlySales = xml;
+   		}else if("sos" == dataType) {
+   			rootSOS = xml;
+			}else if("custom" == dataType) {
+				rootCustom = xml;
+			}else if("prods" == dataType) {
+				rootProduct = xml;
+			}else if("timepunch" == dataType) {
+				rootTimePunch = xml;
+			}
+		}
+	}
+	businessDate_Eurecs = rootCash.POS.@businessDate; 
+	
+	var length = rootCash.POS.OperatorSession.length();
+	var operatorSession = rootCash.POS.OperatorSession;
+	if(operatorSession!=null && Number(length) != 0)
+	{
+		OperatorID = operatorSession[length-1].@id; 
+		 API.dbg("getEurecsInfo OperatorID " + OperatorID);
+	}
+	if(rootView !=null )
+	{
+		var view = rootView.View;
+    } 
+	
+	
+// <StoreId>1275</StoreId>
+// <PosId>POS001</PosId>
+// <Header>\nThank You For Eating At\nYardley Wood</Header> 
+// <Footer>Vat Number : 371057172</Footer> 
+// <StoreName>Yardley Wood</StoreName> 
+// <StoreAddress>Yardley Wood</StoreAddress>
+// <StoreZipCode>B14 4BJ</StoreZipCode>
+// <City>Birmingham</City>
+// <Country>UK</Country>
+// <StorePhoneNumber>0121 430 4214</StorePhoneNumber>
+// <Email></Email>
+// <HomePage></HomePage>
+// <HelpDeskInfo>0000-00-0000</HelpDeskInfo>
+// <Locale>en_UK</Locale>
+// <DateFormat>dd-MM-yyyy</DateFormat>
+// <ReportFlags>NOPREVIEW</ReportFlags>
+// <DataTypes>CASH</DataTypes>
+// <Manager id="3" name="Carl Sagan"/>	
+
+	return outputBuffer;
+}
+
+
+//--------------------------
+// HB SOTEC
+// Get globale values which are already stored here
+//------------------------------------
+function GetEurecsInfo (sType)
+{
+
+if (sType == "COUNTRY") 
+{
+   return Country;
+}
+
+if (sType == "STOREID") 
+{
+   return StoreID;
+}
+
+if (sType == "POSID") 
+{
+   return PosId;
+}
+
+if (sType == "BDATE") 
+{
+   return businessDate_Eurecs;
+}
+if (sType == "OPERATORID") 
+{
+   return OperatorID;
+}
+
+return "";
+}
+
+//--------------------------
+// HB SOTEC
+// Set globale values which are stored here
+//------------------------------------
+function SetEurecsInfo (sType, Value)
+{
+
+if (sType == "COUNTRY") 
+{
+   Country = Value;
+   return Country;
+}
+
+if (sType == "STOREID") 
+{
+   StoreID = Value;
+   return StoreID;
+}
+
+if (sType == "POSID") 
+{
+   PosId = Value;
+   return PosId;
+}
+
+if (sType == "OPERATORID") 
+{
+   OperatorID = Value;
+   return OperatorID;
+}
+
+return Value;
+}
+
+
+/*
+* Replace erase the word double from the receipt
+*
+* MS  12.02.2009
+*/
+function ReplaceDouble(printString)
+{
+   var arrPrintMsg = printString.split("\n"); //we split the reciept in  lines
+   printString = "";
+   var bCharOn = false;
+   for each (var item in arrPrintMsg )
+   { 
+		//we seach for word double 
+        var doubleIndex= item.lastIndexOf("DOUBLE")+6;
+		var notLast = false;
+		if(doubleIndex != 5) //double in the line
+		{
+			for (var i =doubleIndex; i<item.length; i++) //find if the word is the last one in the line
+			{
+			   if(item.charAt(i) != " ") //double is not last
+			   {
+			     notLast=true;
+				 break;
+			   }
+			}
+		}
+		else //no double in the line 
+		{
+		   notLast = true;
+		}
+		
+		//get the actual lenght
+		
+			if(notLast == false) // DOUBLE printer flag mext line should be with DoubleCharOn
+			{
+			   
+			   bCharOn = true;
+			   if(Number(item.length) >6) //we have other words in the line we must copy them
+			   {
+					printString = printString+item.substring(0,Number(item.lastIndexOf("DOUBLE")))+item.substring(Number(item.lastIndexOf("DOUBLE"))+6,item.length);
+			   }
+			   printString = printString + "DoubleCharOn \n";
+			}
+			else
+			{
+			     printString = printString+item;
+				//printString = printString + item;
+				if(bCharOn == true)
+				{
+				    printString = printString + "DoubleCharOff";
+					bCharOn = false;
+				}
+				 printString = printString+"\n";
+			}
+		
+   }
+
+   //API.dbg("mihai str replace:"+printString);
+  return printString;
+}
+
+/* HB*/
+function GetStoreDbAdaptorParameter (sAdaptorType, sAdaptorSection, sAdaptorParameter)
+{
+	var storedbPath;
+	var posdbPath;
+	var sStoredbValue;
+
+	storedbPath = "Adaptors.Adaptor.(@type==\"" + sAdaptorType + "\").Section.(@name==\"" + sAdaptorSection + "\").Parameter.(@name==\"" + sAdaptorParameter + "\").@value";
+	posdbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"" + sAdaptorType + "\").Section.(@name==\"" + sAdaptorSection + "\").Parameter.(@name==\"" + sAdaptorParameter + "\").@value";
+	sStoredbValue = getConfigValue(storedbPath, posdbPath);
+	API.dbg ("GetStoreDbAdaptorParameter >" + storedbPath + "< >" + posdbPath + "<");
+	API.dbg ("GetStoreDbAdaptorParameter Value >" + sStoredbValue);
+	
+  	return sStoredbValue;
+}
+
+/* HB*/
+function GetStoreDbConfigurationParameter (sConfigurationType, sConfigurationSection, sConfigurationParameter, defaultValue)
+{
+	var storedbPath;
+	var posdbPath;
+	var sStoredbValue;
+
+	storedbPath = "Configurations.Configuration.(@type==\"" + sConfigurationType + "\").Section.(@name==\"" + sConfigurationSection + "\").Parameter.(@name==\"" + sConfigurationParameter + "\").@value";
+	posdbPath = "Configuration.(@imports==\"" + sConfigurationType + "\").Section.(@name==\"" + sConfigurationSection + "\").Parameter.(@name==\"" + sConfigurationParameter + "\").@value";
+	sStoredbValue = getConfigValue(storedbPath, posdbPath);
+	API.dbg ("GetStoreDbConfigurationParameter >" + storedbPath + "< >" + posdbPath + "<");
+	API.dbg ("GetStoreDbConfigurationParameter Value >" + sStoredbValue);
+	
+	if(defaultValue != null && (sStoredbValue+"").length == 0)  //be sure that the returned value is actually a string so that we can take the length
+	{
+		sStoredbValue = defaultValue;
+	}
+	
+  	return sStoredbValue;
+}
+
+/*MZ*/
+function GetStoreDbConfigurationParameterEurecs(sConfigurationType, sConfigurationSection, sConfigurationSubSection, sConfigurationParameter)
+{
+	var storedbPath;
+	var posdbPath;
+	var sStoredbValue;
+
+	storedbPath = "Configurations.Configuration.(@type==\"" + sConfigurationType + "\").Section.(@name==\"" + sConfigurationSection + "\").Section.(@name==\"" + sConfigurationSubSection + "\").Parameter.(@name==\"" + sConfigurationParameter + "\").@value";
+	posdbPath = "Configuration.(@imports==\"" + sConfigurationType + "\").Section.(@name==\"" + sConfigurationSection + "\").Section.(@name==\"" + sConfigurationSubSection + "\").Parameter.(@name==\"" + sConfigurationParameter + "\").@value";
+	sStoredbValue = getConfigValue(storedbPath, posdbPath);
+	API.dbg ("GetStoreDbConfigurationParameter >" + storedbPath + "< >" + posdbPath + "<");
+	API.dbg ("GetStoreDbConfigurationParameter Value >" + sStoredbValue);
+	
+  	return sStoredbValue;
+}
+
+/* HB*/
+function GetPosDbPosId()
+{
+
+	var posdbPath;
+	var sStoredbValue;
+
+	posdbPath = "Services.Service.(@type==\"POS\").@name";
+	sStoredbValue = getConfigValue("", posdbPath);
+	API.dbg ("GetPosDbPosId Value >" + sStoredbValue);
+	
+  	return sStoredbValue;
+}
+
+/* HB*/
+// extract the IP Address from the configured URL - Parameter name="url" value="http://10.167.98.71:8080/goform/RPC2"/>
+function IPAddressFromUrl (sUrl)
+{
+	var sIPAddress = "";
+	var nPositionIPStart;
+	var nPositionIPEnd;
+	var nIPLen;
+
+	nPositionIPStart = sUrl.indexOf ("/", 0) + 2; //nPositionStart is the first '/' of the '//' - so increment start position
+	nPositionIPEnd   = sUrl.indexOf (":", nPositionIPStart);
+	nIPLen = nPositionIPEnd - nPositionIPStart;
+	sIPAddress = sUrl.substr (nPositionIPStart, nIPLen);
+	API.dbg ("WAYSTATION IP: Position from " + nPositionIPStart + " to: " + nPositionIPEnd);
+	API.dbg ("WAYSTATION IP: " + sIPAddress);
+
+	return sIPAddress;
+}
+
+
+/* mz in case "" is returned return default value */
+function GetStoreDbConfigurationParameterOrDefault (sConfigurationType, sConfigurationSection, sConfigurationSubSection, sConfigurationParameter, sDefaultValue)
+{
+	var result;
+
+	result = GetStoreDbConfigurationParameterEurecs(sConfigurationType, sConfigurationSection, sConfigurationSubSection, sConfigurationParameter);
+	if(result == "")
+	{
+		result = sDefaultValue;
+	}
+	
+  	return result;
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d37393437001e0f4c99b48aeb8de427697d701de0e33e99ba7f604361f3a64f63889808ebedc4083611e40de1acfa4b34925a1c1c6a771c0010
+ * =================================================================================================================================
+*/

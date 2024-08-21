@@ -1,0 +1,298 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* telequipt.nps
+* This NPS file implements coin dispenser (everest).
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+* 2.53.00		30.04.2010	Mihai Secareanu	
+*  			       22.04.2010 Mihai Secareanu	save coin dispenser state (enable.disable in tlog) ;  change default value name
+*2.53.01		11.05.2010	Mihai Secareanu		change the name of the parameter that will set the maximum change given for other countries that CH
+ */
+
+//var TelequiptEnabled=true;
+var TelequiptLoaded=false;
+
+var coinDispenserExtName= "";
+
+/**PODFilterJS
+ *
+ * @brief - This BC coin dispenser get state 
+ * Return - rval - true if allowed to continue
+ */
+function POSTelequiptGetState()
+{
+	//change button text
+	if(PosCheckSessionProperty("CoinDispenserState","true") || !PosCheckSessionProperty("CoinDispenserState","false"))
+	{
+		PosChangeButtonProperties(0,"title|Coin Dispenser\nEnabled"); 
+	}
+	else
+	{
+		PosChangeButtonProperties(0,"title|Coin Dispenser\nDisabled"); 
+	}
+	return(true);
+}
+
+/**PODFilterJS
+ *
+ * @brief - This BC off on coin dispenser 
+ * Return - rval - true if allowed to continue
+ */
+function POSTelequiptSwitchONOFFJS()
+{
+	//change button text
+	if(PosCheckSessionProperty("CoinDispenserState","true") || !PosCheckSessionProperty("CoinDispenserState","false"))
+	{
+		EnableTelequipt(false);
+		PosChangeButtonProperties(0,"title|Coin Dispenser\nDisabled");
+		PosSetSessionProperty("CoinDispenserState","false",true);
+	}
+	else
+	{
+		EnableTelequipt(true);
+		PosChangeButtonProperties(0,"title|Coin Dispenser\nEnabled");
+		PosSetSessionProperty("CoinDispenserState","true",true);
+	}
+	return(true);
+}
+
+/*
+    SetupTelequipt - start or restart coin dispenser (FM: 21.Aug.2001)
+*/
+function EnableTelequipt(state) 
+{
+	if(!PosCheckParameter("TCLExtension","telequipt","true")) {
+	    return false;
+	}
+	//TelequiptEnabled=state;
+	if(TelequiptLoaded) {
+		return true;
+	}
+}
+ 
+ 
+
+/*
+    SetupTelequipt - start or restart coin dispenser (FM: 21.Aug.2001)
+*/
+function SetupTelequipt() {
+	
+	//get the extension name
+	 var storeDbPath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"extname\").@value";
+	 var posdbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"extname\").@value";
+	 coinDispenserExtName= getConfigValue(storeDbPath, posdbPath);
+	if(!PosCheckParameter("TCLExtension","telequipt","true")) {
+	    return false;
+	}
+	if(TelequiptLoaded) {
+		return true;
+	}
+	var port=npTCLXmlGetINI("Telequipt","CoinPort");
+	// Eugene.Leykind@mcd.com -- get config from posdb.xml
+	var baud=npTCLXmlGetINI("Telequipt","baudRate");
+	var parity=npTCLXmlGetINI("Telequipt","ParityCode");
+	var stopb=npTCLXmlGetINI("Telequipt","stopBits");
+	var datab=npTCLXmlGetINI("Telequipt","dataBits");
+	if ((port == null) || (port.length == 0)) {
+		PosShowMessage("<POSCoin> enabled but no port#, skipping!");
+		return(false);
+	}
+	if (parseInt(port) < 0) {
+		return(false);
+	}
+	//  default to Telequip
+	if ((baud == null) || (baud.length == 0)) {
+		baud="2400";
+	}
+	if ((parity == null) || (parity.length == 0)) {
+		parity="E";
+	}
+	if ((stopb == null) || (stopb.length == 0)) {
+		stopb="1";
+	}
+	if ((datab == null) || (datab.length == 0)) {
+		datab="7";
+	}
+	var rc=1; //with CH  ak0405.dll we do not need the initialisation or reset
+	if(coinDispenserExtName !="ak0405.dll") //default implementation with telequipt.dll
+	{
+		rc=parseInt(npTCLEvalEx("pos_DispenseReset " + port + " " + baud + " " + parity + " " + stopb + " " + datab));
+		if(rc <= 0)
+		{
+			//retry with intialisation
+			rc=parseInt(npTCLEvalEx("pos_DispenseReset " + port + " " + baud + " " + parity + " " + stopb + " " + datab));
+		}
+	}
+	//var rc=npTCLEvalEx("Ak_Init");
+	TelequiptLoaded=rc > 0;
+	return(TelequiptLoaded);
+}
+
+/*
+    PosDispenseCoins - call coin dispenser driver entry point (FM: 21.Aug.2001)
+    the function will return the coins in case of success	
+*/
+function PosDispenseCoins(coins) {
+	var amount="00";
+	PosDisplayText("",1);
+	if(!PosCheckParameter("TCLExtension","telequipt","true")) {
+		//PosShowMessage("telequipt device not available");
+	    return("00");
+	}
+	if(PosCheckSessionProperty("CoinDispenserState","false")) {
+	    return(coins);
+	}
+	if(SetupTelequipt()) {
+		if(coinDispenserExtName == "ak0405.dll") //CH
+		{
+		
+			var xmlStorePath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"CoinPort\").@value";
+			var xmlPosDbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"CoinPort\").@value";
+			var comPort = getConfigValue(xmlStorePath, xmlPosDbPath);
+			
+			var xmlStorePath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+			var xmlPosDbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+			var changeMaxValue = getConfigValue(xmlStorePath, xmlPosDbPath);
+				
+			if(changeMaxValue +"" =="" || Number(changeMaxValue) > 10)
+			{
+				changeMaxValue = 10;
+			}
+			changeMaxValue = 100 * Number(changeMaxValue);
+			
+			var allowedChange = coins % changeMaxValue;
+			var coins5 = allowedChange % 5;
+			allowedChange = allowedChange-coins5; //the accepted values are multiple of 5.	
+			var manualChange = Number(coins)-Number(allowedChange)+Number(coins5);
+			var result = 0;
+			if(allowedChange == 0) //we do not have to give change
+			{
+				return coins;
+			}
+			
+			//mz 06.07.09: call dll with comPort. Only working for DLL version 1.70.00 and higher.
+			var result = npTCLEvalEx("pos_CoinChange "+allowedChange+" "+comPort);
+			if(Number(result) == 0) //everything was ok with the dll
+			{
+				//it is possible that we must add some manual change (coins5)
+				PosShowMessage(API.getLocalMsg ("MSG_COIN_DISPENSER_COINS", new Array(API.formatNumber((allowedChange / 100), "##0.00", 6), API.formatNumber((manualChange / 100), "##0.00", 6))));
+				amount = Number(coins);
+			}
+			if (Number(result) == 1)
+			{
+                PosShowMessage(API.getLocalMsg("MSG_COIN_DISPENSER_ERROR"));
+				//disable telequipts
+				EnableTelequipt(false);
+				//to do update button if the button is place in tender screen.
+			    amount = Number(coins);
+			}
+			if (Number(result) == 2)
+			{
+				 PosShowMessage(API.getLocalMsg("MSG_COIN_DISPENSER_ERROR_CALCULATION"));
+				 amount = Number(coins);
+			}
+			if (Number(result) == 3) 
+			{
+				PosShowMessage(API.getLocalMsg("MSG_COIN_DISPENSER_ERROR_PORT"));
+				amount = Number(coins);
+			}
+			if (Number(result) == 4)
+			{
+				PosShowMessage(API.getLocalMsg("MSG_COIN_DISPENSER_ERROR_CHANGE"),new Array(API.formatNumber((allowedChange / 100), "##0.00", 6)));
+				amount = Number(coins);	
+			}
+		}		
+	    else //default telequipt.dll
+		{
+			//we have two behavior  1. give changes less then 5 euro (default)  and give changes less then 1 euro
+			var xmlStorePath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+			var xmlPosDbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+			var changeMaxValue = getConfigValue(xmlStorePath, xmlPosDbPath);
+			if(changeMaxValue +"" =="" || Number(changeMaxValue) > 10)
+			{
+				changeMaxValue = 5;
+			}
+			changeMaxValue = 100 * Number(changeMaxValue);
+			var change = coins % changeMaxValue;
+			if(change == 0) //we do not have to give change
+			{
+				return coins;
+			}
+			var results=npTCLEvalEx("pos_DispenseChange " + change);
+			if((results=="0") || (results=="00") || Number(results) == 0) {
+				//wait
+				//This solution cannot work because we have a problem with PosRunOSCommand in this version
+				/*var hlp = new BusinessObjectHelper;			
+				var SleepToolPath = hlp.findParamInSectionWide("Sleep", "XPTools");
+
+				if(SleepToolPath == null || SleepToolPath == "")
+				{
+					SleepToolPath = "D:\\XPTools\\Sleep.exe";
+				}
+				API.dbg("PosDispenseCoins SleepToolPath: " + SleepToolPath);
+				if(!PosRunOSCommand(SleepToolPath + " 2 /q"))
+				{
+					API.dbg("PosDispenseCoins Sleep failed.");
+				}*/
+
+				//Try to implement the wait with a timestamp loop
+				var dateObj = new Date();
+				var firstStamp = dateObj.getSeconds();
+				var currentStamp = dateObj.getSeconds();
+				var sleepSeconds = firstStamp + 2;
+
+				if(Number(sleepSeconds) >= 58)
+				{
+					sleepSeconds = 60 - Number(sleepSeconds);
+				}
+
+				do
+				{
+					dateObj = new Date();
+					currentStamp = dateObj.getSeconds();
+				} while ( Number(sleepSeconds) > Number(currentStamp));
+				
+				// reprogram and retry
+				TelequiptLoaded=false;
+				SetupTelequipt();
+				results=npTCLEvalEx("pos_DispenseChange " + change);
+			}
+			API.dbg("PosDispenseCoins results: " + results + " change" + change);
+			if( Number(results) == Number(change)) //operation succesed   //this was the original test results != "00" && results !=null
+			{
+				amount = Number(coins);
+				//oi 05.12.2008 change PosDisplayText to PosShowMessage, because the cernel overwritte the text from PosDisplayText
+				PosShowMessage("MSG_COIN_DISPENSER_COINS",API.formatNumber((change / 100), "##0.00", 6), API.formatNumber(((coins - change)/ 100), "##0.00", 6));
+			}
+			else //error with telequipt device
+			{
+				amount = 0;
+			}	
+		}	
+	}
+	return amount;
+
+}
+
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d373934370079385443a327a1aa349672b2c797648ae1f454331f05d70355ad64f104db2f3c3b18784edb354ec6c3149b8b6274c5a09f040010
+ * =================================================================================================================================
+*/

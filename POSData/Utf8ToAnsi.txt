@@ -1,0 +1,144 @@
+; 
+; NP6majorversion=6.1.17
+; NP6build=B191
+; NP6scriptversion=2.58.00
+; CreationDate=21.06.2011
+;
+; Copyright (c) 2009-2010 McDonald's IT Europe
+;
+; Utf8ToAnsi.txt
+;
+; ===========================================================================================================
+; 	UTF-8	  ANSI
+;	in 	    in             
+;	Hex	    Hex            		                 
+#ROWS= 128    DefaultChar= c340
+     c340	80 
+     c341	81 
+     c342	82 
+     c343	83 
+     c344	84 
+     c345	85 
+     c346	86 
+     c347	87 
+     c348	88 
+     c349	89 
+     c34a	8a 
+     c34b	8b 
+     c34c	8c 
+     c34d	8d 
+     c34e	8e 
+     c34f	8f 
+     c350	90 
+     c351	91 
+     c352	92 
+     c353	93 
+     c354	94 
+     c355	95 
+     c356	96 
+     c357	97 
+     c358	98 
+     c359	99 
+     c35a	9a 
+     c35b	9b 
+     c35c	9c 
+     c35d	9d 
+     c35e	9e 
+     c35f	9f 
+     c360	a0 
+     c361	a1 
+     c362	a2 
+     c363	a3 
+     c364	d4 
+     c365	d5 
+     c366	d6 
+     c367	a7 
+     c368	a8 
+     c369	a9 
+     c36a	aa 
+     c36b	ab 
+     c36c	ac 
+     c36d	ad 
+     c36e	ae 
+     c36f	af 
+     c370	b0 
+     c371	b1 
+     c372	b2 
+     c373	b3 
+     c374	b4 
+     c375	b5 
+     c376	b6 
+     c377	b7 
+     c378	b8 
+     c379	b9 
+     c37a	ba 
+     c37b	bb 
+     c37c	bc 
+     c37d	bd 
+     c37e	be 
+     c37f	bf 
+     c380	c0 
+     c381	c1 
+     c382	c2 
+     c383	c3 
+     c384	c4 
+     c385	c5 
+     c386	c6 
+     c387	80 
+     c388	d4 
+     c389	90 
+     c38a	d2 
+     c38b	d3 
+     c38c	8d 
+     c38d	d6 
+     c38e	d7 
+     c38f	d8 
+     c390	d0 
+     c391	d1 
+     c392	e3 
+     c393	e0 
+     c394	e2 
+     c395	87 
+     c396	d6 
+     c397	d7 
+     c398	d8 
+     c399	97 
+     c39a	e9 
+     c39b	96 
+     c39c	9a 
+     c39d	e7 
+     c39e	de 
+     c39f	df 
+     c3a0	85 
+     c3a1	a0 
+     c3a2	83 
+     c3a3	e3 
+     c3a4	84 
+     c3a5	e5 
+     c3a6	e6 
+     c3a7	87 
+     c3a8	8a 
+     c3a9	82 
+     c3aa	88 
+     c3ab	89 
+     c3ac	8d 
+     c3ad	88 
+     c3ae	8c 
+     c3af	8b 
+     c3b0	f0 
+     c3b1	f1 
+     c3b2	95 
+     c3b3	a2 
+     c3b4	93 
+     c3b5	94 
+     c3b6	f6 
+     c3b7	f7 
+     c3b8	f8 
+     c3b9	97 
+     c3ba	a3 
+     c3bb	96 
+     c3bc	81 
+     c3bd	fd 
+     c3be	fe 
+     c3bf	ff 
+	

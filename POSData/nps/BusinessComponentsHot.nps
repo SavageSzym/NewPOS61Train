@@ -1,0 +1,922 @@
+/** 
+ * BusinessComponentsHOT.nps
+ * This NPS file implements Kernel's BusinessComponentes for HOT.
+ *
+ * Copyright (c) 2005-2007 - Torex Retail PLC
+ *
+ * $Source: /NewPOS/SRC/np61cvs/cvs/___NewPOS6/src/npCore/npBusComp/scripts/BusinessComponentsHOT.nps,v $
+ * $Revision: 776 $
+ * $Date: 2009-08-06 10:46:38 -0300 (qui, 06 ago 2009) $ (of revision)
+ * $Author: rcaram $ (of revision)
+ *
+ */
+ 
+/* Variable used for version control */
+BUSINESS_COMPONENTS_HOT_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+//logs the version
+API.dbg("***************C S L   V E R S I O N***************"); 
+API.dbg("FILE                           VERSION");
+API.dbg("BusinessComponentsHot.nps      " + BUSINESS_COMPONENTS_HOT_VERSION);
+API.dbg("***************************************************");
+
+/**
+ * *************************************************
+ * Global constants
+ * *************************************************
+ */
+
+// Sale reduce errors
+const SALE_ERROR_CANCEL				=	3;		//!< Execution logic error (can't be forced)
+const SALE_ERROR_PROMOQTTY			= 	4;		//!< Cannot have a reduction bigger than the number of promos
+const SALE_ERROR_PROMO_LAST_ITEM	=	5;		//!< Cannot have a reduction that leaves the sale promoted
+const SALE_ERROR_VOIDSALE			=	6;		//!< Cannot have a reduction that leaves the sale empty
+
+// Product types (classes)
+const PC_UNDEFINED_KIND				=	0;		//!< Undefined kind
+const PC_RAW_ITEM					=	1;		//!< Raw ingredient
+const PC_PRODUCT					=	2;		//!< Regular product 
+const PC_VALUE_MEAL					=	3;		//!< Value meal 
+const PC_CHOICE						=	4;		//!< Choice (pseudo-product)
+const PC_GROUP						=	5;		//!< Group (pseudo-product)
+const PC_COMMENT					=	6;		//!< Comment 
+const PC_OPTION						=	7;		//!< Heads optional components 
+												//!< like cann-adds and comments (pseudo-product)
+const PC_NON_FOOD_PRODUCT			=	8;		//!< Non food product 
+const PC_COUPONS					=	9;		//!< Coupons
+
+// Product categories
+const FOOD							=	0;		//!< Food 
+const SERVICE						=	2;		//!< Service 
+const MATERIAL						=	3;		//!< Material 
+
+// Family groups
+const BREAKFAST_SIDE				=	1;
+const FRIES							=	3;
+const DESSERT						=	4;
+const SHAKES						=	5;
+const BREAKFAST_DRINK				=	6;
+const REGULAR_DRINK					=	7;
+const NON_PRODUCT					=	8;
+const SALADS						=	10;
+
+// GUI Sale List Types 
+const NPUI_LIST_AUX=0;							//!< Use single auxiliary list
+const NPUI_LIST_DBCREW=1;						//!< Use double crew list
+const NPUI_LIST_SALE=2;							//!< Use sale list
+const NPUI_LIST_PREVIEW=3;						//!< Use recall by preview list (reserve at least 4 positions from here)
+const NPUI_LIST_CONSOLIDATE=10;					//!< Use consolidate sale list
+
+// Product "salability"
+const PROD_SALABLE_OK=0;						//!< Product is salable
+const PROD_SALABLE_UPGRADE=1;					//!< Product not salable due to upgrade
+const PROD_SALABLE_POD=2;						//!< Product not salable due to POD
+const PROD_SALABLE_NOTFOUND=3;					//!< Product not salable becuase was not found
+const PROD_SALABLE_NOTINPROGRESS=4;				//!< Product not salable because sale is not in progress
+
+const SALE_STATUS_START=0;					// Default status (ready to sell, but no item sold so far)
+const SALE_STATUS_IN_PROGRESS=1;			// Sale in progress, at least one item sold (OPEN_SALE)
+const SALE_STATUS_ON_TOTAL=2;				// Sale totalized at least once
+const SALE_STATUS_TOTALIZED=4;				// Sale in tendering process (TOTAL_SALE)
+const SALE_STATUS_GRILLING=8;				// Sale in grill process (GRILL_IN_PROGRESS)
+const SALE_STATUS_RECALLED=16;				// Sale with recall pressed
+const SALE_STATUS_TENDERED=32;				// Sale tendered
+const SALE_STATUS_STORED=64;				// Sale stored
+const SALE_STATUS_PAID=128;					// Sale paid
+const SALE_STATUS_CLOSED=256;				// Not used
+const PROD_STATUS_HELD=512;					// Order in held condition - drive thru
+const PROD_STATUS_SERVED=1024;				// Order served - drive thru
+const SALE_STATUS_CURRENT_VOIDED=2048;		// Current sale voided
+const SALE_STATUS_LAST_VOIDED=4096;			// Last sale voided
+const SALE_STATUS_NON_ACCOUNTING=8192;		// Sale used for skipping cars
+const UNDEFINED_SALE_STATUS=16384;			// undefined status
+const SALE_STATUS_NUMBER=16384;				// last value 
+
+//SDE-2351
+/* Fix Script Fatal Error in SDO-2104*/
+
+/**
+ * *************************************************
+ * Global variables
+ * *************************************************
+ */
+var gnPromos						=	[0,0,0,0,0];
+var gnQttyPromos					=	0;
+var gsPromoProdCode					=	"";
+var NUMBER_FORMAT = "#,###,##0.00";
+
+executeScript("CSL_Init.nps",true);
+/**
+ * ***************************************************
+ * Kernel Default scripts
+ * ***************************************************
+ */
+ 
+/** PosClearDisplayJS
+ * @brief - Clears Sales panel and/or display a use message in it.
+ * @param - optional user message
+ * @return - true if ok
+ */
+function PosClearDisplayJS(msg) {
+	PosRefreshSalePanel(msg);
+	return(true);
+}
+
+/** PosCheckOpenChoicesJS
+  * @brief - This BC implements the Missing Item Indicator Japan requirement for HOT
+  * @param - cancel_image - Name of the cancel button image
+  * @param - bSellCloseChoices - Boolean value indicating if the closing choices products should be sell
+  * @return - true on success
+  */
+function PosCheckOpenChoicesJS(cancel_image, bSellCloseChoices) {
+	if(!PosCheckRealChoices(cancel_image, bSellCloseChoices)) {
+		return(false);
+	}
+	if(!PosCheckFakeChoices(cancel_image, bSellCloseChoices)) {
+		return(false);
+	}
+	return(true);
+}
+
+/** PosClearPromoJS
+  * @brief - This BC clear evey type of promo operation on the selected sale item.
+  * @return - rval - true/false
+  */
+function PosClearPromoJS() {
+	var hlp = new BusinessObjectHelper;
+	var view = hlp.getCurrentView();
+	if(view == null) {
+		return(true);
+	}
+	var viewXML = new XML(view);
+	if(viewXML == null) {
+		return(true);
+	}
+	var items = viewXML.ItemView;
+	if(items!=null && items.length()>0) {
+		var saleItem=items.(currentSelected==true);
+		if(saleItem!=null && saleItem.length()>0) {
+			if(saleItem[0].quantityPromo>0) {
+  				var currQtty=hlp.getQuantity();
+				hlp.setQuantity(0);
+				PosDoPromoItem(0);
+				hlp.setQuantity(0);
+				PosDoPromoItem(1);
+				hlp.setQuantity(currQtty);
+			}
+		}
+	}
+	return(true);
+}
+
+/** PosSavePromosJS
+ *
+ * @brief - Saves current promos in the currently selected item
+ * @param - none
+ * @return - true on success
+ */
+function PosSavePromosJS() {
+	var hlp = new BusinessObjectHelper;
+	var view = hlp.getCurrentView();
+	if(view == null) {
+		return(true);
+	}
+	var viewXML = new XML(view);
+	if(viewXML == null) {
+		return(true);
+	}
+	gnPromos=[0,0,0,0,0];
+	var items=viewXML.ItemView;
+	if(items!=null && items.length()>0) {
+		var saleItem=items.(currentSelected==true);
+		if(saleItem!=null && saleItem.length()>0) {
+			if(saleItem[0].quantityPromo>0) {
+				var promos = saleItem[0].promo;
+				for(i=0;i<promos.length();i++) {
+					gnPromos[promos[i].@id]=promos[i];
+				}
+				gnQttyPromos=saleItem[0].quantityPromo;
+				gsPromoProdCode=saleItem[0].productCode;
+			}
+		}
+	}
+	return(true);
+}
+
+/** PosRestorePromosJS
+ *
+ * @brief - Restores last saved promos by PosSavePromosJS BC
+ * @param - none
+ * @return - true on success
+ */
+function PosRestorePromosJS() {
+	if(gnQttyPromos == 0) {
+		return(true);
+	}
+	
+	var hlp = new BusinessObjectHelper;
+	var origSelIndex=hlp.getSelIndex();
+	var item = null;
+	var i = 0;
+	while((item=hlp.getSaleItem(i,0))!=null) {
+		var itemXML = new XML(item);
+		if(itemXML.@id == gsPromoProdCode) {
+			PosDoSelIndex(i);
+			var view = hlp.getCurrentView();
+			var viewXML = new XML(view);
+			var items=((viewXML!=null)?viewXML.ItemView:null);
+			if(items!=null && items.length() > 0) {
+				var saleItem=items.(currentSelected==true);
+				var qtty = Number(saleItem[0].quantity);
+				for(j=0; j<gnPromos.length && qtty>0; j++) {
+					if(gnPromos[j] <= 0) {
+						continue;
+					}
+					if(qtty >= gnPromos[j]) {
+						hlp.resetQuantity();
+						hlp.setQuantity(Number(gnPromos[j]));
+						PosDoPromoItem(j);
+						qtty-=gnPromos[j];
+						gnPromos[j]=0;
+					}
+					else {
+						hlp.resetQuantity();
+						hlp.setQuantity(Number(qtty));
+						PosDoPromoItem(j);
+						gnPromos[j]=(gnPromos[j]-qtty);
+						qtty=0;
+					}
+				}
+			}
+		}
+		i++;
+	}
+	
+	PosDoSelIndex(origSelIndex);
+	PosDoQuantum(-1);
+
+	gnPromos		=	[0,0,0,0,0];
+	gnQttyPromos	=	0;
+	gsPromoProdCode	=	"";
+	
+	return(true);
+}
+
+/** PosDoSkipCarJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosDoSkipCarJS</b>\n
+ * This BC put skip Car!\n
+ * In a workflow sequence it is called:<b>PosDoSkipCarJS</b>\n
+ * In java script it should be called:<b>PosDoSkipCarJS</b>\n
+ * Return - rval - true if possible
+ */
+function PosDoSkipCarJS()
+{
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	// Sale not started as yet...
+	if(!PosCheckSessionProperty("RemPOD","FC")) {
+		if(!PosShowConfirmationMessage("MSG_BC_DLG_SKIPCAR","MSG_OK","MSG_CANCEL")) {
+			return(false);
+		}
+		PosDoSkipCar();
+	}
+	return(true);
+}
+
+/** PosDoDisableChoicesJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosDoDisableChoicesJS</b>\n
+ * This BC implements a way to disable any open choice, and is used to implement the drink logic override.\n
+ * In a workflow sequence it is called:<b>PosDoDisableChoicesJS $choices</b>\n
+ * In java script it should be called:<b>PosDoDisableChoicesJS(choices)</b>\n
+ * Where: choices - string - '|' (pipe) separated list of choice codes to be disabled
+ * Return - rval - true if possible
+ */
+function PosDoDisableChoicesJS(choices, message) {
+	if(!PosNotATransactionInProgress("true")) {
+		if(PosDisableChoice (choices)) {
+			if(message.length > 0) {
+				PosDisplayText(message,"1");
+			}
+		}
+	}
+	else {
+		PosShowMessage("MSG_BC_NO_ORDER_IN_PROGRESS");
+		return(false);
+	}
+	return(true);
+}
+
+
+/** PosDoStressTestJS
+ * @brief - This BC was defined to help the QA team to perform a stress test using HHOT. 
+ *          Currently it is fully implemented for Japan environment but it can be used for other enviroments too.
+ *          Also, it's working with a fixed orders (Value meals from Japan's product DB).
+ * @param - int currQtty: the current counter for the orders
+ * @param - int maxQtty: the maximum number of test iterations
+ * @return - 'True' if it should continue and go to the next test iteration or 'False' when an error occurs or it reachs the end of the tests.
+ * Messages: It sets a context variable named "MsgFinStressTest" with a message to be displayed to the user.
+ */
+function PosDoStressTestJS(currQtty, maxQtty) {
+	if(Number(maxQtty) < 0) {
+		var hlp = new BusinessObjectHelper;
+		maxQtty = hlp.getQuantity();
+		currQtty=0;
+		PosDoQuantum(-1);
+	}
+	
+	PosSetSessionProperty("MsgFinStressTest","Finalized w/ ERROR!!!\nNumber of orders: "+currQtty);
+
+	if(!PosDoSale(9101)) { // HB
+		return(false);
+	}
+	if(!PosDoChoice(2020)) {
+		return(false);
+	}
+	if(!PosDoChoice(3120)) {
+		return(false);
+	}
+	if(!PosDoSale(9161)) { // DCB
+		return(false);
+	}
+	if(!PosDoChoice(2020)) {
+		return(false);
+	}
+	if(!PosDoChoice(3120)) {
+		return(false);
+	}
+	if(!PosDoSale(9111)) { // CB
+		return(false);
+	}
+	if(!PosDoChoice(2020)) {
+		return(false);
+	}
+	if(!PosDoChoice(3120)) {
+		return(false);
+	}
+	if(!PosDoSale(9181)) { // BM
+		return(false);
+	}
+	if(!PosDoChoice(2020)) {
+		return(false);
+	}
+	if(!PosDoChoice(3120)) {
+		return(false);
+	}
+	if(!PosDoSale(9171)) { // Chicken filet set
+		return(false);
+	}
+	if(!PosDoChoice(2020)) {
+		return(false);
+	}
+	if(!PosDoChoice(3120)) {
+		return(false);
+	}
+	if(!PosDoTotal()) {
+		return(false);
+	}
+	if(!PosDoStore(false)) {
+		return(false);
+	}
+	if(!PosRecallLastOrderJS()) {
+		return(false);
+	}
+	if(!PosDoVoidSale()) {
+		return(false);
+	}
+
+	currQtty=Number(currQtty)+1;
+	if(currQtty == maxQtty) {
+		PosSetSessionProperty("MsgFinStressTest","Finalized w/ SUCCESS!!!\nNumber of orders: "+currQtty);
+		currQtty = maxQtty = 0;
+		return(false);
+	}
+	
+	var cmd="<currQtty>"+currQtty+"</currQtty><maxQtty>"+maxQtty+"</maxQtty>";
+	return(PosSendUICmd(cmd));
+}
+
+
+
+/******************************************************************************************************/
+
+/**
+ * \brief Basic POS parameter getter
+ * \since NPS-4867
+ */
+/* Properties */
+if(typeof(BusinessObjectHelper) != "undefined") {
+    Config.prototype.helper    = new BusinessObjectHelper (); // Helper for configuration check
+}
+else {
+    Config.prototype.helper    = null;
+}
+Config.prototype.storewide = false;
+Config.prototype.section   = null;
+
+/* Methods */
+
+/**
+ * \brief Get a given parameter from configuration
+ * \param [in] param - Parameter name
+ * \return The parameter value
+ * \return null if parameter could not be obtained
+ * \since NPS-4867
+ */
+Config.prototype.getParameter = function (param) {
+    var value = null;
+    if(this.helper!=null) {
+        if (this.storewide) {
+            value = this.helper.findParamInSectionWide (param, this.section);
+        }
+        else {
+            value = this.helper.findParamInSectionConfig (param, this.section);
+        }
+    }
+    else {
+        value = "";
+    }
+    return value;
+}
+
+/**
+ * \brief Gets a boolean parameter from configuration
+ * \param [in] param - Parameter name
+ * \return A boolean
+ * \retval true of parameter is set
+ * \retval false if parameter is not set
+ * \since NPS-4867
+ */
+Config.prototype.getBoolParameter = function (param) {
+    var value = this.getParameter (param);
+    if ((null != value) && ("ENABLED" == value.toUpperCase ())) {
+	return true;
+    }
+    return false;
+}
+
+/**
+ * \brief Constructor of Config class
+ * \since NPS-4867
+ */
+function Config (section, storewide) {
+    this.section   = section;
+    this.storewide = storewide;
+}
+
+/**
+ * \brief Abstraction for a Enhanced Value Meal Receipt view, used for CODs and
+ * sale's panel.
+ * \since NPS-4867
+ */
+EVMRView.prototype.PC_VALUE_MEAL = 3;
+EVMRView.prototype.PC_CHOICE = 4;
+
+/**
+ * \brief Creates a view with adjusted view items. 
+ * \since NPS-4867
+ * \remarks This method will transfer all values of a choice to 
+ * its main product. However, it is done only if storedb is configured
+ * properly.
+ */
+EVMRView.prototype.adjustViewItems = function () {
+    var parentVm = -1;
+
+    if (this.showAsSinglePrice ()) {
+	for (var i = 0; i <  this.view().ItemView.length(); ++i) {
+	    var _item = this.view().ItemView[i];
+	    if (0 == this.view().ItemView[i].level) {
+	        parentVm = -1;
+		if (this.PC_VALUE_MEAL == this.view().ItemView[i].productType) {
+		   // This the value meal
+		   parentVm = i;
+		}
+	    }
+	    else if ((this.view().ItemView[i].level > 0)
+		&& (this.PC_CHOICE != this.view().ItemView[i].productType)
+		&& (3 == this.view().ItemView[i].prodAction) ) {
+		
+        	if(parentVm<0) {
+		    //parent is not a value meal
+		    continue;
+		}
+
+		// This is a choice
+		this.view().ItemView[parentVm].totalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalPrice) 
+			    + parseFloat (this.view().ItemView[i].totalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADNetTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADNetTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADNetTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].netTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitPrice) 
+			    + parseFloat (this.view().ItemView[i].unitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netUnitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netUnitPrice) 
+			    + parseFloat (this.view().ItemView[i].netUnitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalTax) 
+			    + parseFloat (this.view().ItemView[i].ADTotalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitTax) 
+			    + parseFloat (this.view().ItemView[i].unitTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].totalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalTax) 
+			    + parseFloat (this.view().ItemView[i].totalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalPrice      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADNetTotalPrice = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalTax      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netTotalPrice   = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitPrice       = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netUnitPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitTax         = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalTax        = API.formatNumber ("0", NUMBER_FORMAT, 8);
+	    }
+	}
+    } 
+}
+
+/**
+ * \brief Constructor for EVMR view abstraction
+ * \param [in] view - View to work on
+ * \since NPS-4867
+ */
+function EVMRView (view) {
+    var _config = new Config ("ValueMealDisplay", true);
+    var _view   = new XML (view);
+   
+    this.showAsSinglePrice = function () {
+	return _config.getBoolParameter ("VMDisplay_ShowAsSinglePrice");
+    }
+    this.view = function () {
+	return _view;
+    }
+    this.getStringView = function () {
+	return _view.toXMLString ();
+    }
+}
+
+/***************************************************************************/
+
+/**
+ * \brief Entry point called by kernel in order to create a EVMR view
+ * \param [in] view - View to consolidate in string format
+ * \since NPS-4867 
+ */
+function onAdjustViewForEvmr (view) {
+    var evmrView = new EVMRView (view);
+    evmrView.adjustViewItems ();
+    return evmrView.getStringView ();
+}
+
+/**
+ * \defgroup VIEWCONS View Consolidation
+ * \{
+ */
+
+/**
+ * \brief Constructor of ConsolidatedView class
+ * \param [in] view - View to consolidate in flat string format
+ */
+function ConsolidatedView (view) {
+    this.view = new XML (view);		// Original view to be consolidated
+}
+
+/**
+ * \brief Change Equivalent information
+ * \return 
+ */
+ConsolidatedView.prototype.changeEquivalent = function () {
+	var qtyViewItem=this.view.ItemView.length();
+	var qtyEquivItem=this.view.EquivalentItemView.length();
+	for(var j=0; j<qtyEquivItem; j++) {
+		for(var i=0; i < qtyViewItem; i++) {
+			if(this.view.ItemView[i].EquivalentCode.length() > 0) {
+				if(this.view.EquivalentItemView[j].productCode.toString() == this.view.ItemView[i].EquivalentCode.toString()) {
+					this.view.ItemView[i].productCode = this.view.EquivalentItemView[j].productCode;
+					this.view.ItemView[i].description = this.view.EquivalentItemView[j].description;
+					this.view.ItemView[i].longName = this.view.EquivalentItemView[j].longName;
+					this.view.ItemView[i].dtName = this.view.EquivalentItemView[j].dtName;
+					this.view.ItemView[i].displayOrder = this.view.EquivalentItemView[j].displayOrder;
+				}
+			}
+		}	
+	}
+}
+
+/**
+ * \brief Consolidates a view, returning its value in flat string format.
+ * \return The consolidated view.
+ */
+ConsolidatedView.prototype.consolidate = function () {
+	// Change equivalent
+	this.changeEquivalent();
+    // Create array with sale items
+    var newViewArray = this.detachChoice ();
+    // Create the consolidated view
+    var sortedView = this.createConsolidation (newViewArray);
+	// Sort the Consolidated View
+    this.sortView (sortedView);
+    // Copies attributes from original view
+    this.copyViewAttributes (sortedView);
+    return sortedView.toXMLString();
+}
+
+/**
+ * \brief Copies attributes from internal view to a provided view.
+ * \param [in] view - View to add attributes to
+ */
+ConsolidatedView.prototype.copyViewAttributes = function (view) {
+    for (var attr in this.view.@*) {
+	view.@[this.view.@*[attr].name()] = this.view.@*[attr];
+    }
+}
+
+/**
+ * \brief Detaches choices from a given view. 
+ *
+ * \return Returns a view with choices put outside value meals.
+ */
+ConsolidatedView.prototype.detachChoice = function () {
+	// Create array with sale items
+	var itemChoice=new Array();
+	var qtyPromoLevelZero=0;
+	var qtyLevelZero=0;
+	var qtyViewItem=this.view.ItemView.length();
+	var newViewArray = new Array ();
+	var isParentChoice=false;
+    
+	for(var i=0; i < qtyViewItem; i++) {
+		var item=this.view.ItemView[i];
+		lastItemCode=item.itemCode;
+		if(Number(item.level) == 0) {
+			qtyLevelZero=Number(item.quantity);
+			qtyPromoLevelZero=Number(item.quantityPromo);
+		}
+		// Verify Choice
+		if((Number(item.level) > 0) && (Number(item.prodAction) == 3)) {
+			if(Number(item.productType) != 4) {
+				// This is Choice
+				item.quantityPromo=qtyPromoLevelZero*item.quantity;
+				item.quantity*=qtyLevelZero;
+				var levelChoice=Number(item.level);
+				item.level=0;
+				item.levelChoice = levelChoice;
+				itemChoice.push({item:XML(item)});
+				for(var j=i+1; j < qtyViewItem; j++) {
+					var itemChoiceB=this.view.ItemView[j];
+					if(itemChoiceB.level > levelChoice) {
+						itemChoiceB.level-=levelChoice;
+						itemChoiceB.quantity*=item.quantity;
+					}
+					else {
+						break;
+					}
+				}
+				isParentChoice=true;
+			}
+		}
+		else if (item.isGrillLine == true && isParentChoice == true) {
+			// This is a Grill Item belongs to the Choice
+			itemChoice.push({item:XML(item)});
+		}
+		else {
+			// This is not Choice
+			newViewArray.push({item:XML(item)});
+			isParentChoice=false;
+		}
+	}
+    // Put choice items at array's end
+    for(var i=0; i < itemChoice.length; i++) {
+		var iInd=newViewArray.length;
+		newViewArray.push({item:XML(itemChoice[i].item)});
+    }
+    return newViewArray;
+}
+
+/** 
+ * \brief Create a consolidated view.
+ *
+ * \param [in] viewArray - Array representing a view
+ */
+ConsolidatedView.prototype.createConsolidation = function (viewArray) {
+    //Recreate Original XML
+    var auxXML=new XML("<View/>");
+    for(var i=0; i < viewArray.length; i++) {
+		var ItemXML=XML(viewArray[i].item);
+		auxXML.ItemView+=ItemXML;
+    }
+    var szViewArray=new Array();
+    var szAux="";	
+    var i=0;
+    // Create  line array with the same iItemCode
+    while(i < viewArray.length) {
+	var ItemView=viewArray[i].item;
+	var iItemCode = ItemView.itemCode.toString();
+	szAux =szAux + ItemView.productCode + ItemView.grilledQuantity;
+	for(var j=i+1; j < viewArray.length; j++) {		
+	    var nextItemView=viewArray[j].item;
+	    if((iItemCode!=nextItemView.itemCode) || (nextItemView.level==0)){
+		break;
+	    }
+	    szAux=szAux + nextItemView.productCode + nextItemView.grilledQuantity;
+	}
+	szViewArray.push({id:String(i), item:String(szAux)});
+	szAux="";
+	i=j;
+    }	
+    for(var i = 0; i < szViewArray.length; i++) {
+	var ItemArray = szViewArray[i].item;
+	var iInd      = Number(szViewArray[i].id);
+	
+	for(var j = i+1; j < szViewArray.length; j++) {		
+	    if(ItemArray == szViewArray[j].item) {
+		// Item already used in table
+		var jInd = Number(szViewArray[j].id);
+		szViewArray[j].item = -j;  
+
+		auxXML.ItemView[iInd].quantity = Number (auxXML.ItemView[iInd].quantity) 
+		    + Number (auxXML.ItemView[jInd].quantity);
+
+		auxXML.ItemView[iInd].quantityPromo = Number (auxXML.ItemView[iInd].quantityPromo)
+		    + Number (auxXML.ItemView[jInd].quantityPromo);
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].unitPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].unitPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].unitPrice = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].netUnitPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].netUnitPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].netUnitPrice = value1.toString();;
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].unitTax);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].unitTax);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].unitTax = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].totalPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].totalPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].totalPrice = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].netTotalPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].netTotalPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].netTotalPrice = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].totalTax);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].totalTax);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].totalTax = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].ADTotalPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].ADTotalPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].ADTotalPrice = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].ADNetTotalPrice);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].ADNetTotalPrice);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].ADNetTotalPrice = value1.toString();
+
+		var value1 = new BigDecimal(auxXML.ItemView[iInd].ADTotalTax);
+		var value2 = new BigDecimal(auxXML.ItemView[jInd].ADTotalTax);
+		value1 = value1.add(value2);
+		auxXML.ItemView[iInd].ADTotalTax = value1.toString();
+
+		//auxXML.ItemView[jInd].quantity = 0;
+		delete auxXML.ItemView[jInd];
+	    }
+	}
+    }
+    return auxXML;
+}
+
+/**
+ * \brief Sorts a consolidated view
+ * 
+ * \param [in, out] newViewCons - Consolidated view to sort, as a XML object
+ */
+ConsolidatedView.prototype.sortView = function (newViewCons) {
+    var flagdisplayOrder=false;
+    var displayOrderArray = new Array();
+    var compfunc = function (a, b) {
+	return (Number(a.id) - Number(b.id));
+    };
+    for each (var item in newViewCons.ItemView) {
+	if (Number(item.level) == 0) {
+	    displayOrderArray.push({id:Number(item.displayOrder)});
+	}
+    }
+    // Sort displayOrder Array
+    displayOrderArray.sort (compfunc)
+    //Seach duplicate displayOrder
+    for(var i=1; i < displayOrderArray.length; i++) {
+	if(displayOrderArray[i-1].id == displayOrderArray[i].id){
+	    // There is duplicate displayOrder
+	    flagdisplayOrder=true;
+	    break;
+	}
+    }
+    
+    // Create array with sale items
+    var newViewArray = new Array();
+    var key = "000000000";
+    var displayOrder = "000000000";
+    var productCode = "";
+    for each (var item in newViewCons.ItemView) {
+	if (Number(item.level) == 0) {
+	    key = API.formatNumber(Number(item.displayOrder), "000000000", 9)
+	}
+	displayOrder = API.formatNumber(Number(item.displayOrder), "000000000", 9)
+	if (flagdisplayOrder==true) {
+	    productCode = API.formatNumber(Number(item.productCode), "00000", 5)
+	}
+	// Create key to sort
+	var aux = String(key) + Number(item.level) + String(displayOrder)+ String(productCode);
+	newViewArray.push({id:String(aux), item:String(item)});
+    }
+    // Sort array with sale items
+    newViewArray.sort (compfunc);
+    
+    var sortViewCons = new XML("<View/>");
+    for(var i = 0; i < newViewArray.length; i++) {
+	var ItemView = new XML(newViewArray[i].item);
+	sortViewCons.ItemView+=ItemView;
+    }
+    
+    newViewCons = sortViewCons;
+}
+
+/**
+ * \brief Entry point called by kernel in order to consolidate a view
+ * \param [in] view - View to consolidate in string format
+ * \return Consolidated view in string format
+ */
+function onConsolidateView (view) {
+    var cnView = new ConsolidatedView (view);
+    return cnView.consolidate ();
+}
+
+function HShowNumericButton(quantity) {
+	var hlp = new BusinessObjectHelper;
+	var actual_quantity = hlp.getQuantity();
+	if(quantity == actual_quantity) {
+		PosHOTChangeNumericButtonProp(0,"invert|true");
+	}
+	else {
+		PosHOTChangeNumericButtonProp(0,"invert|false");
+	}
+}	
+
+/**PosShowMenuPriceDialogJS()
+*
+* @brief - This BC present the a info message if the show price is on
+*/
+function PosShowMenuPriceDialogJS() {
+	if(PosCheckSessionProperty("ISPRICEON","TRUE")) {
+		if(!PosShowConfirmationMessage("MSG_UI_SHOWPRICETURNOFF","MSG_YES","MSG_NO")) {
+			return(false);
+		}
+		/* Turn off the Show Prices */
+		PosSetShowPrice(); 
+		PosReloadCurrentScreen();
+	}
+}
+
+/**
+ * @brief - Set the aspect of the button dimension when show prices is true
+ */
+function PosShowPricesSizeSelectionJS(btnSize,IsFloat) {
+	var hlp = new BusinessObjectHelper;
+	var actualSize = hlp.getSizeSel();
+
+	if(actualSize == btnSize) {
+		PosChangeButtonProperties(0,"invert|true",IsFloat);
+	}
+	else {
+		PosChangeButtonProperties(0,"invert|false",IsFloat);
+	}
+}
+
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d3739343700117d0669190aa2dbb82b86649c297888b94789b1a30cdcde17d1c22c9337ffb701866c4fd0c688d060f2de6f2299da82593b0010
+ * =============================================================================================================================
+*/

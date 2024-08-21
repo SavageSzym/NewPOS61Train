@@ -1,0 +1,2 @@
+(7684)1109 135709.0#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(7684)1109 135737.3#SEV(npBusCompAux.c@785):	PosDayOpen expected at least 1 parameters and received 0.

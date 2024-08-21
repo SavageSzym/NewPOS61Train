@@ -1,0 +1,85 @@
+<root>
+<general>
+<Parameter name="version" value="NewPos6.1.17 RC20 HF1 B193 script version: 2.58.02"/>
+<Parameter name="lastChange" value="20.07.2011"/>
+</general>
+<npsFiles>
+<Script name="BCBillAcceptor.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCCashless.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCCOD.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCCoinDispenser.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCEvents.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCEventsHOT.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCPrinterStatus.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCTandem.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsBOI.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsCSOLocal.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsHOTLocal.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsLocal.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsWay.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsWeb.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="eurecs.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="everest.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="everestEMU.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="GrillScript.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="GrillScriptC.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="PTCOD.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="PTEcash.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="PTTollBooth.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="reports.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="reportsHOT.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="telequipt.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="telequiptEMU.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+</npsFiles>
+<i18n>
+<PropertyFile name="cLayer-messages_en.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors61.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors61_de.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors61_en.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors61_fr.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-errors61_nl.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_deAT.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_deDE.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_enIE.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_enUK.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_frFR.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_itCH.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_nlNL.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-localmessages_ptPT.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_de.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_deDE.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_en.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_enIE.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_fr.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_nl.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-messages61_pt.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-resources.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-resources_de.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-resources_deAT.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-resources_en.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PropertyFile name="pos-resources_fr.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+
+</i18n>
+<printer>
+<PrinterFile name="printerStartTSP552ControlChar.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar_Acrelec.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar_DE.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar_STAR.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar_TSP100.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="printerTMControlChar_WINCOR.properties" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="Utf8ToAnsi.txt" version="2.58.02" LastUpdate="20.07.2011"/>
+<PrinterFile name="Utf8ToAnsi_BTT080.txt" version="2.58.02" LastUpdate="20.07.2011"/>
+</printer>
+<hot>
+<Script name="BCEvents.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BCEventsHOT.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="BusinessComponentsHOTLocal.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+<Script name="reportsHOT.nps" version="2.58.02" LastUpdate="20.07.2011"/>
+</hot>
+<Workflow name="workflow.xml" version="2.58.02" LastUpdate="20.07.2011"/>
+</root>

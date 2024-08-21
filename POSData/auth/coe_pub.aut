@@ -1,0 +1,18 @@
+public aut version 93-9076
+authority id = coe
+authority level = 40
+authority name = NewPOS COE developer
+validity = 2010-04-18
+public pki version 9751-7947
+0d29b7b0d5269f9ccfa1b62a6884bbc1a57f8b40241fb82a3db4e37aee8135a4918dd41b5c1ecf0dd260e1eceab77db78140
+5
+signed aut version 93-9076
+authority id = corp
+authority level = 1
+authority name = NewPOS corp authorithy
+validity = 2010-04-18
+signature type = bottom
+time stamp (GMT) = Mon May 21 17:14:05 2007
+certificate = 393735312d37393437002ce375b5223f9c6a7126c2faae82261418ec7a7016d74816a2594743c4340911a94c9e3d71fdc8de16427ba4f8518739de090010
+==============================================================================================================================================================================
+

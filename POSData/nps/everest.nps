@@ -1,0 +1,823 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* Everest.nps
+* This NPS file implements cashless (everest).
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+ 
+const CASHLESS_GC="CASHLESS_GC";
+ 
+var EVEREST_OK=					  0;	/* OK */
+var	EVEREST_PARTIAL=			  1;	/* partial paid - gift card */
+var EVEREST_BALANCE=			  2;	// cashout cancelled by the operator
+var	EVEREST_ERROR=				 -1;	/* fatal error */
+
+var EVEREST_USERCANCEL=			 -4;	// cancelled by the user 
+var EVEREST_OPRCANCEL=			 -5;	// cancelled by the operator
+var EVEREST_OUTOFBALANCE=		-10;	// this card is active but out of balance 
+
+var	EVEREST_ONEMOREGC=			-21;	// One more Gift Card to Redeem 
+var	EVEREST_NOMOREGC=			-22;	// No more Gift Card to Redeem 
+var EVEREST_NOT_GC=			   	-23;	// It isn't a gift card
+var	EVEREST_NOCASHOUT=			-24;	// No cash on card to cash out 
+var EVEREST_MAXCASHOUT1=      	-25;	// Cash Out balance exceeds max amount 
+var EVEREST_MAXCASHOUT2=      	-26;	// Cash Out balance exceeds max amount 
+var EVEREST_FINALIZE_ERROR=		-27;	// Finalization failed - Canceling operation
+var EVEREST_SUPVPRIV=			-28;
+
+var EVEREST_PINPAD_ERROR=		-100;
+var EVEREST_PIN_TIMEOUT=		-101;	// operation timed out 
+var EVEREST_REFUND2GC=			-102;	// Refund to a Gift Card
+
+var RET_TCP_ERROR=				-200;
+var RET_SRV_TIMEOUT=			-201;	// operation timed out 
+var RET_NOSERVER=   	   	  	-202;	// Server unavailable
+var RET_CONN_RESET=				-203;	// connection reset
+var RET_AUTH_NOT_AVAILABLE=		-204;	// Authorization not available
+var RET_PIN_ERROR=				-205;	// PIN not accepted, please try again
+var RET_DECLINED=				-206;	// error connecting to server
+var RET_NOT_ACCCEPT=			-207;	// Card type not accepted, use another card or cash
+var RET_ALREADY_ACTIVE=			-208;	// Gift card is already activated
+var RET_NOT_ACTIVATED=			-209;	// Gift card isn't activated
+
+var EverestLoaded=false;
+var glo_GiftCard_Footer="";
+var glo_MerchantID="";
+var glo_CashlessSignLimit=25.;
+var glo_CashlessRefundInfo=-1;
+
+var StoreID = 0;
+
+function JSReprintEC() {
+var ResPrint = "";
+
+	var frompin = npTCLEvalEx("Eft_Operation 5 0 0");
+//    API.dbg ("EV_DE EftOp5 result " + frompin);		
+    frompin = UmlautReplace (frompin);
+    ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+
+	var CashLessStr = "CASHLESS:" + ResPrint [1] + ResPrint [2] + ResPrint [3] +
+		"@" + "@" + "@" + "@0@" + "0" + "@" + "@" + "@" + "@" + "@" + "@" + "@" + "@#";
+		
+    //PosSetSessionProperty("CASHLESS",CashLessStr);
+	//PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	
+	PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+	
+return true;
+}
+
+function JSReconWithClose() {
+
+	var result=npTCLEvalEx("Eft_Operation 13 0 0");
+    API.dbg ("EV_DE EftOp13 result " + result);		
+
+return true;
+}
+
+function JSStartDiagnose() {
+
+	var result=npTCLEvalEx("Eft_Operation 12 0 0");
+    API.dbg ("EV_DE EftOp12 result " + result);		
+
+return true;
+}
+
+function LoadEverest() {
+
+    API.dbg ("EV_DE LoadEverest");	
+	if(EverestLoaded) {
+		return true;
+	}
+	// Set online
+	var result=npTCLEvalEx("Eft_Operation 14 0 0");
+    API.dbg ("EV_DE EftOp14 result " + result);		
+	// Query pinpad
+//	result=npTCLEvalEx("Eft_Operation 20 0 0");
+//    API.dbg ("EV_DE EftOp20 result " + result);			
+	if(result == "-1") {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+		return false;
+	}
+    StoreID = npTCLXmlGetINI("StoreDetails","StoreId");	
+    API.dbg ("  SToreID " + StoreID);
+	EverestLoaded=true;
+	return true;
+}
+
+function SetUpEverest() 
+{
+    API.dbg ("EV_DE SetupEverest");	
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+	    API.dbg ("  Parameter TCLExtension everest NOT set");
+		return;
+	}
+	glo_GiftCard_Footer=npTCLXmlGetINI("AdditionalGiftCard","contact");
+	if (glo_GiftCard_Footer == null) {
+        	glo_GiftCard_Footer="For gift card balance call 1-877-443-8623";
+	}
+	glo_MerchantID=npTCLXmlGetINI("Everest","MerchantID");
+	var CashlessSignLimit=npTCLXmlGetINI("POSOptions","CashlessSignLimit");
+	if ((CashlessSignLimit != null) && (CashlessSignLimit != "")) {
+		glo_CashlessSignLimit=Number(CashlessSignLimit);
+    }	
+	LoadEverest();
+}
+
+
+/*
+#
+# ParseTrackInfo - Parse read track info
+# Returns a string delimited with pipe (|) containing the following information:
+# CardType|Athorization|ProviderName|CardNum|ExpirationDate|SequenceNumber
+#
+*/
+function ParseTrackInfo(retcode,cardType) {
+	
+	var ret="";
+
+	//# get the track information
+	var infocard=retcode[1].split("@");
+
+	//# get the oldCardType
+	var oldCardType="";
+	var a=infocard[0];
+	if (a.length > 41) {
+		oldCardType=a.substr(41,1);
+	}
+	ret += oldCardType + "|";
+
+	//# get auth number
+	var serverresp=retcode[2];
+	if(serverresp.length > 22) {
+		var auth=serverresp.substr(16,6);
+		if(auth.substr(0,2) == "LA") {
+			auth=Number(Math.round(Math.random()*999999)).toString();
+			if(auth.length < 6) {
+				auth="000000".substr(0,6-auth.length)+auth;
+			}
+		}
+		ret += auth;
+	}
+	ret += "|";
+
+	//# get sequence number
+	var seqno="";
+	if (serverresp.length > 13) {
+		seqno=serverresp.substr(10,4);
+	}
+	var providername="Invalid card type";
+	var cardnum="";
+	var tracks=infocard[1].split("=");
+	if ((cardType == "CR") || (cardType == "CC")) {
+		var provider=tracks[0].substr(1,1);
+		switch (provider) {
+		case '3':
+			provider=tracks[0].substr(2,1);
+			if(6 == provider || /* old prefix */ 8 == provider) {
+				providername="Master"; // Diners
+			} else { // 4 and 7
+				providername="Amex";
+			}
+			break;
+		case '4':
+			providername="Visa";
+			break;
+		case '5': // 51, 52, 53, 54, 55
+			providername="Master";
+			break;
+		case '6': // 6011
+			providername="Dscvr";
+			break;
+		default:
+			providername="Credit";
+			break;
+		}
+		cardnum=tracks[0].substr(1);
+	} else if (cardType == "DB") {
+		providername="Debit";
+		cardnum=tracks[0].substr(1);
+	} else if (cardType == "GC") {
+		providername="Gift Card";
+		var t0=tracks[0];
+		var t1=tracks[1];
+		cardnum=t1.substr(12,1)+t1.substr(14,2)+t0.substr(7,9)+t1.substr(16,4);
+	}
+	//PosShowMessage(cardnum);
+	ret += providername + "|" + cardnum + "|";
+	var e=tracks[1];
+	if (e.length > 4) {
+		var expire=e.substr(2,2);
+		expire += "/";
+		expire += e.substr(0,2);
+		ret += expire;
+	}
+	ret += "|" + seqno + "|";
+	return ret;
+}
+
+function cashlessPayment(tenderId,tenderValue,refund) 
+{
+	var result;
+	var bCont=false;
+	var ResPrint;
+
+    API.dbg("EV_DE JS cashlessPayment tenderId = [" + tenderId + "] tenderValue [" + tenderValue + "] refund [" + refund + "]");
+	
+   	PosSetSessionProperty("CASHLESS_STATUS","");
+//	if(!PosCheckParameter("TCLExtension","everest","true")) {
+//		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+//	    return false;
+//	}
+
+	var hlp = new BusinessObjectHelper;
+	var iSrv = hlp.getServiceIndex();
+	var rc=npAdpPrn_RequestSrv(iSrv,NPSRVPRN_STATUS,"*");
+	if(0 != Number(rc)) {
+		// Printer error
+		API.dbg ("  Printer error " + rc);
+		if(typeof(PosGetPrinterErrorJS) == "function") {
+			PosRemoteExecute("PosShowMessage","PRINTER_ERR",PosGetPrinterErrorJS(rc));
+		return false;	
+		}
+	}
+
+	var CashlessAmount="0.00";
+	var Value=tenderValue.replace(/\./,"");
+	var tenderType="10";
+	
+	var frompin;
+	if(refund == null) {
+		refund=false;
+	}
+	do {
+		if(!refund) {
+			// Amount operation
+			//frompin = npTCLEvalEx("Everest_Operation 5 " + Value + " " + tenderType + " 0 " +((bCont) ? "1" : "0"));
+			// HB 15.11.2007 DES-105 - Use converted value - else there are rounding issues
+            frompin = npTCLEvalEx("Eft_Operation 1 " + Value + " 0 " +  "3" + " 0 " + "ReceiptTxt " + StoreID);			
+            API.dbg ("  Eft_Operation Return length " + frompin.length + " first 5 chars >" + frompin.substring (0, 5));
+            // DO NOT STORE the RETURN text before UMLAUT CONVERSION - THIS corrupts the LOG and causes that NO EC sales are saved
+            frompin = UmlautReplace (frompin);
+		} else {
+		    //# get the total cashless amount sold
+			var hlp = new BusinessObjectHelper();
+			var XMLArray = hlp.getReportXML("CASH","CONSOLIDATED","","","");
+			if((XMLArray != null) && (XMLArray.length > 0)) {
+				var CashRoot = new XML(XMLArray[1]);
+				if(CashRoot != null) {
+					//PosShowMessage(CashRoot.@requestDataType);
+					var tender=CashRoot.CashDetails.Tenders.Tender.(@id == "10");
+					if(tender.length() > 0) {
+						//PosShowMessage(tender[0].@drawerAmount);
+						CashlessAmount=tender[0].@drawerAmount;
+					}
+				}
+			}
+			//PosShowMessage(tender[0].@drawerAmount);
+			if (Number(tenderValue) > Number(CashlessAmount)) {
+				PosShowMessage("MSG_BC_GC_NOT_ENOUGH");
+				return false;
+			}		
+			frompin=npTCLEvalEx("Everest_Operation 7 " + Value + " " + tenderType);
+		}
+		if(frompin == null) {
+			PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+			return false;
+		}
+
+		//PosShowMessage(frompin);
+
+        ResPrint = frompin.split ("|");  // 1 = header, 2 = receipt, 3 = add. print
+		API.dbg("JS cashlessPayment ResPrint [0] = [" + ResPrint [0] + "]");        
+		var retcode= [0, "A", "A", 0];
+		retcode [0] = Number (frompin.charAt (1));
+		retcode [3] = Number (frompin.charAt (2));		
+		tenderType = "" + (21 + retcode [3]);
+		if (frompin.charAt (0) == "-") {  // negative return code
+     		var errcode = Number (ResPrint [0]);
+		} else {
+			var errcode = retcode[0];
+		}
+		if(errcode == EVEREST_SUPVPRIV) {
+			bCont=PosGetAuthorization("manager");
+			PosLogDuplicateSwipe();
+		}
+	} while(bCont && errcode == EVEREST_SUPVPRIV);
+	var cardType=retcode[3];
+    API.dbg ("  errcode " + errcode + " ret: " + retcode [0] + " - " + retcode [1] + " - " + retcode [2] + " - " + retcode [3]);	
+	if((errcode != EVEREST_OK) && (errcode != EVEREST_PARTIAL)) {
+        // declined
+        API.dbg ("  errcode != OK && != PARTIAL");
+	    return false;
+	}
+	if((retcode[1] == "") && (retcode[2] == "")) {
+        API.dbg ("  errcode " + retcode [0] + retcode [1] + retcode [2]);
+        // we have some problem on the Everest
+       	PosShowMessage("Can not complete transaction\nCheck device for hardware fault!");
+		// Reset Pinpad
+		npTCLEvalEx("Everest_Operation 4 0 0");
+        return false;
+	}
+	
+	var auth="******";
+	var providername="";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer = glo_GiftCard_Footer;
+
+	if(retcode.length > 20) {
+		var info=ParseTrackInfo(retcode,cardType);
+        //PosShowMessage("info = " + info);
+	    var trackinfo=info.split("|");
+ 		// now cardType come from everest.dll as in "CR" "DB" and "GC"
+		// cardType=trackinfo[0];
+		auth=trackinfo[1];
+		providername=trackinfo[2];
+		cardnum=trackinfo[3];
+		expire=trackinfo[4];
+		seqno=trackinfo[5];
+	}
+
+	var GCBalance="0.00";
+	var Account=0;
+	
+	var Value=tenderValue;
+	if(cardType == "GC") {
+		tenderType="11";
+		if(errcode != EVEREST_OK) {
+			var v=Number(retcode[4])/100;
+			if(v < 0) {
+	        	PosShowMessage("Gift Card value is less than zero!");
+				// Reset Pinpad
+				npTCLEvalEx("Everest_Operation 4 0 0");
+				return false;
+			}
+			Value=v.toFixed(2);
+		}
+		var balance=Number(retcode[5])/100;
+		GCBalance=balance.toFixed(2);
+		var ini=frompin.indexOf("50.VER15");
+		if(ini >= 0) {
+	    	Account=frompin.substr(ini+94,4); 
+		}
+	}
+	else{
+		local_GiftCard_Footer = ""; 
+	}
+	
+	var printFlag="0";
+	if(!refund) {
+		if((cardType == "CR") && (Number(Value) >= glo_CashlessSignLimit)) {
+			printFlag="1";
+		}
+    } else {
+    	if ((Number(Value) >= glo_CashlessRefundInfo) && (glo_CashlessRefundInfo != -1)) {
+        	printFlag="1";
+	    }
+	}
+
+	//# STORE NUMBER
+	var StoreNumber=frompin.substr(23,4);
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+
+	var CashLessStr = "CASHLESS:" + ResPrint [1] + ResPrint [2] + ResPrint [3] +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+		
+    PosSetSessionProperty("CASHLESS",CashLessStr);
+	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+
+    var hlp = new BusinessObjectHelper; 
+    var currView = hlp.getCurrentView(); 
+
+    var ctx=new SessionContext; 
+    ctx.set(KEY_VIEW,currView.toString(),true); 
+    
+    PosSetSessionProperty("CASHLESS",CashLessStr);	
+	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	
+	PosCreateReport ("VIEW", "receiptCashless@reports.nps", 'NOPREVIEW|MANDATORY', CashLessStr);
+
+//	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+
+	//PosShowMessage(CashLessStr);
+	//API.dbg("JS cashlessPayment CASHLESS = [" + CashLessStr + "]");
+	
+	var bOpenDrawer=(refund) ? "0" : printFlag;
+	// 0 - do not open drawer
+	// 1 - open drawer to receive the signed receipt
+   	PosSetSessionProperty("CASHLESS_STATUS",bOpenDrawer);
+
+	API.dbg("JS cashlessPayment set CASHLESS_TENDERID to: >" + tenderType + "<");           
+	tenderType = "" +tenderType;
+   	PosSetSessionProperty("CASHLESS_TENDERID",tenderType);
+   	PosSetSessionProperty("CASHLESS_VALUE",Value);
+   	PosSetSessionProperty("CASHLESS_PROVIDER",providername);
+   	
+	// Reset Pinpad
+	npTCLEvalEx("Everest_Operation 4 0 0");
+	return true;
+}
+
+function PosCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,false);
+}
+
+function PosRefundCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,true);
+}
+
+function PosCashlessEndOfSale() {
+
+    API.dbg ("EV_DE PosCashlessEndOfSale");
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		//PosShowMessage("Everest device not available");
+	    return false;
+	}
+    result=npTCLEvalEx("Everest_Operation 15 0 0");
+	return true;
+}
+
+function PosResetPinpad() {
+
+	//PosShowMessage("JS PosResetPinpad");
+	API.dbg("EV_DE JS PosResetPinpad");
+	PosSetSessionProperty("CASHLESS_STATUS","");
+   	PosSetSessionProperty("CASHLESS_VALUE","");
+   	PosSetSessionProperty("CASHLESS_PROVIDER","");
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		//PosShowMessage("Everest device not available");
+	    return false;
+	}
+	// Reset Pinpad
+    result=npTCLEvalEx("Everest_Operation 4 1 0");
+	return true;
+}
+
+/** PosActivateGCJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosActivateGCJS</b>\n
+ * This BC activates GC!\n
+ * In a workflow sequence it is called:<b>PosActivateGCJS $Amount</b>\n
+ * In java script it should be called:<b>PosActivateGCJS(Amount)</b>\n
+ * Where: nAmount - string - (numeric value) Amount of gift card
+ * Return - rval - True if possible
+ */
+function PosActivateGCJS(GCValue,reload) {
+
+	API.dbg("EV_DE PosActivateGCJS GCValue [" + GCValue + "]");
+
+	//PosShowMessage("PosActivateGCJS ...");
+
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		PosShowMessage("Everest device not available");
+    	PosSetSessionProperty("CASHLESS_STATUS","");
+	    return false;
+	}
+
+	// Reset Pinpad
+    result=npTCLEvalEx("Everest_Operation 4 0 0");
+    
+	var Value=GCValue.replace(/\./,"");
+	var tenderType="11";
+	
+	var frompin;
+	
+	// Amount operation
+   	frompin=npTCLEvalEx("Everest_Operation" + ((reload) ? " 11 " : " 10 ") + Value + " 0");
+	if(frompin == null) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+		return false;
+	}
+	//API.dbg("PosActivateGCJS FROMPIN = [" + frompin + "]");
+	//PosShowMessage(frompin);
+
+	var retcode=frompin.split(/[\\#]/);
+	var errcode=Number(retcode[0]);
+	var cardType=retcode[3];
+	if((errcode != EVEREST_OK) && (errcode != EVEREST_PARTIAL)) {
+		// Reset Pinpad
+		npTCLEvalEx("Everest_Operation 4 0 0");
+        // declined
+	    return false;
+	}
+	if((retcode[1] == "") && (retcode[2] == "")) {
+        // we have some problem on the Everest
+       	PosShowMessage("Can not complete transaction\nCheck device for hardware fault!");
+		// Reset Pinpad
+		npTCLEvalEx("Everest_Operation 4 0 0");
+        return false;
+	}
+
+	var auth="******";
+	var providername="";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer = glo_GiftCard_Footer;
+
+	if(retcode.length > 2) {
+		var info=ParseTrackInfo(retcode,cardType);
+        //	PosShowMessage("info = " + info);
+	    var trackinfo=info.split("|");
+ 		// now cardType come from everest.dll as in "CR" "DB" and "GC"
+		// cardType=trackinfo[0];
+		auth=trackinfo[1];
+		providername=trackinfo[2];
+		cardnum=trackinfo[3];
+		expire=trackinfo[4];
+		seqno=trackinfo[5];
+	}
+
+	var Account=0;
+	Value=GCValue;	
+	var balance=Number(retcode[5])/100;
+	var GCBalance=balance.toFixed(2);
+	var ini=frompin.indexOf("50.VER15");
+	if(ini >= 0) {
+		Account=frompin.substr(ini+94,4); 
+	}
+
+	var printFlag="0";
+
+	//# STORE NUMBER
+	var StoreNumber=frompin.substr(23,4);
+
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	PosSetSessionProperty(CASHLESS_GC,CashLessStr);
+	//PosShowMessage(CashLessStr);
+	//API.dbg("PosActivateGCJS CASHLESS_GC = [" + CashLessStr + "]");
+	
+	// Reset Pinpad
+	npTCLEvalEx("Everest_Operation 4 0 0");
+	return(true);
+}
+
+/*
+#
+# GCBalanceJS - Shows the Gift Card Balance
+#
+*/
+function GCBalanceJS () 
+{
+    API.dbg ("EV_DE GCBalanceJS");	
+	PosSetSessionProperty(CASHLESS_GC,"");
+	
+	//PosShowMessage("GCBalanceJS ...");
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+	    return null;
+	}
+	var hlp = new BusinessObjectHelper;
+	var frompin;
+	// Amount operation
+	hlp.stopResumeScreenTimeout(false);
+   	frompin=npTCLEvalEx("Everest_Operation 12 0 0");
+	hlp.stopResumeScreenTimeout(true);
+	if(frompin == null) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+		return null;
+	}
+	//API.dbg("PosActivateGCJS FROMPIN = [" + frompin + "]");
+	//PosShowMessage(frompin);
+	var retcode=frompin.split(/[\\#]/);
+	var errcode=Number(retcode[0]);
+	var cardType=retcode[3];
+	if((errcode != EVEREST_OK) && (errcode != EVEREST_PARTIAL)) {
+	    return null;
+	}
+	if((retcode[1] == "") && (retcode[2] == "")) {
+        // we have some problem on the Everest
+       	PosShowMessage("Can not complete transaction\nCheck device for hardware fault!");
+		// Reset Pinpad
+		npTCLEvalEx("Everest_Operation 4 0 0");
+        return null;
+	}
+	var auth="******";
+	var providername="";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer = glo_GiftCard_Footer;
+	if(retcode.length > 2) {
+		var info=ParseTrackInfo(retcode,cardType);
+        //	PosShowMessage("info = " + info);
+	    var trackinfo=info.split("|");
+ 		// now cardType come from everest.dll as in "CR" "DB" and "GC"
+		// cardType=trackinfo[0];
+		auth=trackinfo[1];
+		providername=trackinfo[2];
+		cardnum=trackinfo[3];
+		expire=trackinfo[4];
+		seqno=trackinfo[5];
+	}
+	var Account=0;
+	var balance=Number(retcode[5])/100;
+	var GCBalance=balance.toFixed(2);
+	var ini=frompin.indexOf("50.VER15");
+	if(ini >= 0) {
+		Account=frompin.substr(ini+94,4); 
+	}
+	var printFlag="0";
+	//# STORE NUMBER
+	var StoreNumber=frompin.substr(23,4);
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+	
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		GCBalance + "@" + // Value
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	return(CashLessStr);
+}
+
+/*
+#
+# GCBalanceJS - Cash out a gift card
+#
+*/
+function GCCashOutJS(maxCashOut) 
+{
+    API.dbg ("EV_DE GCCashOutJS");	
+	PosSetSessionProperty(CASHLESS_GC,"");
+
+	//PosShowMessage("GCCashOutJS ...");
+	var threshold=maxCashOut.replace(/\./,"");
+	
+	if(!PosCheckParameter("TCLExtension","everest","true")) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+	    return(false);
+	}
+	var frompin;
+	// Amount operation
+   	frompin=npTCLEvalEx("Everest_Operation 14 " + threshold + " 0");
+	if(frompin == null) {
+		PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+	    return(false);
+	}
+	//API.dbg("GCCashOutJS FROMPIN = [" + frompin + "]");
+	//PosShowMessage(frompin);
+	var retcode=frompin.split(/[\\#]/);
+	var errcode=Number(retcode[0]);
+	var cardType=retcode[3];
+	if((errcode != EVEREST_OK) && (errcode != EVEREST_BALANCE)) {
+        // declined
+	    return(false);
+	}
+	if((retcode[1] == "") && (retcode[2] == "")) {
+        // we have some problem on the Everest
+       	PosShowMessage("Can not complete transaction\nCheck device for hardware fault!");
+	    return(false);
+	}
+	var auth="******";
+	var providername="";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer = glo_GiftCard_Footer;
+	if(retcode.length > 2) {
+		var info=ParseTrackInfo(retcode,cardType);
+        //	PosShowMessage("info = " + info);
+	    var trackinfo=info.split("|");
+ 		// now cardType come from everest.dll as in "CR" "DB" and "GC"
+		// cardType=trackinfo[0];
+		auth=trackinfo[1];
+		providername=trackinfo[2];
+		cardnum=trackinfo[3];
+		expire=trackinfo[4];
+		seqno=trackinfo[5];
+	}
+	var Account=0;
+	var ini=frompin.indexOf("50.VER15");
+	if(ini >= 0) {
+		Account=frompin.substr(ini+94,4); 
+	}
+	var Value=(Number(retcode[4])/100).toFixed(2);
+	var GCBalance=(Number(retcode[5])/100).toFixed(2);
+	var printFlag="0";
+	//# STORE NUMBER
+	var StoreNumber=frompin.substr(23,4);
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	PosSetSessionProperty(CASHLESS_GC,CashLessStr);
+   	PosSetSessionProperty("CASHLESS_TENDERID","11");
+   	PosSetSessionProperty("CASHLESS_VALUE",Value);
+	return(EVEREST_OK == errcode);
+}
+
+SetUpEverest();
+
+//--------------------------
+// HB SOTEC
+// Replace the Non UTF-8 (german character) 
+//--------------------------
+function UmlautReplace (sString)
+{
+var sNoUml = "";
+var nreplace = 0;
+var asUml = new Array ("ä", "Ä", "ö", "Ö", "ü", "Ü", "ß");
+var asUmlRepl = new Array ("ae", "AE", "oe", "OE", "ue", "UE", "ss");
+
+    sNoUml = sString;
+    // need to know the position where the umlaut was replaced, because the replacemnt would shift the formatting
+    // so for every replaced character double spaces "  " have to be replaced by a one space " "
+	for(var i = 0; i < sNoUml.length; i++) {
+    	for(var nUml = 0; nUml < 7; nUml++) {
+    	    if (sNoUml.charAt (i) == asUml [nUml]) {
+	            sNoUml = sNoUml.substring (0, i) + asUmlRepl [nUml] + sNoUml.substring (i + 1);
+	            nreplace++;
+	            }
+	        }
+	    if ((sNoUml.substr (i, 2) == "  ") && (nreplace > 0)) {
+	        sNoUml = sNoUml.substring (0, i) + sNoUml.substring (i + 1);
+	        nreplace--;
+	    }
+	    if ((sNoUml.charAt (i) == "\n" ) || (sNoUml.charAt (i) == "\r" )){
+	        nreplace = 0;
+	    }
+    }
+    
+return sNoUml;    
+}
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d3739343700363adc389734c520ad524ee3afe52b41819462a1e5ca325a7b479047563c6621d17003d602ff91bea65052fde9c66880723f0010
+ * =================================================================================================================================
+*/

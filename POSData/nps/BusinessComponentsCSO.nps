@@ -1,0 +1,110 @@
+/** 
+ * @file BusinessComponentsCSO.nps
+ * @brief This NPS file implements BusinessComponentsCSO Initialiation. This is the main entry of CSL for CSO.
+ *
+ * @addtogroup 	CSL The NewPOS Core Script Lybrary (CSL)
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * $Source: /NewPOS/SRC/np61cvs/cvs/___NewPOS6/src/npCore/npBusComp/scripts/BusinessComponentsCSO.nps,v $
+ * $Revision: 776 $
+ * $Date: 2009-08-06 10:46:38 -0300 (qui, 06 ago 2009) $ (of revision)
+ * $Author: rcaram $ (of revision)
+ * @{
+ */
+
+/* Variable used for version control */
+BUSINESS_COMPONENTS_CSO_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+API.dbg("***************C S L   V E R S I O N***************"); 
+API.dbg("FILE                          VERSION");
+API.dbg("BusinessComponentsCSO.nps     " + BUSINESS_COMPONENTS_CSO_VERSION);
+API.dbg("***************************************************");
+
+executeScript("BusinessComponents.nps",true);
+executeScript("CSL_CSO.nps",true);
+
+/**onPromoItem
+ *
+ * @brief - This function handles onPromoItem event
+ * @return - rval - if it's true the caller is allowed to continue
+ * @author - kalil
+ */
+function onPromoItem(tp) {
+	return(true);
+}
+
+/**onHILO
+ *
+ * @brief - When the HILO is reached on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onHILO() {
+	return(true);
+}
+
+/**onHALO
+ *
+ * @brief - When the HALO is reached on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onHALO() {
+	return(true);
+}
+
+/**onTenderExceeded
+ *
+ * @brief - When the tender is exceeded on Kiosk (CSO) we should not ask for a manager authorization.
+ * @return - rval - True when working as CSO
+ * @author - kalil
+ */
+function onTenderExceeded() {
+	return(true);
+}
+
+/**onReductionHALOAfterTotal
+ *
+ * @brief - Manager authorization should not be asked in CSO.
+ * @return - rval - True when working as CSO
+ * @author - akuromoto
+ */
+function onReductionHALOAfterTotal() { 
+	return(true); 
+}
+
+/**onReductionHILOAfterTotal
+ *
+ * @brief - Manager authorization should not be asked in CSO.
+ * @return - rval - True when working as CSO
+ * @author - akuromoto
+ */
+function onReductionHILOAfterTotal() { 
+	return(true); 
+} 
+
+/**onReductionHILOBeforeTotal
+ *
+ * @brief - Manager authorization should not be asked in CSO.
+ * @return - rval - True when working as CSO
+ * @author - akuromoto
+ */
+function onReductionHILOBeforeTotal() { 
+	return(true); 
+}
+
+/**
+ * @} END nps
+ */
+
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d3739343700a20e9b9f6509552920c81ceda0aa7c229e490afa1e61d39660554590825d297d329714dccb898b6ac2cd5d546ce76aa9dd2f0010
+ * =============================================================================================================================
+*/

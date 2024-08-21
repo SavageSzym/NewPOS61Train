@@ -1,0 +1,168 @@
+<html>
+	<head>
+		<title>NewPOS 6 - WayStation</title>
+		<link rel="stylesheet" type="text/css" href="way.css"/>
+		<script language="JavaScript" src="wayCommon.js"></script>
+		<script language="JavaScript" src="config.js"></script>
+		<script language="JavaScript" src="lib.js"></script>
+		<script language="JavaScript" src="wayAjax.js"></script>
+		<script language="JavaScript" src="wayWorkflow.js"></script>
+		<script language="JavaScript" src="wayGui.js"></script>
+		<script language="JavaScript" src="wayMain.js"></script>
+		<script language="JavaScript" src="scw.js"></script>
+		<script language="JavaScript" src="wayLanguage.js"></script>
+	</head>
+	<body onload="initWayStation()">
+		<!-- Message Dialog -->
+		<div class="dialogHidden" id="okDialog">
+			<table class="dialogHeader">
+				<tbody><tr><td id="okDialogTitle">System message</td></tr></tbody>
+			</table>
+			<table class="dialogMessage">
+				<tbody><tr><td><p id="okDialogMessage">Message goes here</p></td></tr></tbody>
+			</table>
+			<a onclick="dialogClick('ok')" href="#" class="dialogButton"><img src="img/btn-ok.gif" title="ok" alt="ok" border="0" class="dialogButton" onmousedown="this.src='img/btni-ok.gif';" onmouseout="this.src='img/btn-ok.gif';" onmouseup="this.src='img/btn-ok.gif';"/></a>
+		</div>
+		<!-- Yes/No Dialog -->
+		<div class="dialogHidden" id="yesNoDialog">
+			<table class="dialogHeader">
+				<tbody><tr><td id="yesNoDialogTitle">System message</td></tr></tbody>
+			</table>
+			<table class="dialogMessage">
+				<tbody><tr><td><p id="yesNoDialogMessage">Message goes here</p></td></tr></tbody>
+			</table>
+			<a onclick="dialogClick('yes')" href="#" class="dialogButton"><img src="img/btn-yes.gif" title="yes" alt="yes" border="0" class="dialogButton" onmousedown="this.src='img/btni-yes.gif';" onmouseout="this.src='img/btn-yes.gif';" onmouseup="this.src='img/btn-yes.gif';"/></a>
+			<a onclick="dialogClick('no')" href="#" class="dialogButton"><img src="img/btn-no.gif" title="no" alt="no" border="0" class="dialogButton" onmousedown="this.src='img/btni-no.gif';" onmouseout="this.src='img/btn-no.gif';" onmouseup="this.src='img/btn-no.gif';"/></a>
+		</div>
+		<!-- Input Dialog -->
+		<div class="dialogHidden" id="inputDialog">
+			<table class="dialogHeader">
+				<tbody><tr><td id="inputDialogTitle">Input data</td></tr></tbody>
+			</table>
+			<table class="dialogMessage">
+				<tbody>
+					<tr><td><BR></td></tr>
+					<tr><td><BR></td></tr>
+					<tr><td><p id="inputDialogMessage">Message goes here</p></td></tr>
+					<tr><td><input type="text" id="inputDialogArea"></input>
+						<a id="calendarButton" onclick="scwShow(scwID('inputDialogArea'),this);" href="#" class="dialogButtonHidden"><img src="img/btn-calendar.gif" title="Click here to show the calendar." alt="Click here to show the calendar." border="0" class="dialogButton" onmousedown="this.src='img/btn-calendar.gif';" onmouseout="this.src='img/btn-calendar.gif';" onmouseup="this.src='img/btn-calendar.gif';"/></a></td>
+					</tr>
+					<tr><td><BR></td></tr>
+					<tr><td><BR></td></tr>
+				</tbody>
+			</table>
+			<a onclick="dialogClick('okInput')" href="#" class="dialogButton"><img src="img/btn-ok.gif" title="ok" alt="ok" border="0" class="dialogButton" onmousedown="this.src='img/btni-ok.gif';" onmouseout="this.src='img/btn-ok.gif';" onmouseup="this.src='img/btn-ok.gif';"/></a>
+			<a onclick="dialogClick('cancelInput')" href="#" class="dialogButton"><img src="img/btn-cancel.gif" title="cancel" alt="cancel" border="0" class="dialogButton" onmousedown="this.src='img/btni-cancel.gif';" onmouseout="this.src='img/btn-cancel.gif';" onmouseup="this.src='img/btn-cancel.gif';"/></a>
+		</div>
+		<!-- Preview Dialog -->
+		<div class="dialogHidden" id="previewDialog">
+			<table class="dialogHeader">
+				<tbody><tr><td id="previewDialogTitle">Preview</td></tr></tbody>
+			</table>
+			<div class="previewDialogMessage">
+				<textarea class="previewDialogMessage" id="previewDialogMessage" wrap="soft" readonly="true"></textarea>
+			</div>
+			<a onclick="dialogClick('print')" href="#" class="dialogButton"><img src="img/btn-print.gif" title="print" alt="print" border="0" class="dialogButton" onmousedown="this.src='img/btni-print.gif';" onmouseout="this.src='img/btn-print.gif';" onmouseup="this.src='img/btn-print.gif';"/></a>
+			<a onclick="dialogClick('closePreview')" href="#" class="dialogButton"><img src="img/btn-cancel.gif" title="cancel" alt="cancel" border="0" class="dialogButton" onmousedown="this.src='img/btni-cancel.gif';" onmouseout="this.src='img/btn-cancel.gif';" onmouseup="this.src='img/btn-cancel.gif';"/></a>
+		</div>
+		<!-- Little popup used to indicate communication errors -->
+		<div class="commErrorPopupHidden" id="commErrorPopup">Warning: cannot contact the WayStation</div>
+		<!-- Start of WayStation frame -->
+		<div class="outlineBorder" id="outlineBorder"> <!-- outline border -->
+			<div class="wayLogo">
+				<img src="img/waylogo.png" width="1280" height="71">
+			</div>
+			<table class="messageAndClock"> <!-- Messages area + clock -->
+				<tbody>
+					<tr>
+						<td class="messagesArea">
+							<div class="messagesAreaNoMessage" id="messagesArea">&nbsp;</div>
+						</td>
+						<td class="clockArea">
+							<div class="clockArea" id="clockArea">
+								&nbsp;<BR>&nbsp;
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<table class="listAndButtons" id="listAndButtons">
+				<tbody>
+					<tr>
+						<td class="posList">
+							<div>
+								<table border="0" class="posAndStoList" id="posAndStoList">
+									<tr style="height: 50% position: top  top: 0px">
+										<td>
+											<div class="posList">
+												<table class="posList">
+													<tbody>
+														<tr id="lineToClone" class="posInfoLine"> <!-- One line of the table -->
+															<td>
+																<table class="posInfoHeader" cellspacing="0">
+																	<tbody>
+																		<tr>
+																			<td class="posCell" rowspan="2" align="center" width="10%">POS</td>
+																			<td class="posCell" width="30%">Operator</td><td class="posCell" width="15%">State</td><td class="posCell" width="20%">Network</td><td class="posCell" width="20%">POD</td>
+																		</tr>
+																		<tr>
+																			<td class="posCell" width="30%">Business Day</td><td class="posCell" width="15%">Pkg</td><td class="posCell" width="20%">Version</td><td class="posCell" width="20%">IP</td>
+																		</tr>
+																	</tbody>
+																</table>
+															</td>
+														</tr>
+														<tr></tr> <!-- This is only used to fill up empty space -->
+													<tbody>
+												</table>
+											</div>
+										</td>
+									</tr>
+									<tr style="height: 50% position: top">
+										<td>
+											<div class="prodList">
+												<table class="prodList">
+													<tbody>
+														<tr id="linePrdToClone" class="prodInfoLine"> <!-- One line of the table -->
+															<td>
+																<table class="prodInfoHeader" cellspacing="0">
+																	<tbody>
+																		<tr>
+																			<td class="prodCell" rowspan="2" align="center" width="10%">ID</td><td class="prodCell" colspan="4">Alias</td>
+																		</tr>
+																		<tr>
+																			<td class="prodCell" width="20%">Network</td><td class="prodCell" width="15%">Pkg</td><td class="prodCell" width="35%">Version</td><td class="prodCell" width="30%">IP</td>
+																		</tr>
+																	</tbody>
+																</table>
+															</td>
+														</tr>
+														<tr></tr> <!-- This is only used to fill up empty space -->
+													<tbody>
+												</table>
+											</div>
+										</td>
+									</tr>
+								</table>
+							</div>
+						</td>
+						<td class="buttonsArea">
+							<div class="buttonsArea">
+								<table class="buttonsArea">
+									<tbody id="buttonsTable"> <!-- Buttons will come here -->
+									</tbody>
+								</table>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><center>
+							<button type="button" onclick="refreshPoslist()">Update</button>
+							<button type="button" onclick="selectAllPos()">(Un)select all</button>
+						</center></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</body>
+</html>

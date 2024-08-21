@@ -1,0 +1,433 @@
+(0680)1109 135358.3#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(0680)1109 135358.4#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(4600)1109 135358.9#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(0340)1109 135402.1#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(0340)1109 135402.1#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(0340)1109 135402.1#WAR(npreOSItf.c@1596):	[npreOSItf] npre_CreateFile, CreateFile(C:\NewPOS61Train\OutPutFiles002\nptrx_POS0002.tpa) error = 2: The system cannot find the file specified.
+(0340)1109 135402.1#WAR(npreOSItf.c@1596):	[npreOSItf] npre_CreateFile, CreateFile(C:\NewPOS61Train\OutPutFiles002\npevt_POS0002.tpa) error = 2: The system cannot find the file specified.
+(0340)1109 135402.1#WAR(npreTLog.c@643):	[npreTLog] TL_RecoveryLastFile, no file found [C:\NewPOS61Train\OutPutFiles002\nptrx_POS00_*.tpa]
+(0340)1109 135402.1#WAR(npreTLog.c@643):	[npreTLog] TL_RecoveryLastFile, no file found [C:\NewPOS61Train\OutPutFiles002\npevt_POS00_*.tpa]
+(0340)1109 135402.2#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(0340)1109 135402.2#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(0340)1109 135402.2#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(0340)1109 135402.2#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(0340)1109 135402.8#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(0340)1109 135402.8#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(0340)1109 135402.8#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(0340)1109 135402.8#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(0340)1109 135402.8#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(0340)1109 135402.8#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(0340)1109 135402.8#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(0340)1109 135402.9#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(0340)1109 135412.3#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(0336)1109 135419.0#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(0336)1109 135419.0#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(0340)1109 135421.3#WAR(npBusCompMain.c@1903):	[BC],[PosGetAuthorization],[4296]
+(0340)1109 135421.3#WAR(npBusCompMain.c@1328):	[WF],[],[1],[10],[4296],[WF_ShowManagerMenu],[Level=manager|ScreenNumber=900|SingleSignOn=false]
+(3456)1109 135428.2#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(0340)1109 135428.9#WAR(npBusCompMain.c@1903):	[BC],[PosShowScreenWithPassword],[3328]
+(0340)1109 135428.9#WAR(npBusCompMain.c@1328):	[WF],[],[903],[11],[3328],[WF_ShowScreenWithPassword],[ScreenNumber=904]
+(0340)1109 135436.5#WAR(npBusCompMain.c@1903):	[BC],[PosDayOpen],[6141]
+(0340)1109 135437.9#WAR(npBusCompMain.c@1903):	[BC],[PosShutdown],[1375]
+(0340)1109 135437.9#WAR(npBusCompMain.c@1328):	[WF],[],[904],[12],[7547],[WF_DayOpen],[]
+(4832)1109 135441.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0340)1109 135445.5#WAR(npBusCompAux.c@544):	[HK],[onLoginOperator],[2344]
+(0340)1109 135449.4#WAR(npBusCompMain.c@1903):	[BC],[PosShowConfirmationMessage],[2657]
+(0340)1109 135449.4#WAR(npBusCompAux.c@544):	[HK],[onConfirmLogin],[2657]
+(0340)1109 135449.6#WAR(npBusCompMain.c@1903):	[BC],[PosDoOperatorLogin],[6375]
+(0340)1109 135449.6#WAR(npBusCompMain.c@1328):	[WF],[],[900],[11],[6391],[WF_DoOperatorLogin],[]
+(3456)1109 135515.0#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(3456)1109 135601.8#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(3456)1109 135648.6#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(3456)1109 135735.4#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(3456)1109 135822.2#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(5612)0119 095154.1#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(5612)0119 095154.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(5612)0119 095154.8#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(5476)0119 095157.3#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(3708)0119 095200.6#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [c:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(3708)0119 095200.6#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [c:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(3708)0119 095200.6#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(3708)0119 095200.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(3708)0119 095200.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(3708)0119 095200.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(3708)0119 095201.7#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(3708)0119 095201.7#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(3708)0119 095201.7#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(3708)0119 095201.7#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(3708)0119 095201.7#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(3708)0119 095201.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(3708)0119 095201.7#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(3708)0119 095201.7#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(3708)0119 095211.6#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(3708)0119 095211.7#WAR(npGUICL.c@244):	[npGUICL.dll] has been finalized !
+(5488)0119 095217.7#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(5488)0119 095217.7#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(1572)0119 095227.2#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 795 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(5488)0119 095237.9#WAR(npreControlProcess.c@168):	[CP_MainThread] End thread
+(5476)0119 095237.9#WAR(npreControlProcess.c@524):	[npreCP_Finalize]
+(5476)0119 095237.9#WAR(npreControlProcess.c@537):	[npreCP_Finalize] END
+(5272)0124 090104.9#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(5272)0124 090105.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.4#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(c:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(5272)0124 090105.6#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(1764)0124 090108.7#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(0992)0124 090112.0#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [c:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(0992)0124 090112.0#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [c:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(0992)0124 090112.0#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(0992)0124 090112.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(0992)0124 090112.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(0992)0124 090112.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(0992)0124 090112.9#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(0992)0124 090112.9#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(0992)0124 090112.9#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(0992)0124 090112.9#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(0992)0124 090112.9#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(0992)0124 090112.9#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(0992)0124 090112.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(0992)0124 090112.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(0992)0124 090112.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(0992)0124 090112.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(0992)0124 090112.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(0992)0124 090113.0#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(0992)0124 090113.0#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(0992)0124 090122.7#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(2128)0124 090129.0#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(2128)0124 090129.0#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(3272)0124 090138.5#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(5516)0124 090151.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090153.4#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090153.4#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090153.5#WAR(npSaleProduct.c@133):	SaleProductAlloc: size = 102400, count = 1
+(0992)0124 090153.5#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090225.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(3272)0124 090225.7#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 795 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(0992)0124 090226.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090227.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(0992)0124 090259.6#WAR(npGUICL.c@244):	[npGUICL.dll] has been finalized !
+(3272)0124 090313.0#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(2128)0124 090323.6#WAR(npreControlProcess.c@168):	[CP_MainThread] End thread
+(1764)0124 090323.6#WAR(npreControlProcess.c@524):	[npreCP_Finalize]
+(1764)0124 090323.6#WAR(npreControlProcess.c@537):	[npreCP_Finalize] END
+(4020)0718 204409.1#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(4020)0718 204410.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(G:\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(4020)0718 204410.9#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(5068)0718 204417.7#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(4508)0718 204435.2#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [G:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(4508)0718 204435.2#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [G:\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(4508)0718 204435.6#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(4508)0718 204437.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(4508)0718 204437.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(4508)0718 204437.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(2940)0718 204438.1#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(2940)0718 204438.1#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(4508)0718 204449.8#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(4508)0718 204449.8#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(4508)0718 204449.8#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(4508)0718 204449.8#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(4508)0718 204449.8#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(4508)0718 204450.7#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(4508)0718 204452.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(4508)0718 204452.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(4508)0718 204452.7#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(4508)0718 204453.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(4508)0718 204453.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(4508)0718 204454.2#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(4508)0718 204454.2#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(4508)0718 204501.2#WAR(npBusCompAux.c@544):	[HK],[onBeginInitialize],[546]
+(4508)0718 204501.3#WAR(npSaleProduct.c@133):	SaleProductAlloc: size = 102400, count = 1
+(2808)0718 204502.8#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(4508)0718 204509.0#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(4508)0718 204519.4#WAR(npBusCompMain.c@1903):	[BC],[PosDoEndOfSale],[1077]
+(4508)0718 204519.5#WAR(npBusCompMain.c@1328):	[WF],[],[53],[36],[1435],[WF_DoTender],[TenderID=0|Value=50]
+(5268)0718 204523.8#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 795 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(2608)0905 222839.7#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(2608)0905 222841.3#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.3#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.5#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.6#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222841.7#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222842.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222842.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(D:\Documents\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(2608)0905 222842.9#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(4604)0905 222904.2#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(5592)0905 222907.9#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [D:\Documents\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(5592)0905 222907.9#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [D:\Documents\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(5592)0905 222909.8#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(5592)0905 222909.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(5592)0905 222909.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(5592)0905 222909.9#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(5592)0905 222922.2#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(5592)0905 222922.2#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(5592)0905 222922.2#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(5592)0905 222922.2#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(5592)0905 222922.2#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(5592)0905 222922.2#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(5592)0905 222922.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(5592)0905 222922.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(5592)0905 222922.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(5592)0905 222922.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(5592)0905 222922.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(5592)0905 222922.5#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(5592)0905 222922.5#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(6036)0905 222924.5#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(6036)0905 222924.5#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(5592)0905 222926.5#WAR(npSaleProduct.c@133):	SaleProductAlloc: size = 102400, count = 1
+(5592)0905 222934.1#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(5592)0905 222944.6#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(5592)0905 222944.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(5004)0905 222945.3#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 795 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(5592)0905 222945.5#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(5592)0905 222945.6#WAR(npBusCompMain.c@1903):	[BC],[PosDoSale],[1076]
+(5592)0905 222945.8#WAR(npBusCompMain.c@1328):	[WF],[POS0002:708226971],[1],[32],[1451],[WF_DoSale],[ProductCode=5080]
+(5592)0905 222946.4#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(6040)0905 222948.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(5592)0905 222956.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(5592)0905 222956.0#WAR(npBusCompAux.c@544):	[HK],[onItemSell],[1201]
+(5592)0905 222956.0#WAR(npBusCompMain.c@1903):	[BC],[PosDoSale],[1232]
+(5592)0905 222956.1#WAR(npBusCompMain.c@1328):	[WF],[POS0002:708226971],[13],[32],[1263],[WF_DoSale],[ProductCode=5320]
+(5592)0905 223014.3#WAR(npBusCompMain.c@1903):	[BC],[PosDoEndOfSale],[812]
+(5592)0905 223014.8#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[531]
+(5592)0905 223014.9#WAR(npBusCompMain.c@1328):	[WF],[],[53],[43],[1638],[WF_DoTender],[TenderID=0|Value=10]
+(5004)0905 223032.5#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(5592)0905 223035.5#WAR(npGUICL.c@244):	[npGUICL.dll] has been finalized !
+(6036)0905 223047.5#WAR(npreControlProcess.c@168):	[CP_MainThread] End thread
+(4604)0905 223047.5#WAR(npreControlProcess.c@524):	[npreCP_Finalize]
+(4604)0905 223047.5#WAR(npreControlProcess.c@537):	[npreCP_Finalize] END
+(15084)0805 120337.6#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(15084)0805 120337.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(15084)0805 120337.9#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(19760)0805 120342.1#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(25356)0805 120345.2#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(25356)0805 120345.2#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(25356)0805 120345.3#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(25356)0805 120345.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(25356)0805 120345.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(25356)0805 120345.3#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(25356)0805 120345.9#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(25356)0805 120345.9#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(25356)0805 120345.9#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(25356)0805 120345.9#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(25356)0805 120345.9#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(25356)0805 120345.9#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(25356)0805 120346.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(25356)0805 120346.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(25356)0805 120346.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(25356)0805 120346.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(25356)0805 120346.0#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(25356)0805 120346.0#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(25356)0805 120346.0#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(25356)0805 120347.7#WAR(npSaleProduct.c@133):	SaleProductAlloc: size = 102400, count = 1
+(25356)0805 120355.3#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(10148)0805 120402.3#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(10148)0805 120402.3#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(25356)0805 120405.8#WAR(npBusCompMain.c@1903):	[BC],[PosGetAuthorization],[4562]
+(25356)0805 120405.9#WAR(npBusCompMain.c@1328):	[WF],[],[1],[10],[4562],[WF_ShowManagerMenu],[Level=manager|ScreenNumber=900|SingleSignOn=false]
+(8168)0805 120410.1#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 120417.9#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[6828]
+(25356)0805 120417.9#WAR(npBusCompMain.c@1328):	[WF],[],[905],[11],[6828],[WF_Report],[DataTypes=CASH|PRODS|ReportScript=reportProdActiveList@reports.nps|Flags=PREVIEW|CustomParam=|POD=|ServiceList=]
+(18360)0805 120424.5#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120424.5#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[813]
+(25356)0805 120424.5#WAR(npBusCompMain.c@1328):	[WF],[],[905],[11],[813],[WF_Report],[DataTypes=CASH|PRODS|ReportScript=reportProdActiveList@reports.nps|Flags=PREVIEW|CustomParam=|POD=|ServiceList=]
+(25356)0805 120437.7#WAR(npreOSItf.c@1596):	[npreOSItf] npre_CreateFile, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\OutPutFiles002\nptrx_POS0002_20100217.tpa) error = 2: The system cannot find the file specified.
+(25356)0805 120437.7#WAR(npreTLog.c@1867):	[npreTLog] npreTLProcessRebuild, error rc = 1314304,nLogSrvTp 0,Date 20100217
+(25356)0805 120438.6#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[12437]
+(25356)0805 120438.6#WAR(npBusCompMain.c@1328):	[WF],[],[905],[36],[12437],[WF_Report],[DataTypes=CASH|HOURLYSALES|ReportScript=reportSaleHourByDate@reports.nps|Flags=PREVIEW|DATE|CustomParam=|POD=|ServiceList=]
+(8168)0805 120457.2#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 120457.2#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120457.2#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120457.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120458.5#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120534.5#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120534.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(8168)0805 120547.3#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(8168)0805 120634.8#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(8168)0805 120721.8#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 120743.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120743.7#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120743.8#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120802.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(8168)0805 120805.6#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 120817.5#WAR(npBusCompMain.c@1903):	[BC],[PosGetAuthorization],[2125]
+(25356)0805 120817.5#WAR(npBusCompMain.c@1328):	[WF],[],[1],[10],[2125],[WF_ShowManagerMenu],[Level=manager|ScreenNumber=900|SingleSignOn=false]
+(25356)0805 120824.5#WAR(npBusCompMain.c@1903):	[BC],[PosShowScreenWithPassword],[2703]
+(25356)0805 120824.5#WAR(npBusCompMain.c@1328):	[WF],[],[903],[11],[2703],[WF_ShowScreenWithPassword],[ScreenNumber=904]
+(25356)0805 120829.1#WAR(npBusCompMain.c@1903):	[BC],[PosSwitchProduction],[2719]
+(25356)0805 120829.1#WAR(npBusCompMain.c@1328):	[WF],[],[903],[35],[2719],[WF_SwitchProduction],[]
+(25356)0805 120833.7#WAR(npBusCompMain.c@1903):	[BC],[PosGetAuthorization],[2203]
+(25356)0805 120833.7#WAR(npBusCompMain.c@1328):	[WF],[],[1],[10],[2203],[WF_ShowManagerMenu],[Level=manager|ScreenNumber=900|SingleSignOn=false]
+(25356)0805 120838.7#WAR(npreOSItf.c@904):	[npreOSItf] npre_exec, CreateProcess cmd [D:\XPEStaging\XPEStaging.exe /calibrate] error = 2: The system cannot find the file specified.
+(25356)0805 120840.7#WAR(npBusCompMain.c@1903):	[BC],[PosShowMessage],[875]
+(25356)0805 120840.7#WAR(npBusCompMain.c@1328):	[WF],[],[901],[44],[875],[WF_WaitingForNewDevelopment],[Message=Waiting for new development]
+(25356)0805 120848.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120848.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120848.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(8168)0805 120852.7#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 120857.4#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 120929.3#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[16547]
+(25356)0805 120929.3#WAR(npBusCompMain.c@1328):	[WF],[],[53],[57],[16625],[WF_DoTenderFromCalculator],[TenderID=0|Value=]
+(8168)0805 120942.5#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(8168)0805 121026.6#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 121038.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 121038.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 121038.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 121039.9#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 121054.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(25356)0805 121054.4#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(8168)0805 121113.7#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(25356)0805 121134.2#WAR(npBusCompMain.c@1903):	[BC],[PosCreateReport],[17281]
+(25356)0805 121134.2#WAR(npBusCompMain.c@1328):	[WF],[],[53],[57],[17375],[WF_DoTenderFromCalculator],[TenderID=0|Value=]
+(25356)0805 121202.2#WAR(npGUICL.c@244):	[npGUICL.dll] has been finalized !
+(8168)0805 121203.8#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 813 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(10148)0805 121213.4#WAR(npreControlProcess.c@168):	[CP_MainThread] End thread
+(19760)0805 121213.4#WAR(npreControlProcess.c@524):	[npreCP_Finalize]
+(19760)0805 121213.4#WAR(npreControlProcess.c@537):	[npreCP_Finalize] END
+(10676)0805 181405.8#WAR(npApp.c@660):	npApp - * * *   N E W P O S   S T A R T E D   * * *
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-errors61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-messages61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_en.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-localmessages_en.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_en.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources61_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreOSItf.c@2057):	[npreOSItf] npreGetViewFromFileMapping, CreateFile(C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\PosData\i18n\pos-resources_enUK.properties) error = 2: The system cannot find the file specified.
+(10676)0805 181405.8#WAR(npreRdTb.c@1733):	genXCreateTable:Error parsing xml rc:0x50e00 (line: 0)
+(9180)0805 181405.9#WAR(npreControlProcess.c@490):	[npreCP_Initialize] build:6_1_17B191 $RCSfile: npreControlProcess.c,v $$Revision: 1.3.8.2 $ Jun 17 2011 09:13:09
+(13016)0805 181409.0#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_ERASE.CTL] error = 2: The system cannot find the file specified.
+(13016)0805 181409.0#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\OutPutFiles002\\POS0002_TLOG_RECOVERED_FROMWAY.REC] error = 2: The system cannot find the file specified.
+(13016)0805 181409.1#WAR(npAdpUI.c@185):	[npAdpUI.dll] build:6_1_17B191 $RCSfile: npAdpUI.c,v $$Revision: 1.64.2.3 $ Jun 17 2011 09:16:26
+(13016)0805 181409.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUIWSSC_SetSIData] error = 127: The specified procedure could not be found.
+(13016)0805 181409.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_SetChannel] error = 127: The specified procedure could not be found.
+(13016)0805 181409.1#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npGUI_Transaction] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npGUICL.c@227):	[npGUICL.dll] has been initialized (0x00 3003) !
+(13016)0805 181409.4#WAR(npAdpUI.c@257):	[npAdpUI_Initialize] getting SI driver
+(13016)0805 181409.4#WAR(npAdpUI.c@259):	[npAdpUI_Initialize] initializing SI driver
+(13016)0805 181409.4#WAR(npAdpHttp.c@121):	[npAdpHttp.dll] build:6_1_17B191 $RCSfile: npAdpHttp.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:43
+(13016)0805 181409.4#WAR(npDrvHTTP.c@743):	[npDrvHTTP.dll] build:6_1_17B191 $RCSfile: npDrvHTTP.c,v $$Revision: 1.22 $ Jun 17 2011 09:13:41
+(13016)0805 181409.4#WAR(npAdpPrn.c@139):	[npAdpPrn.dll] build:6_1_17B191 $RCSfile: npAdpPrn.c,v $$Revision: 1.44.2.4 $ Jun 17 2011 09:16:31
+(13016)0805 181409.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npNetPrn_Initialize] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_Query] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npDrvPrn_SetPrinter] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxInitialize] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npreOSItf.h@989):	[npreOSItf] npreGetProcAddress, GetProcAddress proc name [npaccTaxFinalize] error = 127: The specified procedure could not be found.
+(13016)0805 181409.4#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(13016)0805 181409.4#WAR(npParsePOSDB.c@784):	npcfFindSectionConfig: NULL pointer received
+(13016)0805 181410.7#WAR(npSaleProduct.c@133):	SaleProductAlloc: size = 102400, count = 1
+(13016)0805 181418.4#WAR(npBusCompMain.c@1922):	[lCheckTLOGWithWayStation] Error contacting WAY Station: status=0x144c00
+(13016)0805 181425.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181425.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181425.1#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(14108)0805 181426.1#WAR(npreControlProcess.c@81):	[CP_MainThread] Timeout waiting publisher adaptor activation.
+(14108)0805 181426.1#WAR(npreControlProcess.c@85):	[CP_MainThread] Start thread
+(13016)0805 181431.9#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181433.8#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(1864)0805 181434.0#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 796 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(13016)0805 181445.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181445.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181445.0#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(1604)0805 181448.3#WAR(npreOSItf.c@265):	[npreOSItf] npreFindClose, FindClose error = 6: The handle is invalid.
+(13016)0805 181458.7#WAR(npBusCompMain.c@1903):	[BC],[PosGetAuthorization],[2484]
+(13016)0805 181458.7#WAR(npBusCompMain.c@1328):	[WF],[],[1],[10],[2500],[WF_ShowManagerMenu],[Level=manager|ScreenNumber=900|SingleSignOn=false]
+(13016)0805 181504.9#WAR(npreOSItf.h@902):	[npreOSItf] npreDeleteFile, DeleteFile file name = [C:\Users\szym9\OneDrive\Documents\[Aa] SavageSzym\NewPOS61TrainPW\NewPOS61Train\bin\EC_7716.UPD] error = 2: The system cannot find the file specified.
+(13016)0805 181504.9#WAR(npBusCompMain.c@1903):	[BC],[PosShutdown],[2531]
+(13016)0805 181504.9#WAR(npBusCompMain.c@1328):	[WF],[],[901],[15],[2531],[WF_Shutdown],[ShutdownType=94|level=this|isForced=false]
+(13016)0805 181504.9#WAR(npGUICL.c@244):	[npGUICL.dll] has been finalized !
+(1864)0805 181524.7#WAR(npreMsg.c@3972):	[npreMsg] npreMsg2_SendRecvEx, communication from [WAY0300] to [WAY0300] has taken 797 ms - UNKNOWN SERVICE - command = 20150, 1st param = []
+(14108)0805 181535.3#WAR(npreControlProcess.c@168):	[CP_MainThread] End thread
+(9180)0805 181535.3#WAR(npreControlProcess.c@524):	[npreCP_Finalize]
+(9180)0805 181535.3#WAR(npreControlProcess.c@537):	[npreCP_Finalize] END

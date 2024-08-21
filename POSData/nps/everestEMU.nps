@@ -1,0 +1,477 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* EverestEmu.nps
+* This NPS file implements BusinessComponentes.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+ 
+var EverestLoaded=false;
+var glo_GiftCard_Footer="";
+var glo_MerchantID="";
+var glo_CashlessSignLimit=25.;
+var glo_CashlessRefundInfo=-1;
+
+function mod10(st) 
+{
+	if (st.length > 19)
+		return ("");
+	var sum = 0; 
+	var len = st.length;
+	var i;
+	for (i = 0; i < len; i += 2) {
+		sum += parseInt(st.substring(len-i-1,1),10);
+	}
+	for (i = 1; i < len; i += 2) {
+		digit = st.substring(len-i-1,len-i);
+		var tproduct = parseInt(st.substring(len-i-1,1),10)*2;
+		if (tproduct >= 10)
+			sum += (tproduct % 10) + 1;
+		else
+			sum += tproduct;
+   }
+   return (st+(sum % 10));
+}
+
+function SetUpEverest() {
+
+   	glo_GiftCard_Footer="For gift card balance call 1-877-443-8623";
+	glo_MerchantID="MerchantID";
+	var CashlessSignLimit=25;
+	PosSetParameter("TCLExtension","everest","true");
+}
+
+function cashlessPayment(tenderId,tenderValue,refund) 
+{
+	PosSetSessionProperty("CASHLESS_STATUS","");
+	if(refund == null) {
+		refund=false;
+	}
+	var CashlessAmount="0.00";
+	var Value=tenderValue.replace(/\./,"");
+	var tenderType="10";
+	var cardType="xx";
+	var providername="";
+	var cardnum="";
+	var expire="10/10";
+	var auth="******";
+	var printFlag="0"
+	var	seqno="0000";
+	var	GCBalance="0.00"
+	var Account="0";
+	var	Value=tenderValue;
+	var	StoreNumber="9999";
+	var local_GiftCard_Footer="";
+
+	if(!refund) {
+		PosItemSelection("AMEX|VISA|MASTER|DEBIT|GC 10|NOT APROVED","0|1|2|3|4|5","Question","Cashless payment:");
+	} else {
+	    //# get the total cashless amount sold
+		var hlp = new BusinessObjectHelper();
+		var XMLArray = hlp.getReportXML("CASH","CONSOLIDATED","","","");
+		if((XMLArray != null) && (XMLArray.length > 0)) {
+			var CashRoot = new XML(XMLArray[1]);
+			if(CashRoot != null) {
+				//PosShowMessage(CashRoot.@requestDataType);
+				var tender=CashRoot.CashDetails.Tenders.Tender.(@id == "10");
+				if(tender.length() > 0) {
+					//PosShowMessage(tender[0].@drawerAmount);
+					CashlessAmount=tender[0].@drawerAmount;
+				}
+			}
+		}
+		//PosShowMessage(CashlessAmount);
+		if (Number(tenderValue) > Number(CashlessAmount)) {
+			PosShowMessage("MSG_BC_GC_NOT_ENOUGH");
+			return false;
+		}		
+		PosItemSelection("AMEX|VISA|MASTER|DEBIT|GC 10|NOT APROVED","0|1|2|3|4|5","Question","Cashless refund:");
+	}
+	var ctx=new SessionContext;
+	var nOption=ctx.get("SelectedButtonValue");
+	//PosShowMessage("Option = " + nOption);
+	switch(nOption[0]) {
+	case '0':
+		cardType="CR";
+		providername="Amex";
+		tenderType="22";
+		cardnum=Number(Math.round(Math.random()*9999999999999)).toString();
+		cardnum="30000000000000".substr(0,14-cardnum.length)+cardnum;
+		//PosShowMessage("cardnum = " + cardnum);
+		mod10(cardnum);
+		//PosShowMessage("AMEX = " + cardnum);
+		break;
+	case '1':
+		cardType="CR";
+		providername="Visa";
+		tenderType="24";
+		cardnum=Number(Math.round(Math.random()*99999999999999)).toString();
+		cardnum="400000000000000".substr(0,15-cardnum.length)+cardnum;
+		mod10(cardnum);
+		//PosShowMessage("VISA = " + cardnum);
+		break;
+	case '2':
+		cardType="CR";
+		providername="Master";
+		tenderType="23";
+		cardnum=Number(Math.round(Math.random()*99999999999999)).toString();
+		cardnum="500000000000000".substr(0,15-cardnum.length)+cardnum;
+		mod10(cardnum);
+		//PosShowMessage("MASTER = " + cardnum);
+		break;
+	case '3':
+		cardType="DB";
+		providername="Debit";
+		tenderType="21";
+		cardnum=Number(Math.round(Math.random()*9999999999999999)).toString();
+		cardnum="80000000000000000".substr(0,17-cardnum.length)+cardnum;
+		mod10(cardnum);
+		//PosShowMessage("Debit = " + cardnum);
+		break;
+	case '4':
+		if(refund) {
+			return false;
+		}
+		cardType="GC";
+		providername="Gift Card";
+		cardnum=Number(Math.round(Math.random()*99999999999999)).toString();
+		cardnum="9000000000000000".substr(0,15-cardnum.length)+cardnum;
+		mod10(cardnum);
+		tenderType="11";
+		var v=Number(tenderValue);
+		if(v < 7.89) {
+			GCBalance=Number(10-v).toFixed(2);
+		} else {
+			Value="7.89";
+		}
+		local_GiftCard_Footer = glo_GiftCard_Footer;
+		//PosShowMessage("GC = " + cardnum);
+		break;
+	case '5':
+		return false;
+	}
+
+	auth=Number(Math.round(Math.random()*999999)).toString();
+	if(auth.length < 6) {
+		auth="000000".substr(0,6-auth.length)+auth;
+	}
+	seqno=Number(Math.round(Math.random()*9999)).toString();
+	if(seqno.length < 4) {
+		seqno="0000".substr(0,4-auth.length)+seqno;
+	}
+	
+	if(!refund) {
+		if((cardType == "CR") && (Number(Value) >= glo_CashlessSignLimit)) {
+			printFlag="1";
+		}
+    } else {
+    	if ((Number(Value) >= glo_CashlessRefundInfo) && (glo_CashlessRefundInfo != -1)) {
+        	printFlag="1";
+	    }
+	}
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+
+	CashLessStr="CASHLESS:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	PosAppendSessionProperty("CASHLESS",CashLessStr,true);
+	//PosShowMessage(CashLessStr);
+	//API.dbg("JS cashlessPayment CASHLESS = [" + CashLessStr + "]");
+	var bOpenDrawer=(refund) ? "0" : printFlag;
+	// 0 - do not open drawer
+	// 1 - open drawer
+   	PosSetSessionProperty("CASHLESS_STATUS",bOpenDrawer);
+   	
+   	PosSetSessionProperty("CASHLESS_TENDERID",tenderType);
+   	PosSetSessionProperty("CASHLESS_VALUE",Value);
+   	PosSetSessionProperty("CASHLESS_PROVIDER",providername);
+   	
+	return true;
+}
+
+function PosCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,false);
+}
+
+function PosRefundCashlessPayment(tenderId,tenderValue) {
+	return cashlessPayment(tenderId,tenderValue,true);
+}
+
+function PosCashlessEndOfSale() {
+
+	return true;
+}
+
+
+function PosResetPinpad() {
+	PosSetSessionProperty("CASHLESS_STATUS","");
+   	PosSetSessionProperty("CASHLESS_VALUE","");
+   	PosSetSessionProperty("CASHLESS_PROVIDER","");
+	PosSetSessionProperty(CASHLESS_GC,"");
+	return true;
+}
+
+/** PosActivateGCJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosActivateGCJS</b>\n
+ * This BC activates GC!\n
+ * In a workflow sequence it is called:<b>PosActivateGCJS $Amount</b>\n
+ * In java script it should be called:<b>PosActivateGCJS(Amount)</b>\n
+ * Where: nAmount - string - (numeric value) Amount of gift card
+ * Return - rval - True if possible
+ */
+function PosActivateGCJS(GCValue,reload) 
+{
+	//API.dbg("PosActivateGCJS GCValue [" + GCValue + "]");
+	//PosShowMessage("PosActivateGCJS ...");
+
+	var Value=GCValue.replace(/\./,"");
+	var tenderType="11";
+	
+	var auth="******";
+	var providername="Gift CArd";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer=glo_GiftCard_Footer;
+	var cardType="GC";
+	var Account="0";
+	var GCBalance="0.00";
+
+	var printFlag="0";
+	var StoreNumber="9999";
+	Value=GCValue;
+	cardnum=Number(Math.round(Math.random()*9999999999999)).toString();
+	cardnum="70000000000000000".substr(0,15-cardnum.length)+cardnum;
+		
+	auth=Number(Math.round(Math.random()*999999)).toString();
+	if(auth.length < 6) {
+		auth="000000".substr(0,6-auth.length)+auth;
+	}
+	seqno=Number(Math.round(Math.random()*9999)).toString();
+	if(seqno.length < 4) {
+		seqno="0000".substr(0,4-auth.length)+seqno;
+	}
+	Account=cardnum.substr(cardnum.length-4,4);
+	
+	PosItemSelection("OK|NOT APPROVED","0|1","Question","gift card activation:");
+	var ctx=new SessionContext;
+	var nOption=ctx.get("SelectedButtonValue");
+	//PosShowMessage("Option = " + nOption);
+	switch(nOption[0]) {
+	case '0':
+		break;
+	case '1':
+		return false;
+	}
+	
+	GCBalance=Value;
+
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	PosAppendSessionProperty("CASHLESS_GC",CashLessStr);
+	//PosShowMessage(CashLessStr);
+	//API.dbg("PosActivateGCJS CASHLESS_GC = [" + CashLessStr + "]");
+
+	return(true);
+}
+
+/*
+#
+# GCBalanceJS - Shows the Gift Card Balance
+#
+*/
+function GCBalanceJS () 
+{
+	PosSetSessionProperty(CASHLESS_GC,"");
+	
+	//API.dbg("PosActivateGCJS GCValue [" + GCValue + "]");
+	//PosShowMessage("PosActivateGCJS ...");
+
+	var Value="1000";
+	var tenderType="11";
+	
+	var auth="******";
+	var providername="Gift Card";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer=glo_GiftCard_Footer;
+	var cardType="GC";
+	var Account="0";
+	var GCBalance="0.00";
+
+	var printFlag="0";
+	var StoreNumber="9999";
+	Value="10.00";
+	cardnum=Number(Math.round(Math.random()*9999999999999)).toString();
+	cardnum="70000000000000000".substr(0,15-cardnum.length)+cardnum;
+		
+	auth=Number(Math.round(Math.random()*999999)).toString();
+	if(auth.length < 6) {
+		auth="000000".substr(0,6-auth.length)+auth;
+	}
+	seqno=Number(Math.round(Math.random()*9999)).toString();
+	if(seqno.length < 4) {
+		seqno="0000".substr(0,4-auth.length)+seqno;
+	}
+	Account=cardnum.substr(cardnum.length-4,4);
+	
+	PosItemSelection("OK|NOT APPROVED","0|1","Question","gift card balance:");
+	var ctx=new SessionContext;
+	var nOption=ctx.get("SelectedButtonValue");
+	//PosShowMessage("Option = " + nOption);
+	switch(nOption[0]) {
+	case '0':
+		break;
+	case '1':
+		return false;
+	}
+	
+	GCBalance=Value;
+	var mask="";
+	for(i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+
+	return(CashLessStr);
+}
+
+/*
+#
+# GCBalanceJS - Cash out a gift card
+#
+*/
+function GCCashOutJS(maxCashOut) 
+{
+	PosSetSessionProperty(CASHLESS_GC,"");
+	
+	//PosShowMessage("GCCashOutJS ...");
+	var threshold=maxCashOut.replace(/\./,"");
+
+	var Value="1000";
+	var tenderType="11";
+	
+	var auth="******";
+	var providername="Gift Card";
+	var cardnum="";
+	var expire="";
+	var seqno="";
+	var local_GiftCard_Footer=glo_GiftCard_Footer;
+	var cardType="GC";
+	var Account="0";
+	var GCBalance="0.00";
+
+	var printFlag="0";
+	var StoreNumber="9999";
+	Value="2.34";
+	cardnum=Number(Math.round(Math.random()*9999999999999)).toString();
+	cardnum="70000000000000000".substr(0,15-cardnum.length)+cardnum;
+		
+	auth=Number(Math.round(Math.random()*999999)).toString();
+	if(auth.length < 6) {
+		auth="000000".substr(0,6-auth.length)+auth;
+	}
+	seqno=Number(Math.round(Math.random()*9999)).toString();
+	if(seqno.length < 4) {
+		seqno="0000".substr(0,4-auth.length)+seqno;
+	}
+	Account=cardnum.substr(cardnum.length-4,4);
+	PosItemSelection("OK|NOT APPROVED","0|1","Question","gift card balance:");
+	var ctx=new SessionContext;
+	var nOption=ctx.get("SelectedButtonValue");
+	//PosShowMessage("Option = " + nOption);
+	switch(nOption[0]) {
+	case '0':
+		break;
+	case '1':
+		return false;
+	}
+	GCBalance="0.00";
+	var mask="";
+	for(var i=0; i < cardnum.length-4; ++i) {
+		mask+="*";
+	}
+	cardnum=mask+cardnum.substr(cardnum.length-4,4);
+	CashLessStr="CASHLESS_GC:" +
+		providername + "@" + 
+		cardnum + "@" +
+		expire + "@" +
+		auth + "@0@" +
+		printFlag + "@" +
+		seqno + "@" +
+		glo_MerchantID + "@" +
+		GCBalance + "@" +
+		Account + "@" +
+		Value + "@" + 
+		StoreNumber + "@" +
+		local_GiftCard_Footer + "@#";
+	PosSetSessionProperty(CASHLESS_GC,CashLessStr);
+   	PosSetSessionProperty("CASHLESS_TENDERID","11");
+   	PosSetSessionProperty("CASHLESS_VALUE",Value);
+	return(true);
+}
+
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:30 2011
+ * certificate = 393735312d3739343700e14878fd8bc14205ef69b832be9f80d423e6e43d961c6bc835e28fdbec94599e48eaf17236f4a8f9ea739ecab0c83b6216270010
+ * =================================================================================================================================
+*/

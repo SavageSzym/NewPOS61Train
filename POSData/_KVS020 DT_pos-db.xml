@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="KVS020 DT">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+			<Section name="Messaging">
+				<Parameter name="serverPort" value="60004"/>
+			</Section>
+	</Configuration>
+	<Services>
+		<Service name="8001" type="STO" classname="com.ngpos.arch.services.update.UpdatePosData" startonload="true" quitOnFail="true">
+			<Configuration imports="STO.PRD"/>
+		</Service>
+		<Service name="8001" type="KVS" classname="com.ngpos.arch.services.kvs.main.KvsControl" startonload="true" quitOnFail="true">
+			<Configuration imports="KVS">
+				<Section name="UserInterface">
+					<Parameter name="width" value="1024"/>
+					<Parameter name="horizontalPos" value="800"/>
+					<Parameter name="heldCells" value="2"/>
+					<Parameter name="height" value="768"/>
+					<Parameter name="firstThreshold" value="90"/>
+					<Parameter name="secondThreshold" value="90"/>
+					<Parameter name="showCursor" value="true"/>
+					<Parameter name="showCloseButton" value="true"/>
+				</Section>
+			</Configuration>
+			<Adaptors>
+			<!--
+				<Adaptor name="serial.bumpbar" imports="serial.bumpbar" startonload="true">
+					<Section name="main">
+						<Parameter name="home" value="0xb1"/>
+						<Parameter name="sideon" value=""/>
+						<Parameter name="held" value="0xc2"/>
+						<Parameter name="print" value="0xc1"/>
+						<Parameter name="serveheld" value="0xe2"/>
+						<Parameter name="sideoff" value=""/>
+						<Parameter name="logicalname" value="BumpBar DT 8001"/>
+						<Parameter name="serve" value="0xe1"/>
+						<Parameter name="zoom" value=""/>
+						<Parameter name="next" value="0xb2"/>
+						<Parameter name="recall" value="0xa2"/>
+						<Parameter name="undo" value="0xa1"/>
+						<Parameter name="portname" value="COM2"/>
+					</Section>
+				</Adaptor>
+				-->
+				<Adaptor type="keyboard.bumpbar" startonload="true">
+					<Section name="main">
+						<Parameter name="adaptorname" value="BumpBar"/>
+						<Parameter name="dtfconoff"/>
+						<Parameter name="globalserve" value="'b'|'B'"/> <!-- Pilot Version ONLY -->
+						<Parameter name="globalserveheld" value="'c'|'C'"/> <!-- Pilot Version ONLY -->
+						<Parameter name="splitDTFC" value="'f'|'F'"/>
+						<Parameter name="held" value="'a'|'A'"/>
+						<Parameter name="home" value="'h'|'H'"/>
+						<Parameter name="logicalname" value="Keyboard Virtual BumpBar"/>
+						<Parameter name="next" value="'n'|'N'"/>
+						<Parameter name="previous" value="'1'"/>
+						<Parameter name="pickList" value="'q'|'Q'"/>
+						<Parameter name="print" value="'p'|'P'"/>
+						<Parameter name="recall" value="'r'|'R'"/>
+						<Parameter name="rotate" value="'l'|'L'"/>
+						<Parameter name="serve" value="'s'|'S'"/>
+						<Parameter name="serveheld" value="'e'|'E'"/>
+						<Parameter name="service" value="com.ngpos.drivers.general.BumpBarDriverKeyboard"/>
+						<Parameter name="sideoff" value="'x'|'X'"/>
+						<Parameter name="sideon" value="'o'|'O'"/>
+						<Parameter name="undo" value="'u'|'U'"/>
+						<Parameter name="zoom" value="'z'|'Z'"/>
+					</Section>
+				</Adaptor>
+			</Adaptors>
+			<UsedServices>
+				<UsedService serviceType="RPR">
+					<Member name="020" alias=""/>
+				</UsedService>
+			</UsedServices>
+		</Service>
+		<!--
+		<Service name="8001" type="PST" classname="com.ngpos.newprod.persistence.HsqlPersistenceNode" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="PST">
+					<Member name="8000" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Persistence">
+				<Section name="main">
+					<Parameter name="isFailover" value="true"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8004" type="QUE" classname="com.ngpos.newprod.core.StoreArea" startonload="true" quitOnFail="true">
+			<Configuration imports="StoreProduction">
+				<Section name="KvsOptions">
+					<Parameter name="bumpOnTotal" value="false"/>
+					<Parameter name="enableDisplay" value="ONSTART"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8007" type="QUE" classname="com.ngpos.newprod.core.StoreArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="8001" alias="DT EXPO"/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="StoreProduction"/>
+			<Adaptors>
+				<Adaptor name="external.system" imports="external.system" startonload="true">
+					<Section name="main">
+						<Parameter name="port" value="2221"/>
+						<Parameter name="ip" value="10.164.251.219"/>
+						<Parameter name="includeKVSSide" value="false"/>
+						<Parameter name="logicalname" value="CODDriver1"/>
+					</Section>
+				</Adaptor>
+			</Adaptors>
+		</Service>
+		<Service name="8010" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="1001" alias="MFY1-Expo"/>
+				</UsedService>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+				<UsedService serviceType="QUE">
+					<Member name="8011" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8011" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="KVS">
+					<Member name="1002" alias="KVS002 MFY2"/>
+				</UsedService>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+				<UsedService serviceType="QUE">
+					<Member name="8010" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8009" type="QUE" classname="com.ngpos.newprod.core.ProductionArea" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="GPR">
+					<Member name="1002" alias="GPR MFY2"/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="Production.Routing">
+				<Section name="GrillPrinter">
+					<Parameter name="grillSlipReport" value="grillSlipStar@reports.nps"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="8029" type="QUE" classname="com.ngpos.newprod.core.RouterNode" startonload="true" quitOnFail="true">
+			<Configuration imports="Router">
+				<Section name="KvsRoutes">
+					<Parameter name="queueSource" value="QUE8004"/>
+					<Parameter name="routes" value="109,110,112,261,262"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="9000" type="QUE" classname="com.ngpos.newprod.core.RouterNode" startonload="true" quitOnFail="true">
+			<Configuration imports="Router">
+				<Section name="KvsRoutes">
+					<Parameter name="queueSource" value="QUE8007"/>
+					<Parameter name="routes" value="109,110,112,114,261,262,265,268,269,270,273,301"/>
+				</Section>
+			</Configuration>
+		</Service> -->
+	</Services>
+</PosDB>

@@ -1,0 +1,453 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* GrillScript.nps
+* This script file is used to make the grill screen and grill special modifiers 100% unknown by kernell.
+* It will handle the creation of grill lines on the grill screen, the revalidation of these lines.
+* It will also handle all operations with the grill "Special Modifiers", these modifiers are handled
+* by the kernell but it doesn't even know what they mean, this script should know what to do with those
+* modifiers and what to show on screen for those grill items.
+* See the GrillScriptHandler Class for more details on how it is used.
+* 
+* THE PUBLIC FUNCTIONS HERE ARE NEEDED FOR NEWPOS 6.0 TO WORK, DO NOT DELETE THEM
+* THE RULES HERE SHOULD BE MODIFIED FOR EACH COUNTRY NEEDS.
+* Copyright Â© 2003 McDonalds Corp. All rights reserved.
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+importPackage(Packages.java.math);
+importPackage(Packages.java.lang);
+importPackage(Packages.java.util);
+importPackage(Packages.com.ngpos.pos);
+importPackage(Packages.com.ngpos.pos.core);
+importPackage(Packages.com.ngpos.arch.i18n);
+importPackage(Packages.com.ngpos.arch.datatypes);
+importPackage(Packages.com.ngpos.arch.datatypes.views);
+importPackage(Packages.com.ngpos.pos.presentation.screen);
+importPackage(Packages.com.ngpos.pos.core.data);
+importPackage(Packages.com.ngpos.pos.presentation.screen.data);
+importPackage(Packages.com.ngpos.pos.presentation.view.swing);
+importPackage(Packages.com.ngpos.pos.presentation.view.shared);
+
+/**  Global variables */
+/**/ var ADD = I18nMessage.getInstance().getResourceMessage(TextMessageKey.ORDER_LIST_ADD);
+/**/ var REMOVE = I18nMessage.getInstance().getResourceMessage(TextMessageKey.ORDER_LIST_REMOVE);
+/**/ var EXTRA = I18nMessage.getInstance().getResourceMessage(TextMessageKey.ORDER_LIST_EXTRA);
+/**/
+/**/ var IMAGE_ADD		= "btn-grill-more.jpg";
+/**/ var IMAGE_REMOVE	= "btn-grill-less.jpg";
+/**/ 
+/**/ var WF_GRILL		= "WF_DoGrill";
+/**  End of global variables */
+
+/**************************** P U B L I C   F U N C T I O N S ****************************
+ * These functions are called directly from the kernell, so they cannot be deleted.
+ *****************************************************************************************/
+ 
+/*** PUBLIC FUNCTION
+ * Used by grill screen to validade if any button needs to be deactivated, activated, etc..
+ * @param lineData LinkedList of GrillLineData
+ * @param currentTransaction the current transaction
+ */
+function revalidateLines(lineData, currentTransaction) {
+	var size = lineData.size();
+	for (var i = 0; i < size; i++) {
+		var line = lineData.get(i);
+		revalidateLine(line, currentTransaction);
+	}
+}
+
+/** PUBLIC FUNCTION
+ * Fills the grill buttons of a GrillLine
+ * @param itemCode The item code
+ * @param type Defines the type (IItemView.TYPE_RECIPE, IItemView.TYPE_* ....)
+ * @return Button[] - array of buttons
+ */
+function createGrillLineButtons(itemCode, type) {
+	var returnValue = new Array();
+	switch (type) {
+		case IItemView.TYPE_RECIPE:
+		case IItemView.TYPE_ADD:
+		case IItemView.TYPE_COMMENT:
+			var button1 = createButtonData(itemCode, "(+)", "1", "0", IMAGE_ADD, null);
+			var button2 = createButtonData(itemCode, "(-)", "-1", "0", IMAGE_REMOVE, null);
+			returnValue = new Array(button1, button2);
+			break;
+		default: break; // Ignores other types (HEADER, etc...)
+	}
+	return toJavaArray(returnValue, Button);
+}
+
+/** PUBLIC FUNCTION
+ * Called ONLY ONCE by kernell, at start-up to mount the grill screen.
+ * This function should return an array of button datas to load at the bottom
+ * of the grill screen. (Basically it should return buttons for "ok", "clear", "MSG_CANCEL", etc...)
+ * 
+ * A null value in the array will be handled as a "spacer".. an invisible button just used
+ * to separate others
+ * @return Button[] - buttons to be loaded at bottom
+ */
+function createBottonButtons() {
+	// PressedButton = 0 means "MSG_CANCEL"
+	// PressedButton = 1 means "DONE"
+	// PressedButton = 2 means "CLEAR"
+	var btOk	= createNormalButtonData("WF_DoGrillEnd", "PressedButton", "1", "Done  ", "btnl_kettei _1b.png", "btnl_kettei _2b.png");
+	var btCanc	= createNormalButtonData("WF_DoGrillEnd", "PressedButton", "0", "MSG_CANCEL", "btnl_modoru_1b.png", "btnl_modoru_2b.png");
+	var btClear	= createNormalButtonData("WF_ClearGrill", "PressedButton", "2", "Clear ", "btnl_clear_1b.png", "btnl_clear_2b.png");
+	var array	= new Array(btOk, btClear, null, null, btCanc);
+	return toJavaArray(array, Button);
+}
+/** PUBLIC FUNCTION
+ * Gets the text to be displayed on screen, given an ItemView
+ * 
+ * Grill special modifiers legend:
+ * 1 - Means that the item is marked as "Poco" (Few)
+ * 2 - Means that the item is marked as "Solo" (Just)
+ *
+ * Note that this fuction receives more parameters than it would need,
+ * this is just to ensure enough data for further implementations that
+ * may need them.
+ *
+ * @param view the view that contains the item
+ * @param viewItem the item
+ * @param showDescription true if should show item description too
+ * @return the text to display
+ * @author Rodrigo
+ */
+function getTextToDisplay(view, viewItem, showDescription) {
+	// Grill special modifiers
+	var specialModifier = viewItem.getSpecialModifiers();
+	// Product type "IItemView.TYPE_*"
+	var componentType = viewItem.getProductType();
+	
+	// If it's a comment, we dont show the signal tip
+/*
+	if (componentType == IItemView.TYPE_COMMENT) {
+		var showLine;
+	
+		showLine = viewItem.getDescription();
+		if ((specialModifier == 1) && (showLine)) {
+			showLine = "LIGHT " + viewItem.getDescription();
+		} else if ((specialModifier == 2) && (showLine)) {
+			showLine = "ONLY " + viewItem.getDescription();
+		}
+	
+		return showDescription ? showLine : "";
+	} 
+*/
+	
+	if (specialModifier == 0) {
+		// If this item was grilled in a normal way (no special modifiers)
+		// we calculate the text from component's quantities
+		return getTextFromQuantities(view, viewItem, showDescription);
+	} else {
+		// Item's description (name)
+		var description = showDescription ? " " + viewItem.getDescription() : "";
+		return I18nMessage.getInstance().getResourceMessage(TextMessageKey.GRILL_TEXT_MODIFIER + specialModifier) + description;
+		/*
+		if (specialModifier == 1) {
+			return "LIGHT " + description;
+		} else if (specialModifier == 2) {
+			return "NUR " + description;
+		} else {
+			return I18nMessage.getInstance().getResourceMessage(TextMessageKey.GRILL_TEXT_MODIFIER + specialModifier) + description;
+		}
+		*/
+	}
+}
+
+/**************************** P R I V A T E   F U N C T I O N S ****************************
+ * These functions are called from other functions on this script file, they can be
+ * changed/deleted as needed
+ *******************************************************************************************/
+
+/*** PRIVATE FUNCTION
+ * Used by grill screen to validade if any button needs to be deactivated, activated, etc..
+ * @param line GrillLineData with line information
+ * @param currentTransaction the current transaction
+ */
+function revalidateLine(line, currentTransaction) {
+	var itemCode = line.getItemCode();
+	var type = line.getButtonType();
+	var btns = line.getButtonData();
+	
+	var ingredientGrilled =  currentTransaction.getGrill().getGrillComponent(itemCode);
+	// Gets special modifiers from on going grill
+	var specialModifiers = ingredientGrilled.getSpecialModifier();
+	// Gets the grilled quantity for the on going grill
+	var grilledQuantity = ingredientGrilled.getOnGoingQuantityUpdate();
+	// This is the real quantity
+	var ingredientQuantity = ingredientGrilled.getQuantity();
+	// Component quantities
+	var maxQty = ingredientGrilled.getItem().getMaxQuantity();
+	var minQty = ingredientGrilled.getItem().getMinQuantity();
+	
+	// "type" can be use the handle items in a different way
+	switch (type) {
+		case IItemView.TYPE_RECIPE:
+		case IItemView.TYPE_ADD:
+		case IItemView.TYPE_COMMENT:
+			// Enable button "+" if we can ADD one to it
+			var enable = canSet(maxQty, minQty, ingredientQuantity + 1);
+			btns[0].setEnabled(enable);
+			// Enable button "+" if we can REMOVE one from it
+			enable = (type == IItemView.TYPE_ADD && grilledQuantity > 0)  || canSet(maxQty, minQty, ingredientQuantity - 1);
+			btns[1].setEnabled(enable);
+			break;
+		default: break; // Ignores unknown types
+	}
+}
+
+/** PRIVATE FUNCTION
+ * Transforms a native array to java array
+ * @param a array
+ * @param c array class
+ * @return the java array
+ */
+function toJavaArray(a, c) {
+	if (a == null) {
+		a = new Array();
+	}
+	var newArray = java.lang.reflect.Array.newInstance(c, a.length);
+	for(var i = 0; i < a.length; i++) {
+		newArray[i] = a[i];
+	}
+	return newArray;
+}
+
+
+/** PRIVATE FUNCTION
+ * Calculates the text to be displayed on screen.
+ * This function will consider conponent quantities to know witch text to display on screen
+ * @param view the view to get item from
+ * @param itemIndex the index of the item we want to get (on the view)
+ * @param showDescription true if should show item description too
+ * @return the text to display
+ * @author Rodrigo
+ */
+function getTextFromQuantities(view, viewItem, showDescription) {
+	// Default item quantity
+	var defaultQtd = viewItem.getComponentDefaultQtd();
+	// Quantity that the item will have after grill eg.(1 cheese + (-1 cheese) -> zero)
+	var quantity = defaultQtd + viewItem.grilledQuantity;
+	// The maximun quantity this item can have
+	var maxQtd = viewItem.getComponentMaxQtd();
+	// Item's description (name)
+//	var description = showDescription ? " " + viewItem.getLongName() : "";
+//	var description = showDescription ? " " + viewItem.getDescription() : "";
+	var description = showDescription ? "" + viewItem.getDescription() : "";
+	// Quantity that should be shown to user.
+	var quantityToShow = Number(viewItem.grilledQuantity);
+	var absQuantity = Math.abs(quantityToShow);
+	quantityToShow = absQuantity;
+			
+	if (defaultQtd == quantity) {
+		//LOG.warn("An item arrived with default quantity equals quantity. That should not happen");
+		return "(ERROR " + defaultQtd + ") " + description;
+	}
+	if (quantity == 0) {
+		// If the item will have quantity of zero, we just show the remove sign. eg. "sin queso"
+		return I18nMessage.getInstance().getResourceMessage(TextMessageKey.GRILL_TEXT_MODIFIER + quantity) +" " + description;
+	}
+	
+	if (defaultQtd == 0) {
+		if (maxQtd == 1) {
+			// If it's a comment, we dont show the ADD
+			if (viewItem.productType != 6) { 
+				// Isn´t Comment
+				return ADD + " " + description;
+			} else {
+				// Is Comment
+				return description;
+			}	
+		} else {
+			if (quantityToShow == 1) {
+				return ADD + " " + description;
+			} else {
+				return ADD + " " + quantityToShow + " " + description;
+			}
+		}
+	} else if (defaultQtd == 1) {
+		if (maxQtd == 2) {
+			return EXTRA + " " + description;
+		} else {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		}
+	} else if (defaultQtd == 2) {
+		if (maxQtd == 3 && quantity == 3) {
+			return EXTRA + " " + description;
+		} else if (maxQtd > 3 && quantity > 2) {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		} else {
+			if (quantityToShow == 1) {
+				return REMOVE + " " + description;
+			} else {
+				return REMOVE + " " + quantityToShow + " " + description;
+			}
+		}
+	} else {
+		if (maxQtd == (defaultQtd + 1) && quantity == maxQtd) {
+			return EXTRA + " " + description;
+		} else if (quantity > defaultQtd) {
+			if (quantityToShow == 1) {
+				return EXTRA + " " + description;
+			} else {
+				return EXTRA + " " + quantityToShow + " " + description;
+			}
+		} else {
+			if (quantityToShow == 1) {
+				return REMOVE + " " + description;
+			} else {
+				return REMOVE + " " + quantityToShow + " " + description;
+			}
+		}
+	}
+}
+
+/** PRIVATE FUNCTION
+ * Private function to create a button givena workflow name, param and value...
+ * @Param wfName workflow name
+ * @Param paramName parameter name
+ * @Param paramValue parameter value
+ * @Param name button name (in case that image can't be found, or null)
+ * @Param image image name
+ * @Param negative negative image
+ */
+function createNormalButtonData(wfName, paramName, paramValue, name, image, negative) {
+	var data = new Button();
+	data.setNumber(0);
+	data.setBitmap(image);
+	data.setBitmapdn(negative);
+	data.setTitle(name);
+	data.setBgup("BLACK");
+	data.setBgdn("WHITE");
+	data.setTextdn("BLACK");
+	data.setTextup("WHITE");
+	var action = new Action();
+	action.setType(IAction.TYPE_ONCLICK);
+	action.setWorkflow(wfName);
+	var parameters = new ArrayList();
+	var parameter = new Parameter();
+	parameter.setName(paramName);
+	parameter.setValue(paramValue);
+	parameters.add(parameter);
+	action.setParameter(parameters);
+	var actions = new ArrayList();
+	actions.add(action);
+	data.setAction(actions);
+	return data;
+}
+
+/** PRIVATE FUNCTION
+ * Creates an NPButton.
+ * @param itemCode The item code
+ * @param buttonLabel the button label (just used if could not find image)
+ * @param itemQuantity The quantity added/removed from the item
+ * @param specialModifier The special modifiers to add on item
+ * @param image The image name
+ * @param negative The negative image name
+ * @return the requested button
+ */
+function createButtonData(itemCode, buttonLabel, itemQuantity, specialModifier, image, negative) {
+	var data = new Button();
+	data.setNumber(0);
+	data.setBitmap(image);
+	data.setBitmapdn(negative);
+	data.setTitle(buttonLabel);
+	data.setBgup("BLACK");
+	data.setBgdn("WHITE");
+	data.setTextdn("BLACK");
+	data.setTextup("WHITE");
+	
+	// Button Action
+	var action = new Action();
+	action.setType(IAction.TYPE_ONCLICK);
+	action.setWorkflow(WF_GRILL);
+	// Workflow Parameters
+	var parameters = new ArrayList();
+	
+	var parameter = new Parameter();
+	parameter.setName("ItemCode");
+	parameter.setValue(itemCode);
+
+	var parameter2 = new Parameter();
+	parameter2.setName("ItemQuantity");
+	parameter2.setValue(itemQuantity);
+	
+	var parameter3 = new Parameter();
+	parameter3.setName("SpecialModifier");
+	parameter3.setValue(specialModifier);
+	
+	parameters.add(parameter);
+	parameters.add(parameter2);
+	parameters.add(parameter3);
+	action.setParameter(parameters);
+	
+	var actions = new ArrayList();
+	actions.add(action);
+	data.setAction(actions);
+
+	return data;
+}
+
+
+/** PRIVATE FUNCTION
+ * Checks if you can set a given quantity on a given item
+ * @param maxQty max quantity
+ * @param minQty min quantity
+ * @param qty the quantity
+ * @return
+ * boolean
+ */
+function canSet(maxQty, minQty, qty) {
+	return qty <= maxQty && qty >= minQty;
+}
+
+/*** PRIVATE FUNCTION
+ * Inverts/normalizes the button data
+ * @param btn the button to invert
+ * @param invert to invert or normalize
+ * @param specialModifier int
+ */
+function changeButtonData(data, invert, specialModifier) {
+	var up = data.getBitmap();
+	if (up != null && up.endsWith(PosUiConfiguration.AUTO_INVERTED_SUFFIX) == invert) {
+		return;
+	}
+	var dn = data.getBitmapdn();
+	data.setBitmap(dn);
+	data.setBitmapdn(up);
+	
+	var action = data.getAction().get(0);
+	// Parameter at position 2 (3th parameter) is the "special modifier"
+	action.getParameter().get(2).setValue(invert ? "0" : specialModifier + "");
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d373934370012888920de97eeb978feefc50a70cb0c40dcca394a033df0ab62cd601c43e2df3be2e2a32a8c3a6d4dccf1296dd064f062400010
+ * =================================================================================================================================
+*/

@@ -1,0 +1,423 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCCashless.nps
+* This NPS file implements Cashless Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+
+const GC_STRING="giftCouponString";
+const CASHLESS_GIFT_CARD="CASHLESS_GC";
+
+/** PosIsCashlessAvailableJS
+ *
+ * This function checks if the cashless is loaded and locally available
+ * Return - rval - True if available
+ */
+function PosIsCashlessAvailableJS()
+{
+    return(true);//PinpadIsOnlineJS());
+}
+
+/** PosIsCashlessLoadedJS
+ *
+ * This function checks if the cashless is loaded
+ * Return - rval - True if loaded
+ */
+function PosIsCashlessLoadedJS()
+{
+	return(PosCheckParameter("TCLExtension","everest","true"));
+}
+
+/**PosGCActivationJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosGCActivationJS</b>\n
+ * Persistence:<b>Persisted</b>\n
+ * This BC activates the gift card of last sale!\n
+ * Should be called by the workflow sequence when the sale is finished.\n
+ * In a workflow sequence it is called:<b>PosGCActivationJS</b>\n
+ * In java script it should be called:<b>PosGCActivationJS</b>\n
+ * Return - rval - True for successful execution or False for failure.
+ */
+function PosGCActivationJS(flags)
+{
+	function isAReloadableGiftCard(code)
+	{
+		return("8496" == code || "8497" == code || "8498" == code || "8499" == code);
+	}
+	function compareAmount(e1, e2)
+	{
+		var a1 = Number(e1[2]);
+		var a2 = Number(e2[2]);
+		if(a1 > a2)
+			return 1;
+		if(a1 < a2)
+			return -1;
+		
+		var r1 = isAReloadableGiftCard(e1[0]);
+		var r2 = isAReloadableGiftCard(e2[0]);
+		if(r1 && !r2)
+			return 1;
+		if(!r1 && r2)
+			return -1;
+		
+		return(0);
+	}
+	function compareTypeAndAmount(e1, e2)
+	{
+		var r1 = isAReloadableGiftCard(e1[0]);
+		var r2 = isAReloadableGiftCard(e2[0]);
+		if(r1 && !r2)
+			return 1;
+		if(!r1 && r2)
+			return -1;
+		
+		var a1 = Number(e1[2]);
+		var a2 = Number(e2[2]);
+		if(a1 > a2)
+			return 1;
+		if(a1 < a2)
+			return -1;
+		
+		return(0);
+	}
+	function getGiftCards(giftCardStr)
+	{
+		var giftCards=new Array();
+		var GCStrArray=giftCardStr.split("|");
+		if ((GCStrArray == null) || (GCStrArray.length <= 0)) {
+			return(null);
+		}
+		for(var i=0; i < GCStrArray.length; ++i) {
+			giftCards[i]=GCStrArray[i].split(";");
+			var fields=giftCards[i];
+		}
+		return(giftCards);
+	}
+	function activation(giftCards,prefix)
+	{
+		var i,j
+		var ctx=new SessionContext;
+		
+		giftCards.sort(compareTypeAndAmount);
+		var actQty=0;
+		var relQty=0;
+		var text="";
+		//var Amount=new BigDecimal();
+		for(i=0; i < giftCards.length; ++i) {
+			var fields=giftCards[i];
+			if(!isAReloadableGiftCard(fields[0])) { // ProductCode = fields[0]; 
+				actQty+=Number(fields[1]);
+				// Amount=fields[2];
+			} else {
+				relQty+=Number(fields[1]);
+			}
+		}
+		if(actQty != 0 && relQty != 0) {
+			var i1=0;
+			var i2=0;
+			while(i2 < giftCards.length && !isAReloadableGiftCard(giftCards[i2][0])) {
+				++i2;
+			}
+			var i1Length=i2;
+			while(i1 < i1Length || i2 < giftCards.length) {
+				if(i1 < i1Length) {
+					text+="Gift Card $" + Number(giftCards[i1][2]) + "-" + giftCards[i1][1];
+					++i1;
+				} else {
+					text+="                            ";
+				}
+				if(i2 < giftCards.length) {
+					text+="          Reload $" + Number(giftCards[i2][2]) + "-" + giftCards[i2][1] + "\n";
+					++i2;
+				} else {
+					text+="                                      \n";
+				}
+			}
+			PosShowMessage("MSG_BC_GC_ACTIV_RELOAD",text,actQty,relQty);
+		} else if(actQty != 0) {
+			for(i=0; i < giftCards.length; ++i) {
+				text+="Gift Card $" + Number(giftCards[i][2]) + "-" + giftCards[i][1] + "\n";
+			}
+			PosShowMessage("MSG_BC_GC_ACTIVATION",text,actQty);
+		} else {
+			for(i=0; i < giftCards.length; ++i) {
+				text+="Reload $" + Number(giftCards[i][2]) + "-" + giftCards[i][1] + "\n";
+			}
+			PosShowMessage("MSG_BC_GC_RELOAD",text,relQty);
+		}
+		while(!PosCheckCashDrawer()) {
+			PosShowMessage("MSG_BC_DRAWER_OPENED");
+		}
+		giftCards.sort(compareTypeAndAmount);
+		var actNumber=1;
+		var relNumber=1;
+		var Continue=true;
+		for(i=0; Continue && i < giftCards.length; ++i) {
+			var fields=giftCards[i];
+			for(j=Number(fields[1]); Continue && j > 0; --j) {
+				var text;
+				var msg;
+				var reload=isAReloadableGiftCard(fields[0]);
+				while(Continue) {
+					if(!reload) { // ProductCode = fields[0]; 
+						PosDisplayText("MSG_BC_GC_ACTIVATING",1,true,true,fields[2]);
+						msg="Gift Card to Activate: " + actQty + "\n\nCurrently Activating Card #" + actNumber + " for " + fields[2] + "\nPress OK to Activate\nPress Cancel to Exit.";
+					} else {
+						PosDisplayText("MSG_BC_GC_RELOADING",1,true,true,fields[2]);
+						msg="Gift Card to Reload: " + relQty + "\n\nCurrently Reloading Card #" + relNumber + " for " + fields[2] + "\nPress OK to Reload\nPress Cancel to Exit.";
+					}
+					if(!PosShowConfirmationMessage(msg,"MSG_OK","MSG_CANCEL")) {
+						Continue=false;
+					}
+					
+					// Check if system is online
+					if (PosIsCashlessAvailableJS() != true) {
+						PosShowMessage("MSG_BC_GC_NOT_AVAILABLE");
+						Continue = false;
+					}
+                    
+					if(Continue && PosActivateGCJS(fields[2],reload)) {
+						if(!reload) { 
+							++actNumber;
+						} else {
+							++relNumber;
+						}
+						giftCardText=(j != 1) ? (prefix + fields[0] + ";" + (j-1) + ";" + fields[2]) : prefix;
+						var sep=(j != 1) ? "|" : "";
+						for(k=i+1; k < giftCards.length; ++k) {
+							giftCardText+=sep + giftCards[k][0] + ";" + giftCards[k][1] + ";" + giftCards[k][2];
+							sep="|";
+						}
+						ctx.set(GC_STRING,giftCardText,true);
+						var CashlessGC=ctx.get(CASHLESS_GIFT_CARD); 
+						PosCreateReport("VIEW","receiptGift@reports.nps",flags,CashlessGC);
+						ctx.set(CASHLESS_GIFT_CARD,"");
+						break;
+					}
+					Continue=PosShowConfirmationMessage("MSG_BC_GC_ACT_ERROR","MSG_OK","MSG_CANCEL");
+				}
+			}
+		}
+		if(!Continue || (giftCardText.length != 0)) {
+			giftCardText="R" + ((actNumber != 1 || relNumber != 1) ? "+" : "-") + giftCardText;
+			ctx.set(GC_STRING,giftCardText,true);
+		}
+		return(Continue);
+	}
+	function refund(giftCards,headFields,sign)
+	{
+		var ctx=new SessionContext;
+		var notInProgress=PosNotATransactionInProgress(true)		
+		if(notInProgress) {
+			while(!PosGetAuthorization("manager"))
+				;
+			PosSetTransactionKind(ACC_OT_REFUND,(headFields[3] != "1")	
+				? ACC_OT_REFUND
+				: ((headFields[4] == "0" && sign == "-") ? ACC_OT_GC_BILLABLE_REFUND : ACC_OT_MX_BILLABLE_REFUND));
+			for(var i=0; i < giftCards.length; ++i) {
+				var fields=giftCards[i];
+				for(var j=Number(fields[1]); j > 0; --j) {
+					PosDoSale(fields[0],true);
+				}
+			}
+			PosSetSaleType(headFields[0]); // price code
+			PosDoTotal();
+		}
+		var TenderId=(headFields[3] != "1")
+			? (PosShowConfirmationMessage("MSG_BC_REFUND_TYPE","Cash","Cashless")) ? "-1" : "10"
+			: "6"; // billable sale
+		if(!PosDoTender(TenderId,"-1")) {
+			PosDoTender("-1","-1");
+		}
+		PosDoEndOfSale();
+		ctx.set(GC_STRING,"",true);
+		var viewString=ctx.get(KEY_VIEW);
+		var view=new XML(viewString);
+		view.@LSOrderId=headFields[1];
+		view.@LSTotAmount=headFields[2];
+		ctx.set(KEY_VIEW,view.toString(),true);
+		PosCreateReceiptJS(0,"VIEW","receipt@reports.nps",flags);			
+		return;
+	}
+	
+	var ctx=new SessionContext;
+	
+	var giftCardText=ctx.get(GC_STRING);
+	if(null == giftCardText || 0 == giftCardText.length) { 
+		return(true);
+	}
+	var index=giftCardText.indexOf("!");
+	if(index == -1 || index == giftCardText.length-1) {
+		return(true);
+	}
+	var saleType=0;
+	var OK=false;
+	if(giftCardText.substr(0,2) != "R-" && giftCardText.substr(0,2) != "R+") {
+		var index1=giftCardText.indexOf("!");
+	    var giftCards=getGiftCards(giftCardText.substr(index1+1));
+		if ((giftCards == null) || (giftCards.length <= 0)) {
+			return(true);
+		}
+		OK=activation(giftCards,giftCardText.substr(0,index1+1));
+	}
+	giftCardText=ctx.get(GC_STRING);
+	PosDisplayText("",1);
+	var index=giftCardText.indexOf("!");
+	if(OK || (index < 0)) {
+		return(true);
+	}
+	sign=giftCardText.substr(1,1);
+	giftCardText=giftCardText.substr(2);
+	var index=giftCardText.indexOf("!");
+    var giftCards=getGiftCards(giftCardText.substr(index+1));
+	if ((giftCards == null) || (giftCards.length <= 0)) {
+		return(true);
+	}
+	refund(giftCards,giftCardText.substr(0,index).split("#"),sign);
+	return(false);
+}
+
+/**PosGiftCardCashOutJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosGiftCardCashOutJS</b>\n
+ * Persistence:<b>not persisted</b>\n
+ * This BC cash out a gift card!\n
+ * In a workflow sequence it is called:<b>PosGiftCardCashOutJS</b>\n
+ * In java script it should be called:<b>PosGiftCardCashOutJS</b>\n
+ * Return - rval - True for successful execution or False for failure.
+ */
+function PosGiftCardCashOutJS(flags)
+{
+	PosResetPinpad();
+
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	var ctx=new SessionContext;
+	if(PosCashOut()) {
+		var hlp = new BusinessObjectHelper;
+		var firstTheReceipt = hlp.findParamInSectionWide("CoinDispPrintReceiptOrder","Receipt") == "true"; //true if is set to give the change after printing 
+		//give the change before printing the receipt
+		if((typeof(PosIsCoinDispenseLoadedJS) == 'function') && (typeof(PosDispenseCoins) == 'function') && firstTheReceipt == false) {
+			if(PosIsCoinDispenseLoadedJS()) {
+			   	var value=ctx.get("CASHLESS_VALUE");
+				value=value.substr(value.length-2);
+				if(Number(value) != 0) {
+					PosDispenseCoins(value);
+				}
+			}
+		}
+		PosOpenCashDrawer(false);
+		var CashlessStr=ctx.get(CASHLESS_GIFT_CARD); 
+		PosCreateReport("CUSTOMDATA","cashoutReceipt@reports.nps",flags,CashlessStr);
+		
+		//give the change after the receipt is printed
+		if((typeof(PosIsCoinDispenseLoadedJS) == 'function') && (typeof(PosDispenseCoins) == 'function') && firstTheReceipt == true) {
+			if(PosIsCoinDispenseLoadedJS()) {
+			   	var value=ctx.get("CASHLESS_VALUE");
+				value=value.substr(value.length-2);
+				if(Number(value) != 0) {
+					PosDispenseCoins(value);
+				}
+			}
+		}
+	} else {
+		var CashlessStr=ctx.get(CASHLESS_GIFT_CARD); 
+		if((CashlessStr != null) && (CashlessStr != "")) {
+			PosCreateReport("CUSTOMDATA","balanceReceipt@reports.nps",flags,CashLessStr);
+		}
+	}
+	return(true);
+}
+
+/**PosGiftCardBalanceJS
+ *
+ * @brief - This BC gets the gift card balance
+ * Return - rval - true if it got the balance
+ */
+function PosGiftCardBalanceJS(flags)
+{
+	PosResetPinpad();
+
+	var CashLessStr=GCBalanceJS();
+	if(null == CashLessStr) {
+		return false;
+	}
+	PosCreateReport("CUSTOMDATA","balanceReceipt@reports.nps",flags,CashLessStr);
+	return true;
+}
+
+/** ResetCashlessJS
+ *
+ * @brief - Reset pinpad
+ * Return - true if it suceeed
+ */
+function ResetCashlessJS()
+{
+   return ResetEverest();  
+}
+
+//OI 29.01.2010 add for 6.1.17
+
+/**PosCashOutJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosCashOutJS</b>\n
+ * Persistence:<b>not persisted</b>\n
+ * This BC do cash out!\n
+ * In a workflow sequence it is called:<b>PosCashOutJS</b>\n
+ * In java script it should be called:<b>PosCashOutJS</b>\n
+ * Return - rval - True for successful execution or False for failure.
+ */
+function PosCashOutJS(flags)
+{
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	
+   	PosSetSessionProperty("CASHLESS_TENDERID","10");
+
+	var ctx=new SessionContext;
+	if(PosCashOut()) {
+		if((typeof(PosIsCoinDispenseLoadedJS) == 'function') && (typeof(PosDispenseCoins) == 'function')) {
+			if(PosIsCoinDispenseLoadedJS()) {
+			   	var value=ctx.get("CASHLESS_VALUE");
+				value=value.substr(value.length-2);
+				if(Number(value) != 0) {
+					PosDispenseCoins(value);
+				}
+			}
+		}
+		PosOpenCashDrawer(false);
+		var CashlessStr=ctx.get(CASHLESS_CASHOUT); 
+		PosCreateReport("CUSTOMDATA","cashoutReceipt@reports.nps",flags,CashlessStr);
+	} else {
+		var CashlessStr=ctx.get(CASHLESS_CASHOUT); 
+		if((CashlessStr != null) && (CashlessStr != "")) {
+			PosCreateReport("CUSTOMDATA","balanceReceipt@reports.nps",flags,CashLessStr);
+		}
+	}
+	return(true);
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d373934370093bfdd1f1edef3d1880b740bc6c4114629547a94e1d1df2ef51db89cc7d0a8160ba2c53b96e3515d6ec7743788655ee080290010
+ * =================================================================================================================================
+*/

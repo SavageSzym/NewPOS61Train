@@ -1,0 +1,220 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCCOD.nps
+* This NPS file implements Customer Order Display (COD) Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*2.252.00		08.04.2010	MihaiSecareanu		modify ButtonCODJS according to VSI script sample
+* not included yet in any version
+ButtonCODJS update RC6
+
+*/
+
+ 
+ /**viewFormatterCODJS
+ *
+ * @brief - Responsible for formatting the order view before being sent to the COD service.
+ *          This function was initially created to support the feature Auto condiment (PLE-194) and
+ *			can be used to support the new COD generation.
+ * @return - sView - XML order view formatted.
+ * @author - Kalil
+ */
+function viewFormatterCODJS(sView) {
+	return removeACItems(sView);
+}
+ 
+/** removeACItems
+ *
+ * @brief - Removes all autocondiment items from the view, by design the AC items can not be displayed on the CODs. (Part of feature PLE-194 : Auto condiment)
+ * @param - sView - Incoming view which may have AC items.
+ * @return - XML order view without the AC items.
+ * @author - Kalil
+ */
+function removeACItems(sView) {
+ 	if (sView == null) {
+		return null;
+	} else {
+		try {
+			API.dbg("BCCOD.nps:removeACItems() - Formatting view for the COD service....");
+			var oView = new XML(sView);
+			// Removes all the AC items from the given view.
+			for (var j = 0; j < oView.ItemView.length(); ++j) {
+				if (oView.ItemView[j].AutoCondiment=='true') {
+					delete oView.ItemView[j]; 
+				}
+			} 	
+			return oView.toXMLString();
+		} catch(ex) {
+			API.dbg("FATAL ERROR: Could not remove the auto-condiment items from the order view, due to: " + ex);
+			return sView;
+		}
+	}
+} 
+
+ 
+ 
+/**CODDedicatedModeJS
+ *
+ * @brief - This BC shows/changes the COD Mode dedicated between ON/OFF
+ * Return - rval - true if allowed to continue
+ */
+function CODDedicatedModeJS(change)
+{
+const codMode=["true","false"];
+const codModeButton=["bitmap|cod_on.png","bitmap|cod_off.png"];
+
+	if(!PosNotATransactionInProgress(true)) {
+		if("true"==change) { // Next
+			PosShowMessage("MSG_BC_SALEPROG");
+			return(true);
+		}
+	}
+	var i=0;
+	// Loops up to length because the very first time reportPOD might not be set!
+	for(;i < codMode.length;i++) {
+		if(PosCheckSessionProperty("dedicatedCOD",codMode[i])) {
+			break;
+		}
+	}
+	if("true"==change) { // Next
+		i++;
+	}
+	if(i >=codMode.length) {
+		i=0;
+	}
+	// either reportPOD was not set or changing from the last to the first...
+	PosChangeButtonProperties(0,codModeButton[i]);
+	if("true"==change) { // Next
+		PosSetSessionProperty("dedicatedCOD",codMode[i],"true");
+		PosSetSessionProperty("activatedCOD","0","true");
+	}
+	return(true);
+}
+
+/**ButtonCODJS
+ *
+ * @brief - This BC execute request of the COD button
+ * Return - rval - true if allowed to continue
+ */
+function ButtonCODJS(cod, productCode)
+{
+	if(PosCheckSessionProperty("dedicatedCOD","false")) {
+		if(PosCheckSessionProperty("activatedCOD","0")){
+			szIdCod = "COD "+cod;
+			PosSetSessionProperty("activatedCOD",cod,"true");
+			//PosCommStatusCOD("MSG_BC_ERRORSETCOD1");
+			PosDisplayText("MSG_BC_ROUTEDCOD",1,true,false,szIdCod);
+			// NVS-216 - We need to configurate the selected COD
+			var ctx=new SessionContext;
+			var cod_selected=ctx.get(szIdCod);
+			PosSetSessionProperty("COD 0", cod_selected, "true");
+			
+
+		}
+		else {
+			PosDoSaleJS(productCode);
+		}
+	}
+	else {
+		PosDoSaleJS(productCode);
+	}
+	return(true);
+}
+
+/**ChangeButtonCODJS
+ *
+ * @brief - This BC changes between COD and product picture
+ * Return - rval - true if allowed to continue
+ */
+function ChangeButtonCODJS(cod, bitmap, bitmapdn)
+{
+const codButton=["bitmap|NO.png","bitmap|COD1.png","bitmap|COD2.png"];
+var ctx=new SessionContext;
+
+	if((ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == TANDEM_FACE)) {
+		// Face x Face
+		return(false);
+	}
+
+	if(!PosCheckSessionProperty("workingMode","orderTaker|both")) {
+		return(false);
+	}
+	var i=0;
+	if(PosCheckSessionProperty("dedicatedCOD","false")) {		
+		if(PosCheckSessionProperty("activatedCOD","0")) {	
+			PosChangeButtonProperties(0,codButton[cod]);
+		}
+		else{
+			if(bitmap==null) {
+				return(false);
+			}		
+			PosChangeButtonProperties(0,bitmap);
+		}
+	}
+	else{
+		if (bitmap==null){
+			return(false);
+		}
+	}
+	return(true);
+}
+
+/**PosIsSingleCODJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosIsSingleCODJS</b>\n
+ * Persistence:<b>Persisted</b>\n
+ * This BC returns to workflow the inverse value of PosIsSingleCOD!\n
+ * Should be called by the workflow sequence when the sale is finished.\n
+ * Return - rval - True for successful execution or False for failure.
+ */
+function PosIsSingleCODJS()
+{
+var ctx=new SessionContext;
+
+	if((ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == TANDEM_FACE)) {
+		// Face x Face
+		return(false);
+	}
+
+	return(!PosIsSingleCOD());
+}
+
+/**PosIsCODSelectedJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosIsCODSelectedJS</b>\n
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC checks if a COD is selected!\n
+ * Return - rval - True if COD is selected.
+ */
+function PosIsCODSelectedJS()
+{
+	if( PosCheckSessionProperty("dedicatedCOD","false") &&
+		PosCheckSessionProperty("activatedCOD","0") &&
+     	PosCheckSessionProperty("POD","DRIVE_THRU") && 
+		PosCheckSessionProperty("workingMode","orderTaker|both")) {
+		return(false);
+	}
+	return(true);
+}
+
+ 
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437003a20b954077d1f3e0805581777996765380e6bd2f146548a434ea99b4bf0a79c7a75fd2b8840589548b2804ff509d96edf3f0010
+ * =================================================================================================================================
+*/

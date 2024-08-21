@@ -1,0 +1,99 @@
+ /** 
+ * @file CSL_Missing.nps
+ * @brief This NPS file implements BusinessComponents Missing.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Missing
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Missing.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_MISSING_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable global. */
+SRC_BC_MISSING='CSL_Missing.nps';
+
+/** PosDisplayText
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosDisplayText</b>\n
+ * Persistence:<b>Not Persisted</b>\n
+ * This BC displays a text (UTF8 format) to a given destination.\n
+ * Possible destinations are: Operator message display area; customer message display area; or both.\n
+ * In a workflow sequence it is called:<b>PosDisplayText $Message $DstType $SysMsg ...</b>\n
+ * In java script it should be called:<b>PosDisplayText(Message,DstType,SysMsg,...)</b>\n
+ * Where: Message - string - Message text to show (UTF8 format)
+ *		  DstType - string - Destination (1->"operator", 2->"customer", 3->"both")
+ *		  SysMsg - string - if it's TRUE, this function searchs the message in the properties file
+ *		  ClearInfoArea - string - True if should clear info message when loading next screen
+ *		  ... - up to five strings - complements to Message\n
+ * Property Messages:none\n
+ * Return: - rval - True.
+ */
+//function PosDisplayText() {
+//	var cmd = "PosShowText";
+//	CSL_dbglog(7, SRC_BC_MISSING, cmd, "Start - MISSING **************");
+//    return true;
+//}
+
+
+/**PosShowMenuPriceDialog()
+ *
+ * @brief - This BC present the a info message if the show price is on
+ */
+function PosShowMenuPriceDialog() {
+	var cmd = "PosShowMenuPriceDialog";
+	CSL_dbglog(7, SRC_BC_MISSING, cmd, "Start - MISSING **************");
+    return true;
+}
+
+/**onConfirmLogout
+ *
+ * @brief - This function confirms login 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function onConfirmLogout(bRemote,name) {
+	var cmd = "onConfirmLogout";
+	CSL_dbglog(7, SRC_BC_MISSING, cmd, "Start");
+
+	// Confirms logout
+	return(true);
+}
+
+/** auxShowMessageClearCalc
+ *
+ * @brief - auxiliary function to show message and clear calc
+ * Return - false
+ */
+function auxShowMessageClearCalc(errMsg) {
+	var cmd = "auxShowMessageClearCalc";
+	CSL_dbglog(7, SRC_BC_MISSING, cmd, "Start");
+
+	PosShowMessage(errMsg);
+	PosHandleCalculatorButton("clear");
+	return(false);		
+}
+
+/**
+ * END nps
+ */
+ 
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700fb4bf715a7c3201649c805094a1d1dd126142700e72d11b8aeb4effcd3df71194d34251cde74d4f89012010cb4018eccc92a0010
+ * =============================================================================================================================
+*/

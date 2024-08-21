@@ -1,0 +1,1103 @@
+/** 
+ * BusinessComponents.nps
+ * This NPS file implements BusinessComponents.
+ *
+ * Copyright (c) 2005-2007 - Torex Retail PLC
+ *
+ * $Source: /NewPOS/SRC/np61cvs/cvs/___NewPOS6/src/npCore/npBusComp/scripts/BusinessComponents.nps,v $
+ * $Revision: 776 $
+ * $Date: 2009-08-06 10:46:38 -0300 (qui, 06 ago 2009) $ (of revision)
+ * $Author: rcaram $ (of revision)
+ */
+
+/* Variable used for version control */
+CSL_COMPATIBILITY_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+const KEY_VIEW="view";
+const KEY_REMVIEW="remote_view";
+
+const NPSRVTLOG_API_SET_STATE=1;
+const ADPTLOG_INT_MANAGER_MODE=0x30000006
+
+const SALE_STATUS_START=0;					// Default status (ready to sell, but no item sold so far)
+const SALE_STATUS_IN_PROGRESS=1;			// Sale in progress, at least one item sold (OPEN_SALE)
+const SALE_STATUS_ON_TOTAL=2;				// Sale totalized at least once
+const SALE_STATUS_TOTALIZED=4;				// Sale in tendering process (TOTAL_SALE)
+const SALE_STATUS_GRILLING=8;				// Sale in grill process (GRILL_IN_PROGRESS)
+const SALE_STATUS_RECALLED=16;				// Sale with recall pressed
+const SALE_STATUS_TENDERED=32;				// Sale tendered
+const SALE_STATUS_STORED=64;				// Sale stored
+const SALE_STATUS_PAID=128;					// Sale paid
+const SALE_STATUS_CLOSED=256;				// Not used
+const PROD_STATUS_HELD=512;					// Order in held condition - drive thru
+const PROD_STATUS_SERVED=1024;				// Order served - drive thru
+const SALE_STATUS_CURRENT_VOIDED=2048;		// Current sale voided
+const SALE_STATUS_LAST_VOIDED=4096;			// Last sale voided
+const SALE_STATUS_NON_ACCOUNTING=8192;		// Sale used for skipping cars
+const UNDEFINED_SALE_STATUS=16384;			// undefined status
+const SALE_STATUS_NUMBER=16384;				// last value 
+
+const POS_STA_INVALID=-1;		// Error gettng state
+const POS_STA_CLOSED=0;			// POS closed
+const POS_STA_OPENED=1;			// POS opened for business
+const POS_STA_OPLOGGED=2;		// POS opened with a logged in operator
+const POS_STA_BLOCKED=3;		// POS blocked for some reason
+const POS_STA_BLOCKOP=4;		// POS blocked with a logged in operator */
+
+const TAX=0;
+
+const TA_NO_ACTION=0;
+const TA_AUTH=0x100;			// The manager must allow the operation  (generic)
+const TA_AUTH1=0x101;			// The manager must allow the operation  (tender)
+const TA_AUTH2=0x102;			// The manager must allow the operation  (change)
+const TA_DRAWER=0x200;			// Open the drawer 
+const TA_DISCOUNT=0x400;		// There is a discount
+const TA_REDUCE=0x800;			// There is a discount
+const TA_CASH=0x2000;			// Last tender was cash
+const TA_CASHLESS=0x4000;		// Last tender was 
+const TA_CASHLESS_SIGN=0x8000;
+const TA_COUPON=0x10000;
+
+const NPSRVPRN_SND=0;				//!< Cmd to print a buffer
+const NPSRVPRN_RCV=1;				//!< Cmd to get info from printer
+const NPSRVPRN_SNDRCV=2;			//!< Cmd to print a buffer and receive a message
+const NPSRVPRN_STATUS=3;			//!< Cmd to get printer status
+const NPSRVPRN_QUERY=4;				//!< Cmd to query printer list
+const NPSRVPRN_SET_PRINTER=5;		//!< Cmd to set current printer
+const NPSRVPRN_SET_ALIAS=6;			//!< Cmd to set the alias of a printer of next NPSRVPRN_SNDRCV
+
+const TANDEM_NONE=0;				//!< No tandem used	(REGULAR)
+const TANDEM_FACE=1;				//!< Tandem FacexFace (TANDEM)
+const TANDEM_INLINE=2;				//!< Tandem Inline (TANDEM_SPEAKER)
+const TANDEM_PARALLEL=3;			//!< Tandem Parallel (TANDEM_PARALLEL)
+
+if(!NUMBER_FORMAT) {
+	var NUMBER_FORMAT = "#,###,##0.00";
+}
+
+/**PosChangeTaxModeJS
+ *
+ * @brief - This BC gives a discount in a sale
+ * Return - rval - true if allowed to continue
+ */
+function PosChangeTaxMode_CSL(mode,flags)
+{
+	if(PosChangeTaxMode(mode)) {
+		// Ends sale
+		if(typeof(PosDoEndOfSaleJS) == "function") {
+			PosDoEndOfSaleJS(false,flags,0);
+		}
+		else {
+			PosDoEndOfSale(true);
+		}
+	}
+	PosHandleCalculatorButton("clear");
+	return(true);
+}
+
+/**PosChangePasswordJS
+ *
+ * @brief - This BC changes/resets an user password 
+ * changeType: "CHANGE","RESET","RESETALL"
+ * Return - true if changed, false otherwise
+ */
+function PosChangeUserPassword_CSL(changeType) {
+	// Validates parameter
+	if((undefined == changeType) || (null == changeType) || (changeType.length == 0)) {
+		PosShowMessage("MSG_BC_INVRPTTYPE");
+		return(JS_TRUE);
+	}
+	var bReset=false;
+	var bResetAll=false;
+	var nSecurityLevel=86; // Floor manager
+	var sMessage="MSG_PROMPTID";
+	// Sends a request to a dialog window to get the operator identification...
+	if(changeType == "RESET") {
+		bReset=true;
+	}
+	else {
+		if(changeType == "RESETALL") {
+			bReset=true;
+			bResetAll=true;
+		}
+		else {
+			nSecurityLevel=0;
+			sMessage="MSG_PROMPTUSERID";
+		}
+	}
+	var sIdtf="";
+	var sPassword="";
+	var nOperSecurityLevel=0;
+	var hlp = new BusinessObjectHelper;
+	if(bReset && !bResetAll) {
+		// Show message
+		if(!PosShowConfirmationMessage("MSG_RESETPSWD","Ok","Cancel")) {
+			return(false);
+		}
+	}
+	if(!bResetAll) {
+		// Gets user id
+		sIdtf=hlp.showCalculator(sMessage,1);
+		if(sIdtf.length == 0) {
+			return(false);
+		}
+		// Gets user current password...
+		sPassword=hlp.showCalculator("MSG_PROMPTGETPSWD");
+		if(sPassword.length == 0) {
+			return(false);
+		}
+		// Checks operator validity
+		nOperSecurityLevel=hlp.getUserInfo(sIdtf,2);
+		if(!hlp.validateUser(sIdtf,sPassword,nSecurityLevel)) {
+			// Reset needs at least a floor manager
+			PosShowMessage((bReset && (nOperSecurityLevel < 86))?"MSG_BC_RESETPSWDERR":"MSG_INVPASSWD");
+			return(false);
+		}
+	}
+	// Check type of request
+	if(bReset) {
+		// Sends a request to a dialog window to get the operator identification for whom to reset password ...
+		sIdtf=hlp.showCalculator("MSG_PROMPTRESETPSWD",1);
+		if(sMessage.length == 0) {
+			return(false);
+		}
+		var nUserSecurityLevel=hlp.getUserInfo(sIdtf,2);
+		if(null == nUserSecurityLevel) {
+			// Crew member information is not valid
+			PosShowMessage("MSG_INVPASSWD");
+			return(false);
+		}
+		// Check if crew member information is valid and get original password
+		if(!bResetAll && (Number(nUserSecurityLevel) >= Number(nOperSecurityLevel))) {
+			// manager with a lesser security level
+			PosShowMessage("MSG_BC_RESETPSWDERR");
+			return(false);
+		}
+		var sConfMsg=hlp.getSysMessage("MSG_BC_CONFRESETPSW",sIdtf,hlp.getUserInfo(sIdtf,1));
+		if(!PosShowConfirmationMessage(sConfMsg,"Confirm Reset","Cancel")) {
+			return(false);
+		}
+		sPassword="0";
+	}
+	else {
+		// Sends a request to a dialog window to get new password...
+		var sNewPassword=hlp.showCalculator("MSG_PROMPTNEWPSWD");
+		if(sNewPassword.length == 0) {
+			return(false);
+		}
+		// Sends a request to a dialog window to confirm new password...
+		sPassword=hlp.showCalculator("MSG_PROMPTRENEWPSWD");
+		if(sPassword.length == 0) {
+			return(false);
+		}
+		if(sNewPassword != sPassword) {
+			PosShowMessage("MSG_INVPASSWDMATCH");
+			return(false);
+		}
+	}
+	return(PosChangeUserPassword(sIdtf,sPassword));
+}
+
+/**PosTimePunchJS
+ *
+ * @brief - This BC set a time punch for a user 
+ * Return - true if changed, false otherwise
+ */
+function PosTimePunch_CSL() {
+	
+	var hlp = new BusinessObjectHelper;
+	// Gets user id
+	var	sIdtf=hlp.showCalculator("MSG_PROMPTUSERID",1);
+	if(sIdtf.length == 0) {
+		return(false);
+	}
+	// Gets user current password...
+	var sPassword=hlp.showCalculator("MSG_PROMPTGETPSWD");
+	if(sPassword.length == 0) {
+		return(false);
+	}
+	// Checks operator validity
+	if(!hlp.validateUser(sIdtf,sPassword,0)) {
+		// Reset needs at least a floor manager
+		PosShowMessage("MSG_INVPASSWD");
+		return(false);
+	}
+	return(PosTimePunch(sIdtf,sPassword));
+}
+
+
+/**PosChangeBtnTitleJS
+ *
+ * @brief - This BC changes the title of a button according to a received propertu message
+ * Return - true 
+ */
+function PosChangeBtnTitle_CSL(btnNbr,msg,c1,c2,c3) {
+
+	var hlp = new BusinessObjectHelper;
+	var sConfMsg="title|"+hlp.getSysMessage(msg,c1,c2,c3);
+	PosChangeButtonProperties(btnNbr,sConfMsg);
+	return(true);
+}
+
+/**PosIsBreakfastTimeJS
+ *
+ * @brief - This BC shows checks if it is breakfast time (or a flag is set indicating that) 
+ * Return - true if breakfast time, false otherwise
+ */
+function PosIsBreakfastTime_CSL() {
+	if(PosCheckSessionProperty("BreakfastTime","true")) {
+		return(true);
+	}
+	if(PosCheckSessionProperty("BreakfastTime","false")) {
+		return(false);
+	}
+	return(PosIsBreakfastTime(true));
+}
+
+/**PosCheckClicksJS
+ *
+ * @brief - This BC decrements the number of clicks for a given screen and shows a new screen if the number of clicks is zeroed 
+ * Return - true if breakfast time, false otherwise
+ */
+function PosCheckClicks_CSL(screenNbr) {
+	
+	var ctx=new SessionContext;
+	var sNbrCliks=ctx.get("clicksOnScreen");
+	if((undefined == sNbrCliks) || (null == sNbrCliks)) {
+		// Not defined
+		return(true);
+	}
+	var nbrClicks=Number(sNbrCliks)-1;
+	if(nbrClicks >= 0) {
+		ctx.set("clicksOnScreen",nbrClicks,1);
+		if(0 == nbrClicks) {
+			return(PosShowScreen(screenNbr));
+		}
+	}
+	return(true);
+}
+
+/**PosCheckChoicesJS
+ *
+ * @brief - This BC checks for open choice of a kind
+ * Return - rval - true if allowed to continue
+ */
+function PosCheckChoices_CSL(choices) {
+	if((choices != undefined) && (choices != null)) {
+		var choiceArray=choices.split(",");
+		if(choiceArray != null) {
+			var i=0;
+			for(;i < choiceArray.length; i++) {
+				if(!PosCheckChoice(choiceArray[i])) {
+					return(true);
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+/**PosIsSaleEmptyJS()
+ *
+ * @brief - This BC checks if a sale is empty 
+ * Return - true if empty
+ */
+function PosIsSaleEmpty_CSL() {
+
+	var hlp=new BusinessObjectHelper;
+	var curProdDescr=hlp.getSaleItem(0,0);
+	return((curProdDescr != null)?false:true);
+}
+
+/**PosDetachKVSJS
+ *
+ * @brief - this BC performs remote KVS detach
+ * Return - rval - true if allowed to continue
+ */
+function PosDetachKVSJS()
+{
+	var ctx = new SessionContext;
+	
+	// WHICH KVS?
+	if (!PosChooseKVS("1", "MSG_BC_KVSDETACH", "MSG_BC_KVSDETACH_CONFIRM")) {
+		return (false);
+	}
+	// DETACH KVS
+	if (!PosDetachKVS(ctx.get("SELECTED_REMKVS"))) {
+		return (false);
+	}
+	return true;
+
+}
+/**
+ * \defgroup VIEWCONS View Consolidation
+ * \{
+ */
+
+/**
+ * \brief Constructor of ConsolidatedView class
+ * \param [in] view - View to consolidate in flat string format
+ */
+function ConsolidatedView (view) {
+    this.view = new XML (view);		// Original view to be consolidated
+}
+
+/**
+ * \brief Change Equivalent information
+ * \return 
+ */
+ConsolidatedView.prototype.changeEquivalent = function () {
+	var qtyViewItem=this.view.ItemView.length();
+	var qtyEquivItem=this.view.EquivalentItemView.length();
+	for(var j=0; j<qtyEquivItem; j++) {
+		for(var i=0; i < qtyViewItem; i++) {
+			if(this.view.ItemView[i].EquivalentCode.length() > 0) {
+				if(this.view.EquivalentItemView[j].productCode.toString() == this.view.ItemView[i].EquivalentCode.toString()) {
+					this.view.ItemView[i].productCode = this.view.EquivalentItemView[j].productCode;
+					this.view.ItemView[i].description = this.view.EquivalentItemView[j].description;
+					this.view.ItemView[i].longName = this.view.EquivalentItemView[j].longName;
+					this.view.ItemView[i].dtName = this.view.EquivalentItemView[j].dtName;
+					if(this.view.EquivalentItemView[j].displayOrder != 0) {
+						if(this.view.EquivalentItemView[j].displayOrder < 0) {
+							var a=this.view.ItemView[i].ProdIntId;
+							if(a < 0) {
+								a=this.view.ItemView[i].SaleLine;
+							}
+							this.view.ItemView[i].displayOrder=(this.view.EquivalentItemView[j].displayOrder+1)*-10000+a*10+((this.view.ItemView[i].isGrillLine || this.view.ItemView[i].ComponentsChange)?0:9);
+						}
+					}
+					else {
+						this.view.ItemView[i].displayOrder=-10000+this.view.ItemView[i].SaleLine*10+((this.view.ItemView[i].isGrillLine || this.view.ItemView[i].ComponentsChange)?0:9);
+					}
+				}
+			}
+		}	
+	}
+}
+
+/**
+ * \brief Consolidates a view, returning its value in flat string format.
+ * \return The consolidated view.
+ */
+ConsolidatedView.prototype.consolidate = function () {
+	// Change equivalent
+	this.changeEquivalent();
+    // Create array with sale items
+    var newViewArray = this.detachChoice ();
+    // Create the consolidated view
+    var sortedView = this.createConsolidation (newViewArray);
+	// Sort the Consolidated View
+    this.sortView (sortedView);
+    // Copies attributes from original view
+    this.copyViewAttributes (sortedView);
+	this.copyItemTenderView(sortedView);
+    return sortedView.toXMLString();
+}
+
+/**
+ * \brief Copies attributes from internal view to a provided view.
+ * \param [in] view - View to add attributes to
+ */
+ConsolidatedView.prototype.copyViewAttributes = function (view) {
+    for (var attr in this.view.@*) {
+	view.@[this.view.@*[attr].name()] = this.view.@*[attr];
+    }
+}
+
+ConsolidatedView.prototype.copyItemTenderView = function (view) {
+	var qtyItemTenderView = this.view.ItemTenderView.length();
+	for(var i=0;i<qtyItemTenderView;i++){
+		view.ItemTenderView[i]="";
+		view.ItemTenderView[i].kind = this.view.ItemTenderView[i].kind;
+		view.ItemTenderView[i].description = this.view.ItemTenderView[i].description;
+		view.ItemTenderView[i].code = this.view.ItemTenderView[i].code;
+		view.ItemTenderView[i].qty = this.view.ItemTenderView[i].qty;
+		view.ItemTenderView[i].value = this.view.ItemTenderView[i].value;
+		view.ItemTenderView[i].fiscalIndex = this.view.ItemTenderView[i].fiscalIndex;
+		view.ItemTenderView[i].taxOption = this.view.ItemTenderView[i].taxOption;
+		view.ItemTenderView[i].cat = this.view.ItemTenderView[i].cat;
+		view.ItemTenderView[i].fValue = this.view.ItemTenderView[i].fValue;
+		view.ItemTenderView[i].pValue = this.view.ItemTenderView[i].pValue;
+		view.ItemTenderView[i].srcPOSId = this.view.ItemTenderView[i].srcPOSId;
+		view.ItemTenderView[i].subtotalOpt = this.view.ItemTenderView[i].subtotalOpt;
+		if(this.view.ItemTenderView[i].drawer.length() > 0) {
+			view.ItemTenderView[i].drawer = this.view.ItemTenderView[i].drawer;
+		}
+		view.ItemTenderView[i].skim = this.view.ItemTenderView[i].skim;
+		view.ItemTenderView[i].srcTender = this.view.ItemTenderView[i].srcTender;
+	}
+}
+
+/**
+ * \brief Detaches choices from a given view. 
+ *
+ * \return Returns a view with choices put outside value meals.
+ */
+ConsolidatedView.prototype.detachChoice = function () {
+	// Create array with sale items
+	var itemChoice=new Array();
+	var qtyPromoLevelZero=0;
+	var qtyLevelZero=0;
+	var qtyViewItem=this.view.ItemView.length();
+	var newViewArray = new Array ();
+	var isParentChoice=false;
+    
+	for(var i=0; i < qtyViewItem; i++) {
+		var item=this.view.ItemView[i];
+		lastItemCode=item.itemCode;
+		if(Number(item.level) == 0) {
+			qtyLevelZero=Number(item.quantity);
+			qtyPromoLevelZero=Number(item.quantityPromo);
+		}
+		// Verify Choice
+		if((Number(item.level) > 0) && (Number(item.prodAction) == 3)) {
+			if(Number(item.productType) != 4) {
+				// This is Choice
+				item.quantityPromo=qtyPromoLevelZero*item.quantity;
+				item.quantity*=qtyLevelZero;
+				var levelChoice=Number(item.level);
+				item.level=0;
+				item.levelChoice = levelChoice;
+				itemChoice.push({item:XML(item)});
+				for(var j=i+1; j < qtyViewItem; j++) {
+					var itemChoiceB=this.view.ItemView[j];
+					if(itemChoiceB.level > levelChoice) {
+						itemChoiceB.isChoiceChild = true;
+						itemChoiceB.level-=levelChoice;
+						itemChoiceB.quantity*=item.quantity;
+					}
+					else {
+						break;
+					}
+				}
+				isParentChoice=true;
+			}
+		}
+		else if (item.isChoiceChild == true && isParentChoice == true) {
+			// This item belongs to the Choice
+			delete item.isChoiceChild;
+			itemChoice.push({item:XML(item)});
+		}
+		else {
+			// This is not Choice
+			newViewArray.push({item:XML(item)});
+			isParentChoice=false;
+		}
+	}
+    // Put choice items at array's end
+    for(var i=0; i < itemChoice.length; i++) {
+		var iInd=newViewArray.length;
+		newViewArray.push({item:XML(itemChoice[i].item)});
+    }
+    return newViewArray;
+}
+
+/** 
+ * \brief Create a consolidated view.
+ *
+ * \param [in] viewArray - Array representing a view
+ */
+ConsolidatedView.prototype.createConsolidation = function (viewArray) {
+	//Recreate Original XML
+	var auxXML=new XML("<View/>");
+	var szViewArray=new Array();
+	var szAux="";	
+	var i=0;
+	// Create  line array with the same iItemCode
+	while(i < viewArray.length) {
+		var ItemView=viewArray[i].item;
+		var iItemCode = ItemView.itemCode.toString();
+		szAux =szAux + ItemView.productCode + ItemView.grilledQuantity;
+		var count=1;
+		for(var j=i+1; j < viewArray.length; j++) {		
+			var nextItemView=viewArray[j].item;
+			if((iItemCode!=nextItemView.itemCode) || (nextItemView.level==0)){
+				break;
+			}
+			count++;
+			szAux=szAux + nextItemView.productCode + nextItemView.grilledQuantity;
+		}
+		for(var k=0;k<count;k++) {
+			szViewArray.push({id:String(i), item:String(szAux)});
+		}
+		szAux="";
+		i=j;
+	}	
+	var bItemChecked = new Array(szViewArray.length);
+	
+	var iInd = -1;
+	var count_iInd = 1;
+	for(var i = 0; i < szViewArray.length; i++) {
+		var ItemArray = szViewArray[i].item;
+		
+		if(bItemChecked[i] == "true"){
+			continue;
+		}else{
+			bItemChecked[i] = "true";
+			var ItemXML=XML(viewArray[i].item);
+			auxXML.ItemView+=ItemXML;
+			iInd += count_iInd;
+			count_iInd = 1;
+			var a=i+1;
+			while((a < szViewArray.length) && (ItemXML.itemCode==viewArray[a].item.itemCode) && (Number(viewArray[a].item.level) != 0) && (bItemChecked[a] != "true")){
+				var ItemXML2=XML(viewArray[a].item);
+				auxXML.ItemView+=ItemXML2;
+				bItemChecked[a] = "true";
+				count_iInd++;
+				a++;
+			}
+		}
+		
+		for(var j = i+1; j < szViewArray.length; j++) {	
+
+			if((ItemArray == szViewArray[j].item) && (bItemChecked[j] != "true")) {
+				bItemChecked[j] = "true";
+				// Item already used in table	
+				szViewArray[j].item = -j;
+
+				var ItemXML=XML(viewArray[j].item);
+				
+				if(ItemXML.level == 0) {
+					auxXML.ItemView[iInd].quantity = Number (auxXML.ItemView[iInd].quantity) 
+					+ Number (ItemXML.quantity);
+					
+					auxXML.ItemView[iInd].quantityPromo = Number (auxXML.ItemView[iInd].quantityPromo)
+					+ Number (ItemXML.quantityPromo);
+	
+					auxXML.ItemView[iInd].quantityItemPromo = Number (auxXML.ItemView[iInd].quantityItemPromo)
+					+ Number (ItemXML.quantityItemPromo);
+	
+					var sizePromoDest=auxXML.ItemView[iInd].promo.length();
+					for(var a=0;a<sizePromoDest;a++) {
+						var id = auxXML.ItemView[iInd].promo[a].id;
+						var sizePromoOrig = auxXML.ItemView[iInd].promo.length();	
+						for(var b=0;b<sizePromoOrig;b++){
+							if(id = auxXML.ItemView[iInd].promo[b].id) {
+								auxXML.ItemView[iInd].promo[a] = Number(auxXML.ItemView[iInd].promo[a]) + Number(auxXML.ItemView[iInd].promo[b]);
+							}
+						}
+					}
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].unitPrice);
+					var value2 = new BigDecimal(ItemXML.unitPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].unitPrice = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].netUnitPrice);
+					var value2 = new BigDecimal(ItemXML.netUnitPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].netUnitPrice = value1.toString();;
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].unitTax);
+					var value2 = new BigDecimal(ItemXML.unitTax);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].unitTax = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].totalPrice);
+					var value2 = new BigDecimal(ItemXML.totalPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].totalPrice = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].netTotalPrice);
+					var value2 = new BigDecimal(ItemXML.netTotalPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].netTotalPrice = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].totalTax);
+					var value2 = new BigDecimal(ItemXML.totalTax);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].totalTax = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].ADTotalPrice);
+					var value2 = new BigDecimal(ItemXML.ADTotalPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].ADTotalPrice = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].ADNetTotalPrice);
+					var value2 = new BigDecimal(ItemXML.ADNetTotalPrice);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].ADNetTotalPrice = value1.toString();
+	
+					var value1 = new BigDecimal(auxXML.ItemView[iInd].ADTotalTax);
+					var value2 = new BigDecimal(ItemXML.ADTotalTax);
+					value1 = value1.add(value2);
+					auxXML.ItemView[iInd].ADTotalTax = value1.toString();
+				}
+			}
+		}
+	}
+	return auxXML;
+}
+
+/**
+ * \brief Sorts a consolidated view
+ * 
+ * \param [in, out] newViewCons - Consolidated view to sort, as a XML object
+ */
+ConsolidatedView.prototype.sortView = function (newViewCons) {
+    var flagdisplayOrder=false;
+    var displayOrderArray = new Array();
+    var compfunc = function (a, b) {
+	return (Number(a.id) - Number(b.id));
+    };
+    for each (var item in newViewCons.ItemView) {
+	if (Number(item.level) == 0) {
+	    displayOrderArray.push({id:Number(item.displayOrder)});
+	}
+    }
+    // Sort displayOrder Array
+    displayOrderArray.sort (compfunc)
+    //Seach duplicate displayOrder
+    for(var i=1; i < displayOrderArray.length; i++) {
+	if(displayOrderArray[i-1].id == displayOrderArray[i].id){
+	    // There is duplicate displayOrder
+	    flagdisplayOrder=true;
+	    break;
+	}
+    }
+    
+    // Create array with sale items
+    var newViewArray = new Array();
+    var key = "000000000";
+    var displayOrder = "000000000";
+    var productCode = "";
+    for each (var item in newViewCons.ItemView) {
+	if (Number(item.level) == 0) {
+	    key = API.formatNumber(Number(item.displayOrder), "000000000", 9)
+	}
+	displayOrder = API.formatNumber(Number(item.displayOrder), "000000000", 9)
+	if (flagdisplayOrder==true) {
+	    productCode = API.formatNumber(Number(item.productCode), "00000", 5)
+	}
+	// Create key to sort
+	var aux = String(key) + Number(item.level) + String(displayOrder)+ String(productCode);
+	newViewArray.push({id:String(aux), item:String(item)});
+    }
+    // Sort array with sale items
+    newViewArray.sort (compfunc);
+    
+    var sortViewCons = new XML("<View/>");
+    for(var i = 0; i < newViewArray.length; i++) {
+	var ItemView = new XML(newViewArray[i].item);
+	sortViewCons.ItemView+=ItemView;
+    }
+    
+    newViewCons = sortViewCons;
+}
+
+/**
+ * \brief Basic POS parameter getter
+ * \since NPS-4867
+ */
+/* Properties */
+if(typeof(BusinessObjectHelper) != "undefined") {
+    Config.prototype.helper    = new BusinessObjectHelper (); // Helper for configuration check
+}
+else {
+    Config.prototype.helper    = null;
+}
+Config.prototype.storewide = false;
+Config.prototype.section   = null;
+
+/* Methods */
+
+/**
+ * \brief Get a given parameter from configuration
+ * \param [in] param - Parameter name
+ * \return The parameter value
+ * \return null if parameter could not be obtained
+ * \since NPS-4867
+ */
+Config.prototype.getParameter = function (param) {
+    var value = null;
+    if(this.helper!=null) {
+        if (this.storewide) {
+            value = this.helper.findParamInSectionWide (param, this.section);
+        }
+        else {
+            value = this.helper.findParamInSectionConfig (param, this.section);
+        }
+    }
+    else {
+        value = "";
+    }
+    return value;
+}
+
+/**
+ * \brief Gets a boolean parameter from configuration
+ * \param [in] param - Parameter name
+ * \return A boolean
+ * \retval true of parameter is set
+ * \retval false if parameter is not set
+ * \since NPS-4867
+ */
+Config.prototype.getBoolParameter = function (param) {
+    var value = this.getParameter (param);
+    if ((null != value) && ("ENABLED" == value.toUpperCase ())) {
+	return true;
+    }
+    return false;
+}
+
+/**
+ * \brief Constructor of Config class
+ * \since NPS-4867
+ */
+function Config (section, storewide) {
+    this.section   = section;
+    this.storewide = storewide;
+}
+
+/**
+ * \brief Abstraction for a Enhanced Value Meal Receipt view, used for CODs and
+ * sale's panel.
+ * \since NPS-4867
+ */
+EVMRView.prototype.PC_VALUE_MEAL = 3;
+EVMRView.prototype.PC_CHOICE = 4;
+
+/**
+ * \brief Creates a view with adjusted view items. 
+ * \since NPS-4867
+ * \remarks This method will transfer all values of a choice to 
+ * its main product. However, it is done only if storedb is configured
+ * properly.
+ */
+EVMRView.prototype.adjustViewItems = function () {
+    var parentVm = -1;
+
+    if (this.showAsSinglePrice ()) {
+	for (var i = 0; i <  this.view().ItemView.length(); ++i) {
+	    var _item = this.view().ItemView[i];
+	    if (0 == this.view().ItemView[i].level) {
+	        parentVm = -1;
+		if (this.PC_VALUE_MEAL == this.view().ItemView[i].productType) {
+		   // This the value meal
+		   parentVm = i;
+		}
+	    }
+	    else if ((this.view().ItemView[i].level > 0)
+		//&& (this.PC_CHOICE != this.view().ItemView[i].productType)
+		&& (3 == this.view().ItemView[i].prodAction) ) {
+		
+        	if(parentVm<0) {
+		    //parent is not a value meal
+		    continue;
+		}
+
+		// This is a choice
+		this.view().ItemView[parentVm].totalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalPrice) 
+			    + parseFloat (this.view().ItemView[i].totalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADNetTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADNetTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADNetTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].netTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitPrice) 
+			    + parseFloat (this.view().ItemView[i].unitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netUnitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netUnitPrice) 
+			    + parseFloat (this.view().ItemView[i].netUnitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalTax) 
+			    + parseFloat (this.view().ItemView[i].ADTotalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitTax) 
+			    + parseFloat (this.view().ItemView[i].unitTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].totalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalTax) 
+			    + parseFloat (this.view().ItemView[i].totalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalPrice      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADNetTotalPrice = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalTax      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netTotalPrice   = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitPrice       = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netUnitPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitTax         = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalTax        = API.formatNumber ("0", NUMBER_FORMAT, 8);
+	    }
+	}
+    } 
+}
+
+/**
+ * \brief Creates a view with adjusted view items. 
+ * \since SDO-3214
+ * \remarks This method will transfer all values of a choice to 
+ * its main product. However, it is done only if storedb is configured
+ * properly.
+ */
+EVMRView.prototype.adjustViewItemsOverride = function () {
+    var parentVm = -1;
+
+    if (this.showAsSinglePrice ()) {
+	for (var i = 0; i <  this.view().ItemView.length(); ++i) {
+	    var _item = this.view().ItemView[i];
+	    if (0 == this.view().ItemView[i].level) {
+	        parentVm = -1;
+		if (this.PC_VALUE_MEAL == this.view().ItemView[i].productType) {
+		   // This the value meal
+		   parentVm = i;
+		}
+	    }
+	    else if ((this.view().ItemView[i].level > 0)
+		&& (this.PC_CHOICE == this.view().ItemView[i].productType)
+		&& (3 == this.view().ItemView[i].prodAction) ) {
+		
+        	if(parentVm<0) {
+		    //parent is not a value meal
+		    continue;
+		}
+
+		// This is a choice
+		this.view().ItemView[parentVm].totalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalPrice) 
+			    + parseFloat (this.view().ItemView[i].totalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADNetTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADNetTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].ADNetTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netTotalPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netTotalPrice) 
+			    + parseFloat (this.view().ItemView[i].netTotalPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitPrice) 
+			    + parseFloat (this.view().ItemView[i].unitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].netUnitPrice = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].netUnitPrice) 
+			    + parseFloat (this.view().ItemView[i].netUnitPrice)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].ADTotalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].ADTotalTax) 
+			    + parseFloat (this.view().ItemView[i].ADTotalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].unitTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].unitTax) 
+			    + parseFloat (this.view().ItemView[i].unitTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[parentVm].totalTax = 
+		    API.formatNumber (String (parseFloat (this.view().ItemView[parentVm].totalTax) 
+			    + parseFloat (this.view().ItemView[i].totalTax)), NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalPrice      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADNetTotalPrice = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].ADTotalTax      = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netTotalPrice   = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitPrice       = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].netUnitPrice    = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].unitTax         = API.formatNumber ("0", NUMBER_FORMAT, 8);
+		this.view().ItemView[i].totalTax        = API.formatNumber ("0", NUMBER_FORMAT, 8);
+	    }
+	}
+    } 
+}
+
+
+/**
+ * \brief Constructor for EVMR view abstraction
+ * \param [in] view - View to work on
+ * \since NPS-4867
+ */
+function EVMRView (view) {
+    var _config = new Config ("ValueMealDisplay", true);
+    var _view   = new XML (view);
+   
+    this.showAsSinglePrice = function () {
+	return _config.getBoolParameter ("VMDisplay_ShowAsSinglePrice");
+    }
+    this.view = function () {
+	return _view;
+    }
+    this.getStringView = function () {
+	return _view.toXMLString ();
+    }
+}
+
+/***************************************************************************/
+
+/**
+ * \brief Abstraction for a Simplified Value Meal view, used for CODs
+ * \since NPS-4867
+ */
+EVMCODView.prototype.PC_VALUE_MEAL = 3;
+EVMCODView.prototype.PC_CHOICE = 4;
+
+EVMCODView.prototype.config        = {	       // Configuration parameters
+    showAsSinglePrice: false,		       // Show VMs with single price
+    showUpcharge     : false,		       // Show up-charge text
+    upchargeText     : null,		       // Up-charge text to show
+    suppressDiscount : false,		       // Suppress discount
+    showDiscount     : false,		       // Shows discount text
+    discountText     : null,		       // Discount text to show
+    inlineText       : false		       // inLine text
+};
+
+/**
+ * \brief Calculates price difference for a given item
+ * \param [in] item - Sold item
+ * \return Float
+ * \retval Calculated difference between its price and its reference price
+ */
+EVMCODView.prototype.priceDifference = function (item) {
+    return parseFloat (item.totalPrice) - (parseFloat (item.referencePrice) * (parseFloat(item.quantity)-parseFloat(item.quantityPromo)));
+}
+
+/**
+ * \brief Adjust the view for single price VMs
+ * \author RFL
+ * \since NPS-4867
+ */
+EVMCODView.prototype.adjustVMPrices = function () {
+    var parentVm = null;
+
+    for (var i = 0; i <  this.view().ItemView.length(); i++) {
+        var item = this.view().ItemView[i];
+
+	if ((0 == item.level) && (this.PC_VALUE_MEAL == item.productType)){
+            // This the value meal
+            item.totalVMPrice = API.formatNumber (parseFloat(item.totalPrice), NUMBER_FORMAT, 8);
+            parentVm = item;
+        } else if ((0 == item.level) && (this.PC_VALUE_MEAL != item.productType) && (item.choiceLevel <= 0)){
+            parentVm = null;
+
+        } else if ((item.level > 0)
+            //  && (this.PC_CHOICE != item.productType)
+                && (3 == item.prodAction) ) {
+	    // This is a choice
+	    if(parentVm!=null) {
+            	//var diff = this.priceDifference (item);
+	    	var diff = parseFloat(item.totalPrice) - (parseFloat(item.referencePrice)*(parseFloat(item.quantity)-parseFloat(item.quantityPromo))*(parseFloat(parentVm.quantity)-parseFloat(parentVm.quantityPromo)));
+                
+		if(diff>0 && this.config.showUpCharge) {
+                    parentVm.totalVMPrice= API.formatNumber (parseFloat(parentVm.totalVMPrice) + (parseFloat (item.referencePrice) * (parseFloat(item.quantity)-parseFloat(item.quantityPromo))*(parseFloat(parentVm.quantity)-parseFloat(parentVm.quantityPromo))), NUMBER_FORMAT, 8);
+                    item.choicePriceDiff = API.formatNumber (diff, NUMBER_FORMAT, 8);
+		} else if(diff<0 && (!this.config.suppressDiscount) && (this.config.showDiscount)) {
+                    parentVm.totalVMPrice= API.formatNumber (parseFloat(parentVm.totalVMPrice) + (parseFloat (item.referencePrice) * (parseFloat(item.quantity)-parseFloat(item.quantityPromo))*(parseFloat(parentVm.quantity)-parseFloat(parentVm.quantityPromo))), NUMBER_FORMAT, 8);
+                    item.choicePriceDiff = API.formatNumber (diff, NUMBER_FORMAT, 8);
+		} else {
+                    parentVm.totalVMPrice= API.formatNumber (parseFloat(parentVm.totalVMPrice) + parseFloat(item.totalPrice), NUMBER_FORMAT, 8);
+                    item.choicePriceDiff = API.formatNumber ("0", NUMBER_FORMAT, 8);
+                }
+	    }
+	}
+    }
+}
+
+/**
+ * \brief Creates a view with adjusted view items. 
+ * \since NPS-4867
+ * \remarks This method will remove all value meals with open choices from the view
+ */
+EVMCODView.prototype.removeUnsolvedChoiceItems = function () {
+    var itemCode=-1;
+    var itemTotal=0;
+
+    //removes all items containing unsolved choices from view
+    for (var i = 0; i <  this.view().ItemView.length(); i++) {
+        var _item = this.view().ItemView[i];
+        if ((this.view().ItemView[i].level > 0)
+                && (this.PC_CHOICE == this.view().ItemView[i].productType)
+                && (3 == this.view().ItemView[i].prodAction) ) {
+
+            itemCode = this.view().ItemView[i].itemCode;
+            itemTotal=0;
+            for (var j = 0; j <  this.view().ItemView.length(); ++j) {
+                    //remove value from total
+                    if(this.view().ItemView[j].itemCode==itemCode) {
+                        itemTotal=(parseFloat (itemTotal) + parseFloat (this.view().ItemView[j].totalPrice));
+                        delete this.view().ItemView[j];
+                    }
+            }
+            this.view().@totalAmount=API.formatNumber (parseFloat(this.view().@totalAmount)-parseFloat(itemTotal), NUMBER_FORMAT, 8);
+                
+            //restart the search from beginning
+            i=-1;
+            continue;
+        }
+    }   
+}
+
+/**
+ * \brief Constructor for EVMCOD view abstraction
+ * \param [in] view - View to work on
+ * \since NPS-4867
+ */
+function EVMCODView (view__) {
+    var _view   = new XML (view__);
+
+    var config = new Config ("ValueMealDisplay", true);
+
+    this.config.showAsSinglePrice = config.getBoolParameter ("VMDisplay_ShowAsSinglePrice");
+    this.config.showUpCharge      = config.getBoolParameter ("VMDisplay_ShowUpCharge");
+    this.config.upchargeText      = config.getParameter     ("VMDisplay_UpChargeText");
+    this.config.showDiscount      = config.getBoolParameter ("VMDisplay_ShowDiscount");
+    this.config.discountText      = config.getParameter     ("VMDisplay_DiscountText");
+    this.config.inlineText        = config.getBoolParameter ("VMDisplay_InLineText");
+    this.config.suppressDiscount  = config.getBoolParameter ("VMDisplay_SuppressDiscount");
+
+    this.view = function () {
+	return _view;
+    }
+    this.getStringView = function () {
+	return _view.toXMLString ();
+    }
+}
+
+/***************************************************************************/
+
+/**PosShowMenuPriceDialogJS()
+ *
+ * @brief - This BC present the a info message if the show price is on
+ */
+function PosShowMenuPriceDialogJS() {
+
+	if(PosCheckSessionProperty("ISPRICEON","TRUE")) {
+		if(!PosShowConfirmationMessage("MSG_UI_SHOWPRICETURNOFF","MSG_YES","MSG_NO")) {
+			return(false);
+		}
+		/* Turn off the Show Prices */
+		PosSetShowPrice(); 
+		PosReloadCurrentScreen();
+	}
+}
+
+function PosRefreshButtonsJS() {
+	PosRefreshButtons();
+}
+
+/*
+* Helper function
+* Parameters: storeDbPath - path to the desired parameter in store-db
+*			  psoDbpath -path to the desired parameter in pos-db
+* Returns the value of a configuration parameter
+*/
+ function getConfigValue(storeDbPath, posDbPath)
+ {
+	if(posDbPath!="" && posDbPath!=null) {
+		var value = eval("xmlPosDB."+posDbPath);
+		if(value+""!="") {
+			return  value;
+		}
+	}
+	return  eval("xmlStoreDB."+storeDbPath)+"";
+ }
+
+/** \} */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d3739343700971e4bd747d7b54565828ca07fa5249ac29503dab67d35aa491e4644f2f27c5860f3d5f0ebdd59b7d8d232c9571b827c92380010
+ * =============================================================================================================================
+*/

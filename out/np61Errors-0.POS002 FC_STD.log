@@ -1,0 +1,8 @@
+(0340)1109 135402.8#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(0340)1109 135430.3#SEV(npBusCompAux.c@785):	PosDayOpen expected at least 1 parameters and received 0.
+(3708)0119 095201.7#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(0992)0124 090112.9#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(4508)0718 204454.0#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(5592)0905 222922.5#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(25356)0805 120346.0#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)
+(13016)0805 181409.4#SEV(npUtil.c@205):	Error calling initialize for adaptor: npAdpLd [linedisplay:](0x164e00)

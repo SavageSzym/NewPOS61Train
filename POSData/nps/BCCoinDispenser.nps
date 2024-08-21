@@ -1,0 +1,164 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCCoinDispenser.nps
+* This NPS file implements Coin Dispenser Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*2.53.00		30.04.2010	Mihai Secareanu	
+*	  			22.04.2010 Mihai Secareanu		Send the correct parameter to PosDispenseCoins ( the total change amount);  save coin dispenser state (enable.disable in tlog) ; default value for max change for CH;  cjhange defautl value name
+*/
+ 
+
+/** PosCoinDispenserControlJS
+ * @brief - This function implements the BC,Business Component: <b>PosCoinDispenserControlJS</b>\n
+ * This BC changes the coin dispenser state!\n
+ * In a workflow sequence it is called:<b>PosCoinDispenserControlJS</b>\n
+ * In java script it should be called:<b>PosCoinDispenserControlJS</b>\n
+ * Return - rval - True
+ */
+function PosCoinDispenserControlJS(change)
+{
+	if(!PosCheckParameter("TCLExtension","telequipt","true")) {
+		return(true);
+	}
+	//if the sessionis already set then it must have the value true / if the session is not set then it should not have the value true or false
+	if(PosCheckSessionProperty("CoinDispenserState","true") || !PosCheckSessionProperty("CoinDispenserState","false")) {
+		if(!PosShowConfirmationMessage("MSG_BC_DISABLE_COIN_CHANGER","MSG_YES","MSG_NO")) {
+			return(true);
+		}
+		PosSetSessionProperty("CoinDispenserState","false",true);
+		EnableTelequipt(false); 
+		
+	} else {
+		if(!PosShowConfirmationMessage("MSG_BC_ENABLE_COIN_CHANGER","MSG_YES","MSG_NO")) {
+			return(true);
+		}
+		PosSetSessionProperty("CoinDispenserState","true",true);
+		EnableTelequipt(true); 
+
+	}
+	return(true);
+}
+
+/** PosDispenseChangeJS
+ *
+ * This function dispense coins
+ * Return - rval - True if possible
+ */
+function PosDispenseChangeJS()
+{
+	if(!PosCheckParameter("TCLExtension","telequipt","true")) {
+		return;
+	}
+	var hlp = new BusinessObjectHelper;
+	
+	var lastView = hlp.getLastSaleView();
+	if(lastView == null) {
+		lastView = hlp.getCurrentView();
+	}
+	var view = new XML(lastView);
+	var tenders	= view.ItemTenderView;
+	if(view.@transactionKind != ACC_OT_REFUND) 
+	{
+		if(tenders.length() != 0)
+		{
+			var change=tenders.(kind == "4"); // TK_CHANGE
+			if(change.length() != 0) 
+			{
+				//js 03.12.2008 new value calculation avoid rounding issue
+				var coins = (100 * toInt(change[0].value));
+				coins += Number(change[0].value.substr(change[0].value.length-2));
+				var value = String(coins);
+				
+				if(Number(value) != 0)
+				{
+					//OI 28.01.2010 add for 6.1.16
+					// we have to check the Max Change value to dispense coins
+					var xmlStorePath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+					var xmlPosDbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"MaximumChangeAmount\").@value";
+					var changeMaxValue = getConfigValue(xmlStorePath, xmlPosDbPath);
+					if(changeMaxValue +"" =="" || Number(changeMaxValue) > 10)
+					{
+						//get the extension used
+						 var storeDbPath = "Adaptors.Adaptor.(@type==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"extname\").@value";
+						 var posdbPath = "Services.Service.(@type==\"POS\").Adaptors.Adaptor.(@name==\"npCLayer\").Section.(@name==\"Telequipt\").Parameter.(@name==\"extname\").@value";
+	 coinDispenserExtName= getConfigValue(storeDbPath, posdbPath);	
+						if(coinDispenserExtName =="ak0405.dll") //for ch we have the default value set to 10 
+						{
+							changeMaxValue = 10;
+						}
+						else //for other countries is set to 5
+						{
+							changeMaxValue = 5;
+						}
+					}
+					changeMaxValue = 100 * Number(changeMaxValue);
+					var changeCoins = value % changeMaxValue;
+
+					//oi 05.12.2008 give the change value to the dispenser for the final message
+					//if(Number(PosDispenseCoins(value)) != Number(value))
+					if(Number(PosDispenseCoins(value)) != Number(value)) //PosDispenseCoins receive as parameter the entire change sale amount
+					{ 
+						PosShowMessage("MSG_BC_COIN_DISP_ERROR");
+						API.dbg("Coin dispenser is not responding...");
+					} 
+					else
+					{
+						if(changeCoins == 0) { // we do not have to give change
+							return coins;
+						}
+						// Inform the Kernel about the Change dispensed
+						PosAddChange("Telequip", changeCoins);	
+					}
+				}
+			}
+		}
+	}
+	else //refund
+	{
+		var electronicPayment = tenders.(cat == "TENDER_ELECTRONIC_PAYMENT");
+		if(electronicPayment.length() == 0) { //just for cashless refund
+			//Note: here the PosDispenseCoins was called just with the last two digits not sure why
+			var value = (100 * toInt(view.@grossAmount));
+			value += Number((view.@grossAmount).substr((view.@grossAmount).length-2));
+			if(Number(value) != 0)
+			{
+				if(Number(PosDispenseCoins(value)) != Number(value)) { 
+					PosShowMessage("MSG_BC_COIN_DISP_ERROR");
+					API.dbg("Coin dispenser is not responding...");
+				}
+			}
+		}
+	}
+}
+
+/** PosIsCoinDispenseLoadedJS
+ *
+ * This function checks if coin dispenser is loaded
+ * Return - rval - True if loaded
+ */
+function PosIsCoinDispenseLoadedJS()
+{
+	return(PosCheckParameter("TCLExtension","telequipt","true"));
+}
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d37393437000e6fa1005c13d1c60d8ec3225ca8e2547c454902e7bef9f193a56b3f1db83535aa6fffc3e568e4ef0c39dac4a15af9bb0c3c0010
+ * =================================================================================================================================
+*/

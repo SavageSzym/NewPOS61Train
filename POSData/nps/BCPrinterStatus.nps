@@ -1,0 +1,179 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCPrinterStatus.nps
+* This NPS file implements Printer Status Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+ 
+const PRINTER_STATUS_PAUSED            = 0x00000001;
+const PRINTER_STATUS_ERROR             = 0x00000002;
+const PRINTER_STATUS_PENDING_DELETION  = 0x00000004;
+const PRINTER_STATUS_PAPER_JAM         = 0x00000008;
+const PRINTER_STATUS_PAPER_OUT         = 0x00000010;
+const PRINTER_STATUS_MANUAL_FEED       = 0x00000020;
+const PRINTER_STATUS_PAPER_PROBLEM     = 0x00000040;
+const PRINTER_STATUS_OFFLINE           = 0x00000080;
+const PRINTER_STATUS_IO_ACTIVE         = 0x00000100;
+const PRINTER_STATUS_BUSY              = 0x00000200;
+const PRINTER_STATUS_PRINTING          = 0x00000400;
+const PRINTER_STATUS_OUTPUT_BIN_FULL   = 0x00000800;
+const PRINTER_STATUS_NOT_AVAILABLE     = 0x00001000;
+const PRINTER_STATUS_WAITING           = 0x00002000;
+const PRINTER_STATUS_PROCESSING        = 0x00004000;
+const PRINTER_STATUS_INITIALIZING      = 0x00008000;
+const PRINTER_STATUS_WARMING_UP        = 0x00010000;
+const PRINTER_STATUS_TONER_LOW         = 0x00020000;
+const PRINTER_STATUS_NO_TONER          = 0x00040000;
+const PRINTER_STATUS_PAGE_PUNT         = 0x00080000;
+const PRINTER_STATUS_USER_INTERVENTION = 0x00100000;
+const PRINTER_STATUS_OUT_OF_MEMORY     = 0x00200000;
+const PRINTER_STATUS_DOOR_OPEN         = 0x00400000;
+const PRINTER_STATUS_SERVER_UNKNOWN    = 0x00800000;
+const PRINTER_STATUS_POWER_SAVE        = 0x01000000;
+const PRINTER_STATUS_PAPER_NEAR_END    = 0x02000000;
+const PRINTER_STATUS_PAPER_WEEKEND     = 0x04000000;
+const PRINTER_STATUS_PAPER_PRESENTER   = 0x08000000;
+const PRINTER_STATUS_EXTERNAL_ERROR    = 0x10000000;
+
+/**PosGetPrinterErrorJS
+ *
+ * @brief - Auxiliary function to mount printer msg error
+ * Return - error message mounted
+ */
+function PosGetPrinterErrorJS(status) {
+	// Error messages were improved due to: PLE-74 
+	var szErr="";
+	if(status & PRINTER_STATUS_BUSY) {				// The printer is busy.  
+		szErr+=" The printer is busy.\n";
+	}
+	if(status & PRINTER_STATUS_DOOR_OPEN) {			// The printer door is open. 
+		szErr+=" The printer door is open.\n";
+	}
+	if(status & PRINTER_STATUS_ERROR) {				// The printer is in an error state. 
+		szErr+=" The printer is in an error state.\n";
+	}
+	if(status & PRINTER_STATUS_INITIALIZING) {		// The printer is initializing.  
+		szErr+=" The printer is initializing.\n";
+	}
+	if(status & PRINTER_STATUS_IO_ACTIVE) {			// The printer is in an active input/output state 
+		szErr+=" The printer is in an active input/output state.\n";
+	}
+	if(status & PRINTER_STATUS_MANUAL_FEED) {		// The printer is in a manual feed state. 
+		szErr+=" The printer is in a manual feed state.\n";
+	}
+	if(status & PRINTER_STATUS_NO_TONER) {			// The printer is out of toner. 
+		szErr+=" The printer is out of toner.\n";
+	}
+	if(status & PRINTER_STATUS_NOT_AVAILABLE) {		// The printer is not available for printing.  
+		szErr+=" The printer is not available for printing.\n";
+	}
+	if(status & PRINTER_STATUS_OFFLINE) {			// The printer is offline.  
+		szErr+=" The printer is offline.\n";
+	}
+	if(status & PRINTER_STATUS_OUT_OF_MEMORY) {		// The printer has run out of memory.  
+		szErr+=" The printer has run out of memory.\n";
+	}
+	if(status & PRINTER_STATUS_OUTPUT_BIN_FULL) {	// The printer's output bin is full.  
+		szErr+=" The printer's output bin is full.\n";
+	}
+	if(status & PRINTER_STATUS_PAGE_PUNT) {			// The printer cannot print the current page. 
+		szErr+=" The printer cannot print the current page.\n";
+	}
+	//Windows 95/98/Me: Indicates the page is being "punted" (that is, not printed) because it is too complex for the printer to print. 
+
+	if(status & PRINTER_STATUS_PAPER_JAM) {			// Paper is jammed in the printer  
+		szErr+=" Paper is jammed in the printer.\n";
+	}
+	if(status & PRINTER_STATUS_PAPER_OUT) {			// The printer is out of paper. 
+		szErr+=" The printer is out of paper.\n";
+	}
+	if(status & PRINTER_STATUS_PAPER_PROBLEM) {		// The printer has a paper problem.  
+		szErr+=" The printer has a paper problem.\n";
+	}
+	if(status & PRINTER_STATUS_PAUSED) {			// The printer is paused. 
+		szErr+=" The printer is paused.\n";
+	}
+	if(status & PRINTER_STATUS_PENDING_DELETION) {	// The printer is being deleted.  
+		szErr+=" The printer is being deleted.\n";
+	}
+	if(status & PRINTER_STATUS_POWER_SAVE) {		// The printer is in power save mode.  
+		szErr+=" The printer is in power save mode.\n";
+	}
+	if(status & PRINTER_STATUS_PRINTING) {			// The printer is printing. 
+		szErr+=" The printer is printing.\n";
+	}
+	if(status & PRINTER_STATUS_PROCESSING) {		// The printer is processing a print job.  
+		szErr+=" The printer is processing a print job.\n";
+	}
+	if(status & PRINTER_STATUS_SERVER_UNKNOWN) {	// The printer status is unknown.  
+		szErr+=" The printer is offline.\n";
+	}
+	if(status & PRINTER_STATUS_TONER_LOW) {			// The printer is low on toner. 
+		szErr+=" The printer is low on toner.\n";
+	}
+	if(status & PRINTER_STATUS_USER_INTERVENTION) {	// The printer has an error that requires the user to do something. 
+		szErr+=" The printer has an error that requires the user to do something.\n";
+	}
+	if(status & PRINTER_STATUS_WAITING) {			// The printer is waiting.  
+		szErr+=" The printer is waiting.\n";
+	}
+	if(status & PRINTER_STATUS_WARMING_UP) {		// The printer is warming up. 
+		szErr+=" The printer is warming up.\n";
+	}
+	if(status & PRINTER_STATUS_PAPER_NEAR_END) {
+		szErr+="The printer paper is almost ending\n";
+	}
+	if(status & PRINTER_STATUS_PAPER_WEEKEND){
+		szErr+="PRINTER_STATUS_PAPER_WEEKEND\n";
+	}
+	if(status & PRINTER_STATUS_PAPER_PRESENTER) {
+		szErr+="PRINTER_STATUS_PAPER_PRESENTER\n";
+	}
+	if(status & PRINTER_STATUS_EXTERNAL_ERROR) {
+		szErr+="The printer has an external error\n";
+	}
+	if(szErr == "")
+	{
+		szErr+= "Unknown printer error.";
+	}
+
+	return(szErr);
+}
+ 
+/**PosPrinterStsJS
+ *
+ * @brief - This BC queries the printer status
+ * iSrv: Service index
+ * Return - rval - status 
+ */
+function PosPrinterStsJS(iSrv) {
+
+	if(typeof(npAdpPrn_RequestSrv) == "function") {
+		return(npAdpPrn_RequestSrv(iSrv,NPSRVPRN_STATUS,"*"));
+	}
+	return(0);
+}
+ 
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d3739343700dce4440fcc73354b02b03d2c1f3e42616a455e6c73f5270a518200886ce6128c8684060df7866c3521d794964d7b1215ab110010
+ * =================================================================================================================================
+*/

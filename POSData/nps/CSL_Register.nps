@@ -1,0 +1,984 @@
+ /** 
+ * @file CSL_Register.nps
+ * @brief This NPS file implements BusinessComponents Register.  
+ *
+ * @addtogroup 	CSL
+ * @defgroup 	Register
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Pedro (of Creation)
+ * @since NPS-4831 / date
+ *
+ * @version $Id: CSL_Register.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Include here all remarks related to this file!
+ * @{
+ */
+
+/* Variable used for version control */
+CSL_REGISTER_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+
+/* Set the variable. */
+SRC_BC_REGISTER='CSL_Register.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckSalesBeforeClose</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckSalesBeforeClose is responsible for check if there is an order in progress before close register or change or drawer change.
+ * In java script it should be called:<b>PosCheckSalesBeforeClose(mode)</b>
+ * @param mode - String - can be "EOD" for close or "CDC" for drawer change.
+ */
+function PosCheckSalesBeforeClose(mode) {
+	var cmd = "PosCheckSalesBeforeClose";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [mode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosCheckState</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosCheckState is responsible for check the current status of the POS (Opened,Closed,Operator logged, blocked, operator blocked).
+ * In java script it should be called:<b>PosCheckState(state)</b>
+ * @param state - String - POS state to check, it can be:\n
+ *		  				   "POS_Opened": to check if the POS is in an opened state\n
+ *						   "POS_Closed": to check if the POS is in a closed state\n
+ *		 				   "POS_OpLogged": to check if the POS is in an operator logged-in state\n
+ *						   "POS_Blocked": to check if the POS is in a blocked state\n
+ *		 				   "POS_OpBlocked": to check if the POS is in an operator blocked state\n
+ * @success current POS state matches the state received as parameter.
+ * @failure <i>Argument Missing</i> - state parameter is missing.
+ * @failure <i>State do not Match</i> - given state do not match with the current POS state.
+ */
+function PosCheckState(state) {
+	var cmd = "PosCheckState";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [state]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosDayOpen</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC is responsible for opening the day. The POS status must be "closed" in order to successfully open the day. The date and the POS open
+ * mode (storewide, offline or forced) must be informed.
+ *
+ * @param POSMode - string - POS open mode. The values can be:\n
+ *							"storewide": open POS in Store Wide mode;\n
+ *							"offline": open POS in Offline mode;\n
+ *							"forced": open POS in Store Wide Forced mode.
+ * @param date - string - Businessday to be opened. Must be in system date format (yyyyMMdd).
+ * @success Business Day opened successfully.
+ * @failure	<i>Invalid POSMode parameter</i> - The POSMode parameter must be "storewide", "offline" or "forced".
+ * @failure	<i>Invalid date format</i> - The date format must be yyyyMMdd.\n
+ * @failure	<i>Invalid date</i> - Only future date is valid, relative to the last closed BusinessDay or the day before the current system date,
+ * in case of no previous BusinessDay.\n
+ * @failure <i>POS is not closed</i> - The POS status must be closed for opening the day.
+ * @sessioncontext <i>PosDoDayOpen_Failure</i> - Indicates the failure string with the message to be shown in a dialog window, in case of a 
+ * failure when trying to open a business day.
+ * @sessioncontext <i>PosDoDayOpen_Result</i> -  Indicates the result string. Not used.
+ * @remarks
+ * 
+ * Property Messages:
+ *	 MSG_BC_INVDATE: When the date is invalid.
+ *	 MSG_BC_DAYOPENED: When the day is opened and the message is shown in the operator display.
+ *	 MSG_BC_ALREADYOPEN: When the POS status is not closed.
+ *	 
+ */
+function cPosDayOpen(POSMode,date) {
+	var cmd = "cPosDayOpen";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [POSMode,date]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosDayOpenVerify</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC is responsible for checking if it is possible to open a business day. In order to open a business day, the POS state must be "Closed".
+ * The business day to be opened must be informed.
+ *
+ * @param date - string - Businessday to be verified. Must be in system date format (yyyyMMdd).
+ * @success Business Day can be opened.
+ * @failure	<i>Invalid date format</i> - The date format must be yyyyMMdd.\n
+ * @failure	<i>Invalid date</i> - Only future date is valid, relative to the last closed BusinessDay or the day before the current system date,
+ * in case of no previous BusinessDay.\n
+ * @failure <i>POS is not closed</i> - The POS cannot be opened with state different than "Closed".
+ * @sessioncontext <i>cPosDayOpenVerify_Failure</i> - Indicates the failure string with the message to be shown in a dialog window, in case of a 
+ * failure when verifying if it is possible to open a business day.
+ * @sessioncontext <i>cPosDayOpenVerify_Result</i> -  Indicates the result string. Not used.
+ * @remarks
+ * 
+ * Property Messages:
+ *	 MSG_BC_INVDATE: When the date format is invalid.
+ *	 MSG_BC_INVBUSDATE: When the date is not valid. Only future date is valid.
+ *	 MSG_BC_ALREADYOPEN: When the POS status is not closed.
+ *	 
+ */
+function cPosDayOpenVerify(date) {
+	var cmd = "cPosDayOpenVerify";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [date]);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDayOpen</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDayOpen is responsible for perform the actions needed to open the day.\n
+ * Before actually opening the day, the POS state is checked. It should be "closed" for opening the day.\n
+ * If Session Context variable "dayOpenBusinessDay" is previously set, by a call to PosDoSWOpenDay for example,\n
+ * it is used as the business day, otherwise a "calculator" window is opened for the user to enter the business day.\n
+ * It is also possible to inform the necessary security level to perform the action.\n
+ * If that's the case an authorization is requested from the user.\n
+ * The action can be done in a verify mode, when only consistency is performed,\n
+ * or in execution mode (default case) when the open day is actually performed.\n
+ * The option "verify" is normally used to inform the POS state when a Store Wide Open is to be performed.\n
+ * After completion, the POS state is updated in WAY Station.\n
+ * In java script it should be called:<b>PosDayOpen(openMode, level)</b>
+ * @param openMode - String - Optional, "verify" or "execute"(default).
+ * @param level - String - Optional, "manager"(default),"supervisor","system" but also:"null","remote" and "forced",
+ *        "null" indicates that no authorization is required and "remote" that the authorization was granted remotely.
+ * @success The open day was performed or can be performed (in case of verify mode).
+ * @failure <i>onDayOpen() failed</i> - hook returned false.
+ * @failure <i>POS retrieve state Error</i> - Error trying to retrieve POS state.
+ * @failure <I>POS is not closed</i> - POS is already open.
+ * @failure <i>User Cancelled Date</i> - User cancelled calculator when asking for the date.
+ * @failure <i>Invalid Business Day</i> - given business day is invalid.
+ * @failure <i>Not Authorized</i> - operation not authorized.
+ * @failure <i>onDayOpened() failed</i> - hook returned false.
+ * @hook <i>onDayOpen()</i> - called before BC start.
+ * @hook <i>onDayOpened()</i> - called if day was successfully opened.
+ * @sessioncontext <i>"dayOpenBusinessDay"</i> - Read to check if already set, write to clear its data.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_DAYOPENCONF: Shown in the calculator when asking for the date.\n
+ *	MSG_BC_INVBUSDATE: Shown if date is not valid.\n
+ *	MSG_BC_DAYOPENED: Shown if day was correctly opened.\n
+ *	MSG_BC_ALREADYOPEN: Shown if day is already opened.\n
+ *	
+ */
+function PosDayOpen(openMode, level) {
+	var cmd = "PosDayOpen";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [openMode, level]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDetachKVS</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDetachKVS is responsible for ask the WayStation to detach a KVS in the network.
+ * In java script it should be called:<b>PosDetachKVS(nbrKVS)</b>
+ * @param nbrKVS - String - KVS to detach.
+ * @success Detach KVS command successfully sent to WayStation.
+ * @failure <i>Command Send Error</i> - Error while sending detach KVS command to WayStation.
+ * @todo Check return code if argument is missing.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_KVSDETACH_SUCCESS: Shown if KVS successfully detached.\n
+ *	MSG_BC_KVSDETACH_WSUNAVAIABLE: Shown if WayStation is unavailable.\n
+ *	MSG_BC_KVSDETACH_ERROR: Shown if could not detach KVS.\n
+ */
+function PosDetachKVS(nbrKVS) {
+	var cmd = "PosDetachKVS";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [nbrKVS]);
+}
+
+/** cPosOperatorLogin
+ *
+ * @brief - This function implements the BC,Business Component: <b>cPosOperatorLogin</b>\n
+ * This BC performs operator login routine!\n
+ * In a workflow sequence it is called:<b>cPosOperatorLogin $id &initialFloat</b>\n
+ * In java script it should be called:<b>cPosOperatorLogin(id,initFloat)</b>\n
+ * Where: id - string - operator id.\n
+ *        initFloat - string - initial float of the native currency\n
+ *		  name - string - (optional) the operator name. This is required when the operator id is not under the security.data file
+ * Property Messages:\n
+ *   MSG_PROMPTOP: Prompt message asking operator identification.\n
+ *   MSG_BC_LOGINFLOAT: Prompt message asking initial float.\n
+ *   MSG_BC_LOGINCONF: Prompt message confirming log-in.\n
+ *   MSG_BC_OPERLOGIN: Message confirming log-in.\n
+ *   MSG_BC_INVLOGINOP: Error message not opened log-in.\n
+ *   MSG_BC_INVLOGINLG: Error message operator already logedd-in.\n
+ *   MSG_BC_INVLOGINBK: Error message POS time blocked.\n
+ * Hooks: no events
+ * @return - rval - True if the operator was logged in successfully.
+ */
+function cPosOperatorLogin(id,initFloat) {
+	var cmd = "cPosOperatorLogin";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** PosOperatorLogin
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosOperatorLogin</b>\n
+ * Persistence:<b>Persisted</b>\n
+ * This BC performs operator login routine!\n
+ * In a workflow sequence it is called:<b>PosOperatorLogin $remote</b>\n
+ * In java script it should be called:<b>PosOperatorLogin(remote,id,initFloat)</b>\n
+ * Where: remote - string - optional - TRUE to indicate a remote login (default:FALSE)\n
+ *        id - string - optional - operator id for remote login (used only if remote is TRUE, default:none)\n
+ *        initFloat - string - optional - initial float (used only if remote is TRUE, default:0)\n
+ * Property Messages:\n
+ *   MSG_PROMPTOP: Prompt message asking operator identification.\n
+ *   MSG_BC_LOGINFLOAT: Prompt message asking initial float.\n
+ *   MSG_BC_LOGINCONF: Prompt message confirming log-in.\n
+ *   MSG_BC_OPERLOGIN: Message confirming log-in.\n
+ *   MSG_BC_INVLOGINOP: Error message not opened log-in.\n
+ *   MSG_BC_INVLOGINLG: Error message operator already logedd-in.\n
+ *   MSG_BC_INVLOGINBK: Error message POS time blocked.\n
+ * Hooks: onLoginOperator(remote,id) - called after open state confirmed, before any proper execution\n
+ *		  onInitialFloat(remote,initFloat) - called to verify initial float\n
+ *		  onConfirmLogin(remote,name,currency,value) - called to confirm log in\n
+ *		  onLoginFinalize(remote,errMsg) - called when an error ocurred
+ * @return - rval - True if the operator was logged in successfully.
+ * @todo Need to be documented
+ */
+function PosOperatorLogin() {
+	var cmd = "cPosOperatorLogin";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	
+	var currency = "";
+	var ret = false;
+	var sInitFloat = 0;
+	
+	var hlp=new BusinessObjectHelper;
+
+	var xmlPOS = new XML(hlp.getPOSState());
+
+	var state   = Number(xmlPOS.@state);
+
+	switch(state) {
+	case POS_STA_CLOSED:
+		PosShowMessage("MSG_BC_INVLOGINOP");
+		break;
+	case POS_STA_OPENED:
+		// Gets user id
+		var ctx=new SessionContext;
+		// Asks working mode, in case of DT
+		var workingMode=selectWorkMode("Login as Secondary Cashier");
+		if((workingMode != null) && (workingMode[0] != null)) {
+			ctx.set("workingMode",workingMode[0],true);
+			if(workingMode[1] != null) {
+				ctx.set("tandemBooth",workingMode[1],true);
+			}
+			else {
+				var tdBooth=hlp.findParamInSectionConfig("tandemBooth","PosType");
+				ctx.set("tandemBooth",tdBooth,true);
+			}
+		}	
+		var sId = PosShowCalculator("MSG_PROMPTOP", "", 1, 0);
+		if(sId.length == 0) {
+			break;
+		}
+		// Checks operator validity
+		nOperSecurityLevel=hlp.getUserInfo(sId,2);
+		if(!hlp.validateUser(sId,null,0,true)) {
+			// Reset needs at least a floor manager
+			PosShowMessage("MSG_INVPASSWD");
+			break;
+		}
+		var podMode = ctx.get("workingMode");
+		if (podMode != "orderTaker") {
+			// Gets user initFloat
+			sFloatMsg = hlp.getSysMessage("MSG_BC_LOGINFLOAT",hlp.getUserInfo(sId,1));
+			sInitFloat = PosShowCalculator(sFloatMsg, "US$", 0, 2, 20000);
+			if(sInitFloat.length == 0) {
+				break;
+			}
+		    // Pickup Initial Float Limit
+		    if(rootStoreDB != null) {
+			    var sInitialFloatLimit = rootStoreDB.StoreDB.StoreProfile.BusinessLimits.InitialFloatLimit;    
+				var sInitialFloatLimit = sInitialFloatLimit * 100;
+				if(sInitFloat > sInitialFloatLimit) {
+		  		    var sInitVlr1 = API.formatNumber (Number(sInitialFloatLimit/100), "#,###,##0.00", 12);
+		  		    var sInitVlr2 = API.formatNumber (Number(sInitFloat/100), "#,###,##0.00", 12);
+					var sErrMsg=hlp.getSysMessage("MSG_BC_INIT_FLOAT_LIMIT",sInitVlr1,sInitVlr2);
+				    PosShowMessage(sErrMsg);
+					break;
+				}
+			}
+		}
+		// Confirms login
+		var name = hlp.getUserInfo(sId,1);
+		var sInitFloat = sInitFloat / 100; 
+        var sInitAmt = API.formatNumber (Number(sInitFloat), "#,###,##0.00", 12);
+		var sConfMsg=hlp.getSysMessage("MSG_BC_LOGINCONF",name,currency,sInitAmt);
+		if(PosShowConfirmationMessage(sConfMsg,"MSG_YES","MSG_NO")) {
+			ret = executeBC(cmd, [sId, sInitAmt]);
+		}
+		// ***
+		if(!auxValidDtMode()) {
+			PosShowMessage("MSG_DT_LOGIN_TANDEM_ERR");
+			return(false);
+		}
+		break;
+	case POS_STA_OPLOGGED:
+		PosShowMessage("MSG_BC_INVLOGINLG");
+		break;
+	default:
+		PosShowMessage("MSG_BC_INVLOGINBK");
+		break;
+	}
+	return(ret);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoOperatorLogin</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoOperatorLogin is responsible for perform operator login routine.
+ * In java script it should be called:<b>PosDoOperatorLogin(remote, id, initFloat, simulator)</b>
+ * @param remote - String - Optional, "true" to indicate a remote login (default:"false").
+ * @param id - String - Optional, operator id for remote login (used only if remote is "true", default:none).
+ * @param initFloat - String - Optional, initial float (used only if remote is "true", default:0).
+ * @param simulator - String - Optional, "true" to indicate that is in simulator mode (default:"false").
+ * @success Operator was logged in successfully.
+ * @failure <i>Register not Opened</i> - Cannot log into a closed register.
+ * @failure <i>User Already logged</i> - Cannot log into a register that have an already logged user.
+ * @failure <i>Blocked POS</i> - Cannot log in a blocked POS.
+ * @failure <i>onLoginFinalize() failed</i> - hook returned false.
+ * @failure <i>onLoginOperator() failed</i> - hook returned false.
+ * @failure <i>User Cancelled</i> - User cancelled when calculator was shown.
+ * @failure <i>onConfirmLogin() failed</i> - hook returned false.
+ * @failure <i>Cannot set POS state</i> - failed while trying to set POS state.
+ * @hook <i>onLoginOperator()</i> - called after open state confirmed, before any proper execution.
+ * @hook <i>onInitialFloat()</i> - called to verify initial float.
+ * @hook <i>onConfirmLogin()</i> - called to confirm log in.
+ * @hook <i>onLoginFinalize()</i> - called when an error ocurred.
+ * @sessioncontext <i>"workingMode"</i> - Read to get the working mode.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_LOGINFLOAT: Prompt message asking initial float.\n
+ *	MSG_BC_INIT_FLOAT_LIMIT: Typed initial float amount is greater than defined limit.\n
+ *	MSG_BC_OPERLOGIN: Message confirming log-in.\n
+ *	MSG_BC_INVLOGINOP: Error message not opened log-in.\n
+ *	MSG_BC_INVLOGINLG: Error message operator already logedd-in.\n
+ *	MSG_BC_INVLOGINBK: Error message POS time blocked.\n
+ */
+function PosDoOperatorLogin(remote, id, initFloat, simulator) {
+	var cmd = "PosDoOperatorLogin";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [remote, id, initFloat, simulator]);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosOperatorLogout</b>.
+ *
+ * Persistence: <b>Persisted</b>\n
+ * This BC is responsible for perform the operator logout.
+ *
+ * @success Logout performed successfully.
+ * @failure	<i>Invalid POS state</i> - In order to perform a logout the POS state must be either opened with a logged in operator or blocked with a logged in operator.\n
+ * @sessioncontext <i>PosOperatorLogout_Failure</i> - Indicates the failure string with the message to be shown in a dialog window, in case of a invalid state of POS.
+ * @sessioncontext <i>PosOperatorLogout_Result></i> - Indicates the result string. Not used.
+ * @remarks
+ *
+ * Property Messages:\n
+ *	 MSG_BC_INVLOGOUT: When the POS state does not allow a logout operation.\n
+ *	 MSG_BC_OPERLOGOUT: When the status is changed. This message is shown in both Operator Display and Costumer Display.
+ */
+function cPosOperatorLogout() {
+	var cmd = "cPosOperatorLogout";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoOperatorLogout</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoOperatorLogout is responsible for perform the operator logout routine, when it's in remote mode do not prompt for confirmation.
+ * In java script it should be called:<b>PosDoOperatorLogout(remote)</b>
+ * @param remote - String - Optional, "true" to indicate a remote logout (default:"false").
+ * @success .
+ * @failure <i>Transaction in progress</i> - Cannot logout operator when a transaction is in progress.
+ * @failure <i>Cannot retrieve POS state</i> - Error getting POS state.
+ * @failure <i>Operator not Logged</i> - There is no user logged.
+ * @failure <i>onConfirmLogout() failed</i> - hook returned false.
+ * @failure <i>Cannot set POS state</i> - Error setting POS state.
+ * @failure <i>onLogoutFinalize() failed</i> - hook returned false.
+ * @hook <i>onCheckFileForRemoteDelete()</i> - invoked before delete the file from the WayStation.
+ * @sessioncontext <i>"workingMode"</i> - Read to get the working mode.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_OPERLOGOUT: Message confirming log-off.\n
+ *	MSG_BC_INVLOGOUT: Error message invalid log-out.\n
+ */
+function PosDoOperatorLogout_CSL(remote) {
+	var cmd = "PosDoOperatorLogout_CSL";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	
+	if(remote == undefined) {
+		// Default value
+		remote = "false";
+	}
+	
+	var ret = false;
+	var hlp	 = new BusinessObjectHelper;
+	var xmlPOS = new XML(hlp.getPOSState());
+	var state  =  Number(xmlPOS.@state);
+
+	switch(state) {
+	case POS_STA_OPLOGGED:
+	case POS_STA_BLOCKOP:
+		var name   = xmlPOS.Operator.@name;
+		// Confirms logout
+		var sConfMsg=hlp.getSysMessage("MSG_BC_LOGOUTCONF",name);
+		// In remote mode is not necessary to prompt for confirmation.
+		if(remote == "true" || PosShowConfirmationMessage(sConfMsg,"MSG_YES","MSG_NO")) {
+			var ctx = new SessionContext;
+			// workingMode
+			var podMode = ctx.get("workingMode");
+			if (podMode != "orderTaker") {
+			   ret = true;
+			}
+			// POD
+			cmd = "cPosOperatorLogout";
+					
+			if (executeBC(cmd, [remote])) {
+				if(remote && PosCheckSessionProperty("POD","CSO")) {
+					PosActivateScreenSaver(1);
+				}
+				if (ret && remote == "false") {
+					PosOpenCashDrawer(false);
+ 			    }
+				ret = true;
+			} else {
+				ret = false;
+			}
+		}
+		break;
+	default:
+		PosShowMessage("MSG_BC_INVLOGOUT");
+		break;
+	}
+	//if(("HOT" == pod) || (bRemote && (("CSO" == pod) || ("CK" == pod) || ("CKD" == pod))) || ((("DT" == pod) || ("WT" == pod)) && (ctx.get("workingMode") == "orderTaker"))) {
+	//	return(false);
+	//}
+	return(ret);
+}
+
+
+ 
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoRemoteDrawerChange</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoRemoteDrawerChange is responsible for perform the actions needed to remotely drawer change.
+ * In java script it should be called:<b>PosDoRemoteDrawerChange(nbrPOS, timeout)</b>
+ * @param nbrPOS - String - Number of POS to perform drawer change.
+ * @param timeout - String - Optional, time to execute the command in miliseconds default is 10000ms.
+ * @success Remotely drawer change request successfully sent.
+ * @failure <i>Send Request Error</i> - Error sending drawer change request.
+ * @sessioncontext <i>"reportRemDrwChg"</i> - Set as a XML formated parameter.
+ * @todo Check return codes, when missing parameter.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_PROCESSING: Shown while processing the request.\n
+ */
+function PosDoRemoteDrawerChange(nbrPOS, timeout) {
+	var cmd = "PosDoRemoteDrawerChange";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	var result = executeBC(cmd, [nbrPOS, timeout]);
+	if (!result) {
+		var ctx = new SessionContext;
+		var rsp = ctx.get('remDrwrChgError');
+		switch (rsp) {
+			case '0':
+				// TLOGRSP_ACK
+				return true;
+			case '3':
+				// TLOGRSP_INVALIDPOS
+				ctx.set('remDrwrChgErrorMsg', 'MSG_BC_REMDRWRCHG_INVALIDPOS');
+				return false;
+			case '1':
+				// TLOGRSP_TIMEOUT
+				ctx.set('remDrwrChgErrorMsg', 'MSG_BC_REMDRWRCHG_TIMEOUT');
+				return false;
+			case '4':
+				// TLOGRSP_INVALIDTLOG
+				ctx.set('remDrwrChgErrorMsg', 'MSG_BC_REMDRWRCHG_INVALIDTLOG');
+			case '17': 
+			default:
+				// TLOGRSP_CANNOTDRAWERCHANGE
+				ctx.set('remDrwrChgErrorMsg', 'MSG_BC_REMDRWRCHG_ERROR');
+				return false;
+		}
+	}
+	return result;
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoRemoteLogin</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosDoRemoteLogin is responsible for perform actions needed to remotely login in a register.
+ * In java script it should be called:<b>PosDoRemoteLogin(nbrPOS, timeout)</b>
+ * @param nbrPOS - String - Number of POS to perform the login.
+ * @param timeout - String - Optional, time to execute the command in miliseconds default is 10000ms.
+ * @success Login request successfully sent.
+ * @failure <i>Send Request Error</i> - Error sending login request.
+ * @failure <i>onLoginRemOperator() failed</i> - hook returned false.
+ * @sessioncontext <i>"reportRemLogin"</i> - Set as a XML formated parameter.
+ * @hook <i>onLoginRemOperator()</i> - Called before BC execution.
+ * @todo Check return codes, when missing parameter.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_PROCESSING: Shown while processing the request.\n
+ */
+function PosDoRemoteLogin(nbrPOS, timeout) {
+	var cmd = "PosDoRemoteLogin";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [nbrPOS, timeout]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoSWCloseDay</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoSWCloseDay is responsible for perform the actions needed to store widely close the day.\n
+ * The action can be done in forced or non forced modes. In forced mode, all POS in the store are\n
+ * commanded to close while in non forced mode, only when all POS are able to close the action is commanded.\n
+ * In java script it should be called:<b>PosDoSWCloseDay(timeout, isForced)</b>
+ * @param timeout - String - Optional, time to execute the command in miliseconds (default is 15000ms).
+ * @param isForced - String - Optional, "true" or "false" (default).
+ * @success store wide close day was performed.
+ * @failure <i>onSWEndOfDay() failed</i> - hook returned false.
+ * @failure <i>Cannot get POS state</i> - Error retrieving POS state.
+ * @failure <i>User Cancelled</i> - User cancelled when confirming to close all registers.
+ * @failure <i>User Logged</i> - Cannot close a register that has a user logged in.
+ * @failure <i>Day Close confirmation</i> - User cancelled Day Close confirmation.
+ * @failure <i>User not Authorized</i> - User not authorized to perform Store Wide Close Day.
+ * @failure <i>WayStation not available</i> - WayStation not available or error calling adaptor.
+ * @hook <i>onSWEndOfDay()</i> - called before BC start.
+ * @sessioncontext <i>"dayCloseXML"</i> - set with the xml for day close.
+ * @sessioncontext <i>"dayOpenBusinessDay"</i> - set as the business day being checked for opening.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_SWOPLOGGED: Shown when confirming to close all other registers except this one, cause there is a user logged in (forced mode).\n
+ *	MSG_BC_OPLOGGED: Shown if trying to close a register that has a user logged in (non forced mode).\n
+ *	MSG_BC_ENDDAYCONF: Shown in the close day confirmation.\n
+ *	MSG_BC_SWCOMMUNIC: Shown when WayStation is not available for Store Wide Command.\n
+ *	MSG_BC_ERRSWCLOSE: Shown when unable to close all registers in the store.\n
+ */
+function PosDoSWCloseDay(timeout, isForced) {
+	var cmd = "PosDoSWCloseDay";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [timeout, isForced]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosDoSWOpenDay</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosDoSWOpenDay is responsible for check the Applier program results, send the whole ApplyUpdate process log file
+ * In java script it should be called:<b>PosDoSWOpenDay(timeout, isForced)</b>
+ * @param timeout - String - Optional, time to execute the command in miliseconds (default is 15000ms).
+ * @param isForced - String - Optional, "true" or "false"(default).
+ * @success Store wide open day was performed.
+ * @failure <i>onSWDayOpen() failed</i> - hook returned false.
+ * @failure <i>Cannot get POS state</i> - failed to retrieve POS state.
+ * @failure <i>POS is not Closed</i> - Day is already open.
+ * @failure <i>User Cancelled</i> - User cancelled calculator when asking for date to open the day.
+ * @failure <i>User not Authorized</i> - User is not authorized to perform Store Wide Open day.
+ * @failure <i>Communication Error</i> - WayStation is not available.
+ * @hook <i>onSWDayOpen()</i> - called before BC start.
+ * @sessioncontext <i>"dayOpenXML"</i> - set with the xml for day open.
+ * @sessioncontext <i>"dayOpenBusinessDay"</i> - set as the business day being checked for opening.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_SWALREADYOPEN: Shown when confirming to open all other registers, except this one, cause its already opened (only in forced mode).\n
+ *	MSG_BC_ALREADYOPEN: Shown if day is already opened (only when not in forced mode).\n
+ *	MSG_BC_DAYOPENCONF: Shown when confirming to open day or type a new date.\n
+ *	MSG_BC_INVBUSDATE: Shown when invalid business date entered (only for non forced mode).\n
+ *	MSG_BC_SWINVDATE: Shown when invalid business date entered (forced mode, maybe the date is valid elsewhere).\n
+ *	MSG_BC_SWCOMMUNIC: Way Station is not available for Store Wide Command.\n
+ *	MSG_BC_ERRSWOPEN: Shown when unable to open all registers in the store.\n
+ */
+function PosDoSWOpenDay(timeout, isForced) {
+	var cmd = "PosDoSWOpenDay";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [timeout, isForced]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosEndOfDay</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC is responsible for execute the end of day routine. If the POS state is opened or blocked, the business day is ended.
+ * Any other status will make this BC return false.
+ * 
+ * @param closeMode - String - POS close mode. The values can be:\n
+ *							"storewide": open POS in Store Wide mode;\n
+ *							"offline": open POS in Offline mode;\n
+ *							"forced": open POS in Store Wide Forced mode.
+ * @success Business day ended successfully.
+ * @failure <i>Invalid parameter</i> - The closeMode parameter must be one of the three strings: "storewide", "offline" or "forced". 
+ * @failure <i>Invalid POS state</i> - The POS state must be either Opened or Blocked.
+ * @sessioncontext <i>KEY_CPOSENDOFDAY_FAIL</i> - Key to indicate the failure string with the message to be shown in a dialog window, 
+ * in case of a failure when trying to end a business day.
+ * @sessioncontext <i>KEY_CPOSENDOFDAY_RESULT</i> - Key to indicate a string in case of success. Not used.
+ * @remarks
+ *
+ * Property Messages:\n
+ *	MSG_BC_NOTOPENED: Error message informing day already closed.\n
+ *	MSG_BC_OPLOGGED: Error message informing there is a operator loged-in.\n
+ */
+function cPosEndOfDay(closeMode) {
+	var cmd = "cPosEndOfDay";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [closeMode]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>cPosEndOfDayVerify</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * This BC verifies if it is possible to end a Business Day. If the POS state is opened or blocked, it is possible to end a Business Day.
+ * Any other status will make this BC return false.
+ * 
+ * @success Business Day can be ended.
+ * @failure <i>Invalid POS state</i> - The POS state must be either Opened or Blocked for success.
+ * @remarks
+ *
+ * This BC needs revision. It aways returns false, regardless of the POS state. It should return true when the POS state is "opened" or "blocked".
+ */
+function cPosEndOfDayVerify() {
+	var cmd = "cPosEndOfDayVerify";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosEndOfDay</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosEndOfDay is responsible for execute the end of day routine!\n
+ * The action can be done in a verify mode, when only consistency is performed,\n
+ * or in a default execution mode when the end of day is actually performed.\n
+ * It is also possible to inform the necessary security level to perform the action.\n
+ * In java script it should be called:<b>PosEndOfDay(closeMode, level)</b>
+ * @param closeMode - String - Optional, "verify" or "execute"(default).
+ * @param level - String - Optional, "manager"(default),"supervisor","system","null" or "remote".\n
+ *									 "null" indicates that no authorization is required and\n
+ *									 "remote" that the authorization was granted remotely.\n
+ * @success end of day was performed or can be performed (in case of verify mode).
+ * @failure <i>onEndOfDay() failed</i> - hook returned false.
+ * @failure <i>Failed to get POS state</i> - failure retrieving POS state.
+ * @failure <i>Grand Total Request fail</i> - failed to get Grand Total value.
+ * @failure <i>User Cancelled</i> - user cancelled calculator when asked to confirm close day.
+ * @failure <i>Not Authorizerd</i> - user is not authorized to perform end of day.
+ * @failure <i>Serialization Error</i> - Error serializating end of day data.
+ * @hook <i>onEndOfDay()</i> - called before BC start.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_ENDDAYCONF: Prompt message to operator confirming closing date.\n
+ *	MSG_BC_NOTOPENED: Error message informing day already closed.\n
+ *	MSG_BC_OPLOGGED: Error message informing operator still loged-in.\n
+ */
+function PosEndOfDay(closeMode, level) {
+	var cmd = "PosEndOfDay";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [closeMode, level]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosGetLoggedInPOS</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosGetLoggedInPOS is responsible for get a list of logged-in POS in the network.
+ * In java script it should be called:<b>PosGetLoggedInPOS()</b>
+ * @success information retrieved and found logged-in POS.
+ * @failure <i>Can not retrieve POS list</i> - Can not retrieve POS list from WayStation.
+ * @sessioncontext <i>"loginDTPosition"</i> - set with the value of found logged-in POS's.
+ */
+function PosGetLoggedInPOS() {
+	var cmd = "PosGetLoggedInPOS";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosLogDuplicateSwipe</b>.
+ *
+ * Persistence:<b>Persisted</b>\n
+ * The PosLogDuplicateSwipe is responsible for register an audith line in tlog files when a card is swiped more than once (logs a possible fraud).
+ * In java script it should be called:<b>PosLogDuplicateSwipe(result)</b>
+ * @param result - String - "true" if duplicate swipe approved or "false" if refused.
+ * @success Duplicate card swipe successfully logged.
+ * @failure <i>Log Error</i> - Error logging duplicate card swipe.
+ * @failure <i>Argument Missing</i> - result parameter is missing.
+ */
+function PosLogDuplicateSwipe(result) {
+	var cmd = "PosLogDuplicateSwipe";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [result]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosRemoteDetach</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosRemoteDetach is responsible for ask the WayStation to detach a POS in the network.
+ * In java script it should be called:<b>PosRemoteDetach(nbrPOS)</b>
+ * @param nbrPOS - String - Optional, POS to detach, default is current POS.
+ * @success POS successfully detached.
+ * @failure <i>POS is not listed</i> - POS is not listed during detach.
+ * @failure <i>POS is online</i> - POS is online during detach.
+ * @failure <i>Need Drawer Change</i> - Need to perform a drawer change before detach.
+ * @failure <i>Drawer Change failed</i> - Remote drawer change failed during detach.
+ * @failure <i>Already Detached</i> - POS is already detached.
+ * @failure <i>General failure</i> - General failure during detach.
+ * @remarks
+ *
+ * Property Messages:\n
+ * 	MSG_BC_DETACHOK: Shown if POS successfully detached.\n
+ *	MSG_BC_DETACHPOSNOTFOUND: Shown if POS is not listed during detach.\n
+ *	MSG_BC_DETACHPOSONLINE: Shown if POS is online during detach.\n
+ *	MSG_BC_LOGOUTOP: Shown if need to perform a drawer change before detach.\n
+ *	MSG_BC_DETACHDRWCHGFAILED: Shown if remote drawer change failed during detach.\n
+ *	MSG_BC_DETACHALREADY: Shown if POS is already detached.\n
+ *	MSG_BC_DETACHFAILED: Shown if a general failure occurred during detach.\n
+ */
+function PosRemoteDetach(nbrPOS) {
+	var cmd = "PosRemoteDetach";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd, [nbrPOS]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSignalDayOpened</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSignalDayOpened is responsible for send a multicast message, handled mainly by production, signalizing that the store is opened.\n
+ * That is, production can receive orders.\n
+ * In java script it should be called:<b>PosSignalDayOpened()</b>
+ * @success Multicast message indicating that day is opened was sent.
+ * @failure <i>POS state retrieve Error</i> - An error occurred while trying to retrieve POS state.
+ * @failure <i>onSignalDayOpened() failed</i> - hook returned false.
+ * @hook <i>onSignalDayOpened()</i> - invoked before send multicast message.
+ */
+function PosSignalDayOpened() {
+	var cmd = "PosSignalDayOpened";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	return executeBC(cmd);
+}
+
+/** StartSpecialTrx_CSL
+ *
+ * @brief - This BC starts a special transaction (waste,refund)
+ * Return - rval - true if allowed to continue
+ */
+function StartSpecialTrx_CSL(level,singleSignOn,kind,message,destination) {
+	var cmd = "StartSpecialTrx_CSL";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+
+	// Should be in Sale mode (operator logged and not alreday performing a transaction
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	var ctx=new SessionContext;
+	switch(Number(ctx.get("transactionSaleType"))) {
+	case 1:
+		PosShowMessage("MSG_BC_REFUND_IN_PROGRESS");
+		break;
+	case 2:
+		PosShowMessage("MSG_BC_WASTE_IN_PROGRESS");
+		break;
+	default:
+		if(!PosGetAuthorization(level,singleSignOn)) {
+			return(false);
+		}
+	 	PosSetTransactionKind(kind);
+		PosShowScreen(ctx.get("baseScreenId"));
+		PosDisplayText(message,destination);
+	}
+	return(true);
+}
+
+/** PODFilter_CSL
+ *
+ * @brief - This BC shows/changes the POD Filter used in reports
+ * Return - rval - true if allowed to continue
+ */
+function PODFilter_CSL(change) {
+	var cmd = "PODFilter_CSL";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	
+	const reportType=["ALL","FC","DT","WT"];
+	const reportButton=["bitmap|postypeall.png","bitmap|postypefc.png","bitmap|postypedt.png","bitmap|postypewt.png"];
+
+	var i=0;
+	// Loops up to length because the very first time reportPOD might not be set!
+	for(;i < reportType.length;i++) {
+		if(PosCheckSessionProperty("reportPOD",reportType[i])) {
+			break;
+		}
+	}
+	if("true"==change) { // Next
+		i++;
+	}
+	if(i >=reportType.length) {
+		i=0;
+	}
+	// either reportPOD was not set or changing from the last to the first...
+	PosChangeButtonProperties(0,reportButton[i]);
+	if("true"==change) { // Next
+		PosSetReportScope("CONSOLIDATED",reportType[i]);
+	}
+	return(true);
+}
+
+/** PosDoSkipCar_CSL
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosDoSkipCarJS</b>\n
+ * This BC put skip Car!\n
+ * In a workflow sequence it is called:<b>PosDoSkipCarJS</b>\n
+ * In java script it should be called:<b>PosDoSkipCarJS</b>\n
+ * Return - rval - true if possible
+ */
+function PosDoSkipCar_CSL() {
+	var cmd = "PosDoSkipCar_CSL";
+	CSL_dbglog(7, SRC_BC_REGISTER, cmd, "Start");
+	
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	// Sale not started as yet...
+	if(!PosCheckCashDrawer()) {
+		// Drawer open
+		PosShowMessage("MSG_BC_DRAWER_OPENED");
+		return(true);
+	}
+	if(PosCheckSessionProperty("POD","DRIVE_THRU")) {
+		if(!PosShowConfirmationMessage("MSG_BC_DLG_SKIPCAR","MSG_OK","MSG_CANCEL")) {
+			return(false);
+		}
+		PosDoSkipCar();
+	}
+	var ctx=new SessionContext;
+	PosShowScreen(ctx.get("baseScreenId"));
+
+	return(true);
+}
+
+
+
+/********** AUXILIARY FUNCTIONS *********
+ */
+ /**selectWorkMode
+ *
+ * @brief - This auxiliary function ask for working mode if in DT mode 
+ * @param - msgSecCashier - not used
+ * @return - array with the selected work mode
+ */
+function selectWorkMode(msgSecCashier) {
+
+	var wkModeRet=new Array();
+	wkModeRet[0]=null;
+	wkModeRet[1]=null;
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("DT" == pod) || ("WT" == pod)){
+		var askWorkMode=true;
+		if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == TANDEM_FACE)) {
+			// Face-2-Face
+			var hlp=new BusinessObjectHelper;
+			var test=hlp.findParamInSectionConfig("tandemBooth","PosType");
+			if((Number(test) == 1) || (Number(test) == 2)) {
+				PosItemSelection("icnoperatorcs.png|icnoperatorotcs.png","cashier|both","RES_DT_LOGIN_TITLE","MSG_DT_LOGIN_MESSAGE");
+				wkModeRet[0]=ctx.get("SelectedButtonValue");
+				wkModeRet[1]=test;
+				askWorkMode=false;
+			}
+		}
+		if(askWorkMode) {
+			PosItemSelection("icnoperatorot.png|icnoperatorcs.png|icnoperatorotcs.png","orderTaker|cashier|both","RES_DT_LOGIN_TITLE","MSG_DT_LOGIN_MESSAGE");
+			wkModeRet[0]=ctx.get("SelectedButtonValue");
+		}
+	}
+	return(wkModeRet);
+}
+ 
+/**auxValidDtMode
+ *
+ * @brief - This function validates DT Mode 
+ * Return - rval - if it's true the caller is allowed to continue
+ */
+function auxValidDtMode() {
+	
+	// Validates FacexFace DT tandem mode...
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == 1)) {
+		var test=0;
+		if(PosGetLoggedInPOS()) {
+			var loggedin=ctx.get("loginDTPosition");
+			if(loggedin != null) {
+				if(loggedin.indexOf("1") > 0) {
+					test|=1;
+				}
+				if(loggedin.indexOf("2") > 0) {
+					test|=2;
+				}
+			}
+		}
+		switch(test) {
+			case 1:
+				// Primary already logged-in
+				if(Number(ctx.get("tandemBooth")) != 1) {
+					test=0;
+				}
+				break;
+			case 2:
+				// Secondary already logged-in
+				if(Number(ctx.get("tandemBooth")) != 2) {
+					test=0;
+				}
+				break;
+			case 3:
+				if((Number(ctx.get("tandemBooth")) != 1) && (Number(ctx.get("tandemBooth")) != 2)) {
+					test=0;
+				}
+				break;
+		}
+		if(test != 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/**
+ * END nps
+ */
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:47 2011
+ * certificate = 393735312d3739343700609407f24478313aac7cd53237474dd0531599c3c985c4cb27d114baad12b21b719d64d3c860339ee46edd3e5436e4d2032d0010
+ * =============================================================================================================================
+*/

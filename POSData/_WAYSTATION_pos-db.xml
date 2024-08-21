@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="WAYSTATION">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+		<Section name="Messaging">
+			<Parameter name="serverPort" value="60003"/>
+		</Section>
+	</Configuration>
+	<Services>
+		<Service name="300" type="PSW" classname="npPswMgr.dll" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="WAY">
+					<Member name="300" alias=""/>
+				</UsedService>
+				<UsedService serviceType="POS">
+					<Member name="001" alias=""/>
+					<!-- <Member name="002" alias=""/>
+					<Member name="003" alias=""/>
+					<Member name="004" alias=""/> -->
+					<Member name="019" alias=""/>
+					<Member name="020" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="PSW"/>
+		</Service>
+		<Service name="300" type="WAY" classname="npway.dll" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="UPD">
+					<Member name="300" alias=""/>
+				</UsedService>
+				<UsedService serviceType="POS">
+					<Member name="001" alias=""/>
+					<!-- <Member name="002" alias=""/>
+					<Member name="003" alias=""/>
+					<Member name="004" alias=""/> -->
+					<Member name="019" alias=""/>
+					<Member name="020" alias=""/>
+				</UsedService>
+				<UsedService serviceType="PSW">
+					<Member name="300" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="WAY">
+				<Section name="main">
+					<Parameter name="ShowConsoleWindow" value="true"/>
+				</Section>
+			</Configuration>
+			<Adaptors>
+				<Adaptor name="npAdpPSW" imports="npAdpPSW" startonload="true"/>
+				<!-- Added For NP6 6.1.16 NPS-5501 25th November 2009 Chris Appleton -->
+				<Adaptor name="npAdpPubl" imports="npAdpPubl" startonload="true"/>
+				<Adaptor name="npAdpTLD" imports="npAdpTLD" startonload="true"/>
+			</Adaptors>
+		</Service>
+		<Service name="301" type="WEB" classname="npwwebsrv.dll" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="PSW">
+					<Member name="300" alias=""/>
+				</UsedService>
+				<UsedService serviceType="WAY">
+					<Member name="300" alias=""/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="WEB">
+				<Section name="main">
+					<Parameter name="ShowConsoleWindow" value="true"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="300" type="STO" classname="npUpdtRcv.dll" startonload="true" quitOnFail="true">
+			<Configuration imports="STO">
+				<Section name="main">
+					<Parameter name="ShowConsoleWindow" value="true"/>
+				</Section>
+			</Configuration>
+		</Service>
+		<Service name="300" type="UPD" classname="npUpdtSrv.dll" startonload="true" quitOnFail="true">
+			<UsedServices>
+				<UsedService serviceType="STO">
+					<Member name="001" alias="POS001 FC"/>
+					<!-- <Member name="002" alias="POS002 FC"/>
+					<Member name="003" alias="POS003 FC"/>
+					<Member name="004" alias="POS004 FC"/> -->
+					<Member name="019" alias="POS019 DT"/>
+					<Member name="020" alias="POS020 DT"/>
+					<Member name="300" alias="WAYSTATION"/>
+					<Member name="1001" alias="KVS001 MFY1|2001"/>
+					<Member name="1002" alias="KVS002 MFY2|2002"/>
+					<Member name="8001" alias="PRODBACK|020"/>
+					<Member name="2001" alias="KVS001 MFY1"/>
+					<Member name="2002" alias="KVS002 MFY2"/>
+					<Member name="8000" alias="PRODMAIN|300"/>
+				</UsedService>
+			</UsedServices>
+			<Configuration imports="UPD">
+				<Section name="main">
+					<Parameter name="ShowConsoleWindow" value="true"/>
+					<Parameter name="HotLogFolder" value="e:\NewPOS61\Bin\HOT_UPDT\LOG"/>
+					<Parameter name="HotBinFolder" value="e:\NewPOS61\Bin\HOT_UPDT\BIN"/>
+					<Parameter name="HotToSendFolder" value="e:\NewPOS61\Bin\HOT_UPDT\TOSEND"/>
+					<Parameter name="HotCurrentFolder" value="e:\NewPOS61\Bin\HOT_UPDT\DB\CURRENT"/>
+					<Parameter name="HotFutureFolder" value="e:\NewPOS61\Bin\HOT_UPDT\DB\FUTURE"/>
+				</Section>
+			</Configuration>
+			<!-- Added by Chris Appleton 10th June RFM Update testing -->
+			<Adaptors>
+				<Adaptor name="conf.apply.update" imports="conf.apply.update" startonload="true"/> 
+			</Adaptors>
+		</Service>
+		<Service name="302" type="BOI" classname="npboi.dll" startonload="true" quitOnFail="true">
+			<Configuration imports="BOI">
+				<Section name="main">
+					<Parameter name="ShowConsoleWindow" value="true"/>
+				</Section>
+			</Configuration>
+			<Adaptors>
+				<Adaptor name="xmlrpccli" imports="xmlrpccli" startonload="true"/>
+			</Adaptors>
+		</Service>
+	</Services>
+</PosDB>

@@ -1,0 +1,313 @@
+/** 
+ * @file CSL_Adaptors.nps
+ * @brief This NPS file implements BusinessComponents that interact to NewPOS extension points.
+ * @addtogroup 	CSL
+ * @defgroup 	Adaptors
+ * @ingroup 	CSL
+ *
+ * Copyright (C) 2008 McDonalds Corp. All rights reserved.
+ *
+ * @author Ricardo (of Creation)
+ * @since SDO-1351 / 2009/06/16
+ *
+ * @version $Id: CSL_Adaptors.nps 776 2009-08-06 13:46:38Z rcaram $
+ * @remarks Business Components related to NewPOS adaptors
+ * @{
+ */ 
+ 
+/* Variable used for version control */
+CSL_ADAPTORS_VERSION = "https://svn.rdisoftware.com/svn/scm_newpos/global/signed/6.1.17/nps:6785";
+ 
+/* Set the variable. */
+var SRC_BC_ADAPTORS='CSL_Adaptors.nps';
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosNPSExtRequestCmd</b>.
+ * 
+ * The PosNPSExtRequestCmd is responsible to execute an external DLL function configured through the NPSExtension adaptor. The command number received must be a valid command in the DLL configured in the NPSExtension adaptor identified by the logical name.
+ * If the logical name is empty , the first configured NPSExtesion adaptor is called.
+ * @param logicalName The adaptor logical name.
+ * @param command The command to be executed by the DLL function.
+ * @param ...(Optional) A variable quantity of parameters that will be sent to the DLL function.
+ * @success The command received as parameter is executed with success and the result is stored in then NPSExtRequestCmd_Result session context variable
+ * @failure <i>Adaptor not available</i> - There’s no NPSExtension adaptor configured in this service. The session context NPSExtRequestCmd_Failure is filled with the error code 1
+ * @failure <i>Invalid parameters</i> - The quantity of parameters or its value are invalid (smaller than 2). The session context NPSExtRequestCmd_Failure is filled with the error code 2
+ * @failure <i>Internal Error</i> - The session context NPSExtRequestCmd_Failure is filled with the error code 3
+ * @sessioncontext <i>NPSExtRequestCmd_Result</i> - The value returned from the DLL function.
+ * @sessioncontext <i>NPSExtRequestCmd_Failure</i> - The code of the error returned from the DLL function or BC internal error.
+ */
+ function PosNPSExtRequestCmd(logicalName, command) {
+	var cmd = "PosNPSExtRequestCmd";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+	return executeBC(cmd, Array.prototype.slice.call(arguments));
+ }
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosSendPrinterCmd</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosSendPrinterCmd is responsible for send a sequence of escape commands to the printer and returns an ACK from the printer hardware
+ * In java script it should be called:<b>PosSendPrinterCmd(escapeCmd,timeout)</b>
+ * @success Ack for the printer.
+ */
+function PosSendPrinterCmd(escapeCmd,timeout) {
+	var cmd = "PosSendPrinterCmd";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [escapeCmd, timeout]);
+}
+
+/**
+ * @brief This function implements the BC,Business Component: <b>PosIsCODOnline</b>.
+ *
+ * Persistence:<b>Not Persisted</b>\n
+ * The PosIsCODOnline is responsible for obtaining the COD status (0:Online, 1:Offline or 2:Disable).\n
+ * It also allocates a camera and requests a picture.\n
+ * In java script it should be called:<b>PosIsCODOnline()</b>
+ * @success Always return true.
+ * @sessioncontext <i>"IsCODOnline"</i> - set with COD status (0:Online, 1:Offline or 2:Disable).
+ */
+function PosIsCODOnline() {
+	var cmd = "PosIsCODOnline";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd);
+}
+
+/** 
+ * @brief Query the printer status (npAdpPrn)
+ *          
+ * The command will be sent (synchronously) to the printer to check the printer status, if the printer is ready or not.
+ *
+ * @param printerAlias Printer alias (for further use, to specify the remote printer alias, "" means the default printer (optional , default is "")
+ * @param timeout in seconds to wait for the status. (optional , default is 5)
+ * @success It was possible to check the printer status, and the status is store on the sessioncontext result.
+ * @failure <i>Invalid printer alias</i> - The printer with given alias could not be found.
+ * @failure <i>timeout</i> - If the printer status could not be get due timeout.
+ * @failure <i>printer error</i> - Internal printer error
+ * @since - SDO-1351 - Create the Business Components interface with the Adaptors (printer, etc) in 6.1.16.
+ * @sessioncontext <i>PosPrinterQueryStatus_Result"</i> - contains the printer status, this is filled only if the BC is execute with success.
+ * 													 0x0-> ready
+ * 													 0x400-> parallel printing
+ * 													 other values-> error
+ * @sessioncontext <i>"PosPrinterQueryStatus_Failure"</i> - contains the code error printer status, this is filled only if the BC execution fails.
+ */
+function cPosPrinterQueryStatus(printerAlias, timeout) {
+	var cmd = "cPosPrinterQueryStatus";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [printerAlias, timeout]);
+}
+
+/** 
+ * @brief Sends data to the printer (npAdpPrn)
+ *          
+ * This command sends data to be printed through the printer adaptor.
+ *
+ * @param printerAlias Printer alias (required only for remote printer adaptor, "" means the default printer (optional , default is "").
+ * @param timeout in seconds to wait for the status, any negative number means default, 0 means no timeout. (optional , default is 5)
+ * @param data the buffer to send to the printer (required).
+ * @success if the print was executed with success.
+ * @failure <i>Invalid Logical Name</i> - It was not possible to find the requested printer.
+ * @failure <i>Invalid printer alias</i> - The printer with given alias could not be found.
+ * @failure <i>timeout</i> - If the data could not be sent due timeout.
+ * @failure <i>printer error</i> - Internal printer error
+ * @since - SDO-1351 - Create the Business Components interface with the Adaptors (printer, etc) in 6.1.16.
+ * @sessioncontext <i>cPosPrinterPrint_Result"</i> - contains jobid of the print request, this is filled only if the BC is execute with success.
+ * @sessioncontext <i>cPosPrinterPrint_Failure</i> - contains the code error, this is filled only if the BC execution fails.
+ */
+function cPosPrinterPrint(printerAlias, timeout, data) {
+	var cmd = "cPosPrinterPrint";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [printerAlias, timeout, data]);
+}
+/** 
+ * @brief Sends data to the printer (npAdpPrn)
+ *          
+ * This command sends data to be printed and wait it to be completed or fail.
+ *
+ * @param printerAlias Printer alias (required only for remote printer adaptor, "" means the default printer (optional , default is "").
+ * @param timeout in seconds to wait for the status, any negative number means default, 0 means no timeout. (optional , default is 5)
+ * @param data the buffer to send to the printer (required).
+ * @success if the print was executed with success.
+ * @failure <i>Invalid printer alias</i> - The printer with given alias could not be found.
+ * @failure <i>timeout</i> - If the data could not be sent due timeout.
+ * @failure <i>printer error</i> - Internal printer error
+ * @since - SDO-1351 - Create the Business Components interface with the Adaptors (printer, etc) in 6.1.16.
+ * @sessioncontext <i>cPosPrinterPrint_Result"</i> - contains jobid of the print request, this is filled only if the BC is execute with success.
+ * 													 0-> waiting
+ * 													 1-> printing
+ * 													 2-> error
+ * 													 3-> done		
+ * @sessioncontext <i>cPosPrinterPrint_Failure</i> - contains the code error, this is filled only if the BC execution fails.
+ */
+function PosPrinterPrintAndWait(printerAlias, timeout, data) {
+	var cmd = "PosPrinterPrintAndWait";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+	
+	var result = false;
+	if (cPosPrinterPrint(printerAlias, timeout, data)) {
+		result = true
+		//Get the Job Id
+		//var ctx=new SessionContext;
+		//var jobId = ctx.get("cPosPrinterPrint_Result");
+		var jobId = getLastSuccess("cPosPrinterPrint");
+		var jobStatus = 0; // O means waiting;
+		do {
+			result = cPosPrinterJobStatus(printerAlias, timeout, jobId);
+			if (result) {
+				 jobStatus = Number(getLastSuccess("cPosPrinterJobStatus"));
+			} 
+		} while (result == true && jobStatus == 0)
+	}
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Finished");
+    return result; 
+}
+
+/** 
+ * @brief Query the printer Job Status (npAdpPrn)
+ *          
+ * This command query the status of a given printer job id. The Job status is stored in section context variable.
+ * 
+ * This will wait for job be finished (with success or not) or if timeout occurs.
+ *
+ * @param printerAlias Printer alias (required only for remote printer adaptor, "" means the default printer (optional , default is "").
+ * @param timeout in seconds to wait for the status, any negative number means default, 0 means no timeout. (optional , default is 5)
+ * @param jobId the job id to query. (required).
+ * @success if the query was executed with success.
+ * @failure <i>Invalid printer alias</i> - The printer with given alias could not be found.
+ * @failure <i>timeout</i> - If the data could not be sent due timeout.
+ * @failure <i>printer error</i> - Internal printer error
+ * @since - SDO-1351 - Create the Business Components interface with the Adaptors (printer, etc) in 6.1.16.
+ * @sessioncontext <i>PosPrinterPrint_Result"</i> - contains the state of the job id, this is filled only if the BC is execute with success.
+ * @sessioncontext <i>PosPrinterPrint_Failure</i> - contains the code error, this is filled only if the BC execution fails.
+ */
+function cPosPrinterJobStatus(printerAlias, timeout, jobId) {
+	var cmd = "cPosPrinterJobStatus";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [printerAlias, timeout, jobId]);
+}
+
+function PosDisableCOD() {
+	var cmd = "PosDisableCOD";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd);	
+}
+
+/** 
+ * @brief PosCODCMD will execute the some specific commands (see parameters below) and return ENABLED or DISABLED if the command is QUERY_COD_ENABLED.
+ * This BC can be used for enabling and disabling the COD and verifying if it was remotely enabled.
+ *          
+ * @param CODId - int - COD selected
+ * @param CMD - int - Command to be executed: 	0 - enable COD
+ * 					 							1 - disable COD
+ *												2 - verifies if the COD is enabled or disabled
+ * @success command executed successfully
+ * @failure <i>Transaction in progress</i> - There is a transaction in progress.
+ * @sessioncontext <i>PosPrinterPrint_Result"</i> - contains the state of the job id, this is filled only if the BC is execute with success.
+ * @sessioncontext <i>PosPrinterPrint_Failure</i> - contains the code error, this is filled only if the BC execution fails.
+ *
+ * @remarks
+ * Property Messages:\n
+ * 	MSG_COD_CMD_QUERY: Shown when CMD is "2" and core BC retured success
+ * 	MSG_COD_CMD_OK: Shown when command executed with success in COD
+ *  MSG_COD_CMD_ERROR: Shown when COD didn't answer to the command
+ */
+function PosCODCMD(CODId, CMD) {
+	var cmd = "PosCODCMD";
+	var Rcv;
+	var result;
+	
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    result=executeBC(cmd, [CODId, CMD])
+
+	if(result){
+		Rcv = getLastSuccess("PosCODCMD");
+		if(CMD=="2"){
+			PosShowMessage("MSG_COD_CMD_QUERY",Rcv);
+		}else{
+			PosShowMessage("MSG_COD_CMD_OK");
+		}
+	}else{
+		if(!PosNotATransactionInProgress(false)) {
+			return(false);	
+		}
+		PosShowMessage("MSG_COD_CMD_ERROR");
+	}
+	
+	return result;
+}
+
+/** 
+ * @brief Get the magnetic strip information (npAdpPrn)
+ *          
+ * This command gets the information storaged in magnetic strip.
+ * 
+ * It will wait until receive success/failure during given timeout.
+ *
+ * @param timeout in seconds to wait for the device response. (optional, default is 5)
+ * @success if the MSR device returns a string with success. 
+ * @failure <i>timeout</i> - If the data could not be sent due timeout.
+ * @since - SDO-1511 - Create the Business Components interface for Magnetic Strip Reader
+ * @sessioncontext <i>cPosMSRRead_Result"</i> - contains the string with information storaged data, this is filled only if the BC is execute with success.
+ * @sessioncontext <i>cPosMSRRead_Failure</i> - contains the code error, this is filled only if the BC execution fails.
+ */
+function cPosMSRRead(timeout) {
+	var cmd = "cPosMSRRead";
+	CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [timeout]);
+}
+
+/** Fiscal Printer - X Report
+ *
+ * @brief - Execute a X Report in the Fiscal Printer
+ * Return - rval: true -
+*/
+function PosFPPrintXReport() {
+    var cmd = "PosFPPrintXReport";
+    CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, []);
+}
+/** Fiscal Printer - Z Report
+ *
+ * @brief - Send a Z Report to the Printer
+ * Return - rval: true -
+*/
+function PosFPPrintReductionReport() {
+    var cmd = "PosFPPrintReductionReport";
+    CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, []);
+}
+/** Fiscal Printer - PosFPOperation
+ *
+ * @brief - Execute directly operations in the Fiscal Printer
+ * @param - Type: ID value (1 - Initial Amount, 2 - Skim, 3 - Show Store Number, ...)
+ * Return - rval: true -
+ * Note: The <Flags> and <Param1>, <Param2>… fields should be used by local script implementations to comply with local requirements.
+*/
+function PosFPOperation(Type,Flags,Param1,Param2,Param3,Param4) {
+    var cmd = "PosFPOperation";
+    CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [Type,Flags,Param1,Param2,Param3,Param4]);
+}
+/** Fiscal Printer - PosFPSetDateTime
+ *
+ * @brief - Set the Fiscal Printer Date and Time
+ * Return - rval: true -
+*/
+function PosFPSetDateTime(DateTime) {
+    var cmd = "PosFPSetDateTime";
+    CSL_dbglog(7, SRC_BC_ADAPTORS, cmd, "Start");
+    return executeBC(cmd, [DateTime]);
+}
+
+/** @} END nps */
+ 
+/* signed aut version 9-9076
+ * authority id = builder
+ * authority level = 10
+ * authority name = NewPOS release level
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Fri Jun 17 12:25:46 2011
+ * certificate = 393735312d37393437003dda4976b8d10a8a45898d27bfe9e3170c1f66cfa2402f87f6379be00fcd7f64c762934e155d10823acf8df8374354dba3560010
+ * =============================================================================================================================
+*/

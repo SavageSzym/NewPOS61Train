@@ -1,0 +1,348 @@
+body
+{
+	background-image: none;
+	cursor: default;
+	font-family: Verdana, Tahoma, Arial, Helvetica, Sans-Serif;
+	background-color: #eeeeee;
+	text-align: center;
+	moz-user-select: none;
+}
+/* Outline border, used to create a desktop-like look-and-feel */
+.outlineBorder {
+	border: 2px solid gray;
+	height: 99%;
+}
+/* WayStation logo image */
+div.wayLogo {
+	width: 100%;
+	overflow: hidden;
+}
+/* Area that holds system messages and the clock. */
+table.messageAndClock {
+	width: 95%;
+	margin-left:auto;
+	margin-right:auto;
+}
+/* System messages area */
+td.messagesArea {
+	width: 85%;
+}
+div.messagesAreaNoMessage, div.messagesAreaWithMessage {
+	border: 1px solid gray;
+	text-align: left;
+}
+div.messagesAreaNoMessage {
+	background-color: white;
+}
+div.messagesAreaWithMessage {
+	background-color: yellow;
+}
+/* Clock area */
+td.clockArea {
+	width: 15%;
+	font-size: 80%;
+}
+div.clockArea
+{
+	font-weight: bold;
+	color: #3f4040;
+	font-family: Arial;
+	list-style-type: none;
+	text-align: center;
+}
+/* POS list and buttons */
+table.listAndButtons {
+	margin-left:auto;
+	margin-right:auto;
+	width: 95%;
+	height: 85%;
+}
+table.posAndStoList {
+	width: 100%;
+	font-family: Verdana, Arial;
+	position: relative;
+	top: 0px;
+	height: 100%;
+}
+/* POS List*/
+td.posList
+{
+	border-right: gray 1px solid;
+	border-top: gray 1px solid;
+	border-left: gray 1px solid;
+	width: 50%;
+	border-bottom: gray 1px solid;
+	font-family: Verdana, Arial;
+	position: relative;
+	top: 0px;
+	height: 100%;
+}
+td.posCell {
+	border-top: 1px solid #D3D3D3;
+	border-right: 1px solid #D3D3D3;
+	border-left: 0px solid #D3D3D3;
+	border-bottom: 0px solid #D3D3D3;
+	padding: 2px;
+}
+
+td.prodCell {
+	border-top: 1px solid #D3D3D3;
+	border-right: 1px solid #D3D3D3;
+	border-left: 0px solid #D3D3D3;
+	border-bottom: 0px solid #D3D3D3;
+	padding: 2px;
+}
+
+div.posList {
+	position:relative;
+	top: 0px;
+	height: 100%;
+	overflow: auto;
+	width: 100%;
+}
+table.posList {
+	position:relative;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+}
+div.prodList {
+	height: 100%;
+	overflow: auto;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+}
+div.dummyList {
+	height: 15px;
+	width: 100%;
+	overflow: no;
+	top: 0px
+}
+table.prodList {
+	position:relative;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+/* POS Information */
+tr.posInfoLine {
+	height: 50px;
+	position: top;
+}
+tr.prodInfoLine {
+	height: 50px;
+	position: top;
+}
+
+table.prodInfoHeader , table.prodInfoNormal, table.prodInfoSelected
+{
+	border-right: #d3d3d3 0px solid;
+	border-top: #d3d3d3 0px solid;
+	font-weight: bold;
+	font-size: 80%;
+	border-left: #d3d3d3 1px solid;
+	width: 100%;
+	border-bottom: #d3d3d3 1px solid;
+	font-family: Verdana, Arial;
+	height: 50px;
+	position: top;
+	top:0px
+
+}
+
+table.posInfoHeader, table.posInfoNormal, table.posInfoSelected
+{
+	border-right: #d3d3d3 0px solid;
+	border-top: #d3d3d3 0px solid;
+	font-weight: bold;
+	font-size: 80%;
+	border-left: #d3d3d3 1px solid;
+	width: 100%;
+	border-bottom: #d3d3d3 1px solid;
+	font-family: Verdana, Arial;
+	height: 50px;
+	top:0px
+	
+}
+
+table.posInfoHeader
+{
+	font-size: 100%;
+	color: lightgoldenrodyellow;
+	font-family: Verdana, Arial;
+	background-color: #992033;
+}
+table.prodInfoHeader
+{
+	font-size: 100%;
+	color: lightgoldenrodyellow;
+	font-family: Verdana, Arial;
+	background-color: #992033;
+}
+table.posInfoNormal {
+	background-color: #F5F5F5;
+	color: black;
+	cursor: pointer;
+}
+table.posInfoSelected {
+	background-color: #F2E6DC;
+	color: black;
+	cursor: pointer;
+}
+table.prodInfoNormal {
+	background-color: #F5F5F5;
+	color: black;
+	cursor: pointer;
+}
+table.prodInfoSelected {
+	background-color: #F2E6DC;
+	color: black;
+	cursor: pointer;
+}
+/* Buttons area */
+td.buttonsArea
+{
+	border-right: gray 1px solid;
+	border-top: gray 1px solid;
+	border-left: gray 1px solid;
+	width: 50%;
+	border-bottom: gray 1px solid;
+	font-family: Verdana, Arial;
+	height: 100%;
+}
+div.buttonsArea, table.buttonsArea {
+	width: 100%;
+	height: 100%;
+}
+table.buttonsArea {
+	table-layout: fixed;
+}
+/* Buttons */
+td.buttonNormal, td.buttonPressed, td.buttonHidden {
+	width: 20%;
+	height: 14%;
+	max-height: 14%;
+	min-height: 14%;
+	border: 1px solid gray;
+	visibility: visible;
+	overflow: hidden;
+	white-space: nowrap;
+	text-align: center;
+	font-weight: bold;
+	font-size: 80%;
+}
+td.buttonNormal
+{
+	border-right: 2px outset;
+	border-top: 2px outset;
+	padding-left: 1px;
+	border-left: 2px outset;
+	cursor: hand;
+	color: lightgoldenrodyellow;
+	padding-top: 1px;
+	border-bottom: 2px outset;
+	font-family: Verdana, Arial;
+	background-color: #992033;
+}
+td.buttonPressed
+{
+	border-right: 2px inset;
+	padding-right: 1px;
+	border-top: 2px inset;
+	padding-left: 0px;
+	padding-bottom: 1px;
+	border-left: 2px inset;
+	padding-top: 0px;
+	border-bottom: 2px inset;
+	background-color: red;
+}
+td.buttonHidden {
+	visibility: hidden;
+}
+/* "Modal" dialogs */
+div.dialog, div.dialogHidden
+{
+	border-right: black 2px solid;
+	border-top: #aaaaaa 2px solid;
+	z-index: 9;
+	visibility: visible;
+	border-left: #aaaaaa 2px solid;
+	color: background;
+	border-bottom: black 2px solid;
+	font-family: Verdana, 'Arial Black';
+	position: absolute;
+	background-color: #d3d3d3;
+	text-align: center;
+	moz-user-select: none;
+}
+div.dialogHidden {
+	width: 0px;
+	height: 0px;
+	top: 0px;
+	left: 0px;
+	visibility: hidden;
+}
+.dialogButton {
+	cursor: default;
+}
+.dialogButtonHidden {
+	cursor: default;
+	visibility: hidden;
+}
+table.dialogHeader {
+	font-weight: bolder;
+	font-size: larger;
+	height: 15px;
+	width: 100%;
+	background-color: black;
+	color: #FFD000;
+	padding: 2px;
+}
+.dialogMessage {
+	font-weight: bold;
+	height: 81%;
+	width: 100%;
+	overflow: hidden;
+	text-align: center;
+	vertical-align: middle;
+}
+table.inputDialogMessage
+{
+	font-weight: bold;
+	vertical-align: middle;
+	overflow: hidden;
+	width: 100%;
+	font-family: Verdana, Arial;
+	height: 50%;
+	text-align: center;
+}
+div.previewDialogMessage {
+	height: 88%;
+	width: 100%;
+	overflow: hidden;
+}
+textarea.previewDialogMessage {
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+}
+div.commErrorPopup, div.commErrorPopupHidden {
+	font-weight: bold;
+	-moz-user-select:none;
+	text-align: center;
+	position: absolute;
+	z-index: 9;
+	visibility: visible;
+	background-color: crimson;
+	color: white;
+	border: 1px solid gray;
+	width: 15%;
+	top: 2%;
+	left: 83%;
+	text-decoration: blink;
+}
+div.commErrorPopupHidden {
+	visibility: hidden;
+}

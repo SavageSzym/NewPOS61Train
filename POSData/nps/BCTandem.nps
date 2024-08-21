@@ -1,0 +1,174 @@
+/** 
+* NP6majorversion=6.1.17
+* NP6build=B193
+* NP6scriptversion=2.58.02
+* CreationDate=20.07.2011
+*
+* Copyright (c) 2009-2010 McDonald's IT Europe
+*
+* BCTandem.nps
+* This NPS file implements Tandem Business Componentes .
+*
+* SOTEC History Changes
+*
+* Version		Date			Name			Detail Description
+* 2.50.00		25.01.2010	Olga Illenseer		Take over from 6.1.16 Scripts	
+*/
+
+/** PosParallelDtSwitchJS
+ *
+ * @brief - This function implements the BC,Business Component: <b>PosParallelDtSwitchJS</b>\n
+ * This BC switch store mode Parallel to Regular and vice versa!\n
+ * In a workflow sequence it is called:<b>PosParallelDtSwitchJS</b>\n
+ * In java script it should be called:<b>PosParallelDtSwitchJS</b>\n
+ * Return - rval - true if possible
+ */
+function PosParallelDtSwitchJS()
+{
+	if(!PosIsInSaleMode() || !PosNotATransactionInProgress(false)) {
+		return(false);
+	}
+	var ctx=new SessionContext;
+	if(PosCheckSessionProperty("dtStoreMode","PARALLEL")) {
+		PosSetSessionProperty("dtStoreMode","REGULAR","true");
+	}
+	else {
+		PosSetSessionProperty("dtStoreMode","PARALLEL","true");
+	}
+	PosShowScreen(ctx.get("baseScreenId"));
+
+	return(true);
+}
+
+/**auxAskWorkMode
+ *
+ * @brief - This auxiliary function ask for working mode if in DT mode 
+ * 			(used by PosChangeDtWorkingModeJS and onLoginOperator)
+ * Return - none
+ */
+function auxAskWorkMode(msgSecCashier) {
+
+	var wkModeRet=new Array();
+	wkModeRet[0]=null;
+	wkModeRet[1]=null;
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("DT" == pod) || ("WT" == pod)){
+		var askWorkMode=true;
+		if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) == TANDEM_FACE)) {
+			// Face-2-Face
+			var hlp=new BusinessObjectHelper;
+			var test=hlp.findParamInSectionConfig("tandemBooth","PosType");
+			if((Number(test) == 1) || (Number(test) == 2)) {
+				PosItemSelection("icnoperatorcs.png|icnoperatorotcs.png","cashier|both","RES_DT_LOGIN_TITLE","MSG_DT_LOGIN_MESSAGE");
+				wkModeRet[0]=ctx.get("SelectedButtonValue");
+				wkModeRet[1]=test;
+				askWorkMode=false;
+			}
+		}
+		if(askWorkMode) {
+			PosItemSelection("icnoperatorot.png|icnoperatorcs.png|icnoperatorotcs.png","orderTaker|cashier|both","RES_DT_LOGIN_TITLE","MSG_DT_LOGIN_MESSAGE");
+			wkModeRet[0]=ctx.get("SelectedButtonValue");
+		}
+	}
+	return(wkModeRet);
+}
+
+/**auxGetTandemNbrJS
+ *
+ * @brief - This auxiliary function gets the tandem booth number 
+ * 			(used by onSndRcvStore)
+ * Return - tandem booth
+ */
+function auxGetTandemNbrJS() {
+
+	var ctx=new SessionContext;
+	var pod=ctx.get("POD");
+	if(("DT" == pod) && (ctx.get("tandemEnable").toString() == "true") && (Number(ctx.get("DTStoreMode")) != TANDEM_NONE)) {
+		if(Number(ctx.get("DTStoreMode")) == TANDEM_PARALLEL) {
+			return(Number(ctx.get("tandemBooth")));
+		}
+		if(Number(ctx.get("DTStoreMode")) == TANDEM_FACE) {
+			// Tandem Face-2-Face
+			if(PosCheckSessionProperty("workingMode","cashier|both")) {
+				return(Number(ctx.get("tandemBooth")));
+			}
+		}
+		else {
+			if(PosCheckSessionProperty("workingMode","orderTaker|both")) {
+				// Tandem Inline
+				var cod0=ctx.get("COD 0");
+				if((cod0 != null) && (cod0.length > 0)) {
+					// This is a dedicated COD
+					var cod1=ctx.get("COD 1");
+					if(cod1 == cod0) {
+						// Primary
+						return(1);
+					}
+					var cod2=ctx.get("COD 2");
+					if(cod2 == cod0) {
+						// Secondary
+						return(2);
+					}
+				}
+			}
+		}
+	}
+	return(0);
+}
+
+/**PosChangeDtWorkingModeJS
+ *
+ * @brief - This function implements the BC,Business Component PosChangeDtWorkingModeJS\n
+ * Return - rval - True for successful execution or False for failure.
+ */
+function PosChangeDtWorkingModeJS() {
+
+	if(!PosIsInSaleMode()) {
+		return(false);
+	}
+	var workingMode=auxAskWorkMode("Changing to Secondary Cashier");
+	if((workingMode != null) && (workingMode[0] != null)) {
+		if(!PosChangeDtWorkingMode(workingMode[0])) {
+			return(false);
+		}
+		if(workingMode[1] != null) {
+			var ctx=new SessionContext;
+			ctx.set("tandemBooth",workingMode[1],true);
+		}
+	}	
+	return(true);
+}
+
+/**ToggleTandemModeJS
+ *
+ * @brief - This BC toggles tandem (enabled/disabled)
+ * Return - true if ok
+ */
+function ToggleTandemModeJS()
+{
+	if(!PosNotATransactionInProgress(false)) {
+		//PosShowMessage("MSG_BC_TDOPLOGGED");
+		return(false);
+	}
+	var tandOper=(PosCheckSessionProperty("tandemEnable","true"))?"false":"true";
+	if(!PosEnableTandem(tandOper)) {
+		PosShowMessage("MSG_BC_TXRXPRD");
+	}
+	PosRefreshButtons();
+	return(true);
+}
+ 
+ 
+
+/* signed aut version 9-9076
+ * authority id = coe
+ * authority level = 40
+ * authority name = NewPOS COE developer
+ * group = npi
+ * validity = 2010-04-18
+ * signature type = slash_star
+ * time stamp (GMT) = Wed Jul 20 07:36:29 2011
+ * certificate = 393735312d3739343700db642010bbc26678f588b1649e76c956b5dbfd808f560749019845fda67852c6dc74b5b0bbbd0c9eefc96dfecb1892a0792f0010
+ * =================================================================================================================================
+*/

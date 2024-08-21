@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PosDB xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="/export/home/webrfm/app/rfm/jboss-3.2.2/server/default/deploy/webrfmD10.war/rfmdata/pos-db.xsd" version="1.0" name="KVS001 MFY1">
+	<StoreDB imports="all"/>
+	<ColorDB imports="default"/>
+	<Configuration imports="Store.wide">
+			<Section name="Messaging">
+				<Parameter name="serverPort" value="60001"/>
+			</Section>
+	</Configuration>
+	<Services>
+		<Service name="1001" type="KVS" classname="com.ngpos.arch.services.kvs.main.KvsControl" startonload="true" quitOnFail="true">
+			<Configuration imports="KVS">
+				<Section name="UserInterface">
+					<Parameter name="showCursor" value="true"/>
+					<Parameter name="showCloseButton" value="true"/>
+				</Section>
+			</Configuration>		
+			<Adaptors>
+			<!--
+				<Adaptor name="serial.bumpbar" imports="serial.bumpbar" startonload="true">
+					<Section name="main">
+						<Parameter name="home" value=""/>
+						<Parameter name="sideon" value="0xa1"/>
+						<Parameter name="held" value=""/>
+						<Parameter name="print" value=""/>
+						<Parameter name="serveheld" value=""/>
+						<Parameter name="sideoff" value="0xa2"/>
+						<Parameter name="logicalname" value="BumpBar MFY1 1001"/>
+						<Parameter name="serve" value="0xd1"/>
+						<Parameter name="zoom" value="0xb2"/>
+						<Parameter name="next" value="0xd2"/>
+						<Parameter name="recall" value="0xb1"/>
+						<Parameter name="undo" value="0xc1"/>
+						<Parameter name="portname" value="COM2"/>
+					</Section>
+				</Adaptor> -->
+				<Adaptor type="keyboard.bumpbar" startonload="true">
+					<Section name="main">
+						<Parameter name="adaptorname" value="BumpBar"/>
+						<Parameter name="dtfconoff"/>
+						<Parameter name="globalserve" value="'b'|'B'"/> <!-- Pilot Version ONLY -->
+						<Parameter name="globalserveheld" value="'c'|'C'"/> <!-- Pilot Version ONLY -->
+						<Parameter name="splitDTFC" value="'f'|'F'"/>
+						<Parameter name="held" value="'a'|'A'"/>
+						<Parameter name="home" value="'h'|'H'"/>
+						<Parameter name="logicalname" value="Keyboard Virtual BumpBar"/>
+						<Parameter name="next" value="'n'|'N'"/>
+						<Parameter name="previous" value="'1'"/>
+						<Parameter name="pickList" value="'q'|'Q'"/>
+						<Parameter name="print" value="'p'|'P'"/>
+						<Parameter name="recall" value="'r'|'R'"/>
+						<Parameter name="rotate" value="'l'|'L'"/>
+						<Parameter name="serve" value="'s'|'S'"/>
+						<Parameter name="serveheld" value="'e'|'E'"/>
+						<Parameter name="service" value="com.ngpos.drivers.general.BumpBarDriverKeyboard"/>
+						<Parameter name="sideoff" value="'x'|'X'"/>
+						<Parameter name="sideon" value="'o'|'O'"/>
+						<Parameter name="undo" value="'u'|'U'"/>
+						<Parameter name="zoom" value="'z'|'Z'"/>
+					</Section>
+				</Adaptor>				
+			</Adaptors>
+		</Service>
+		<Service name="1001" type="STO" classname="com.ngpos.arch.services.update.UpdatePosData" startonload="true" quitOnFail="true">
+			<Configuration imports="STO.PRD"/>
+		</Service>
+	</Services>
+</PosDB>
